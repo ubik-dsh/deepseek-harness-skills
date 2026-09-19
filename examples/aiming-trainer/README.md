@@ -174,6 +174,20 @@ no score, was never selected, and the chaser spent a hundred rounds shooting at
 empty ground. **The win condition and the progress signal are different numbers**,
 and scoring a strategy by the first discards every strategy whose value is delayed.
 
+### Matches, and a slower crossing
+
+A match lasts **three minutes**; then the round is called, the winner announced, and
+a new match begins with **the same two agents**. That boundary is the point: the
+strategies carry over, so a chaser that lost the first three minutes and wins the
+next is the thing worth watching. The clock is on screen, and the result of the
+previous match stays there.
+
+The crossing was slowed by a third — six ticks instead of four, which was a blink
+at any speed you would want to watch. What this changes is what you can *see*: the
+click is resolved against the whole crossing either way, so the metric barely
+moves. It is a watchability change wearing the clothes of a difficulty setting, and
+saying so is cheaper than implying otherwise.
+
 ## Requirements
 
 Python 3.9 or newer and Pillow. No numpy: the vision is channel arithmetic through

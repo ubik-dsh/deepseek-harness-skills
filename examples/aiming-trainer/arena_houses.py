@@ -27,6 +27,7 @@ import argparse
 import math
 import random
 import textwrap
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -40,6 +41,8 @@ HOUSE_H = 86
 HOUSE_HP = 20
 MIN_RESPAWN_DISTANCE = 100.0
 MAX_STAY = 8             # rounds in one house before it is too hot to keep
+CROSS_TICKS = 6          # ticks spent crossing; was 4, which was a blink
+MATCH_SECONDS = 180.0    # a match lasts three minutes
 LATENCY = 3
 ROUNDS_PER_GENERATION = 5
 EVADER_RADIUS = 9
@@ -227,6 +230,10 @@ class World:
         self.rounds: list[dict[str, object]] = []
         self.round_number = 0
         self.destroyed = 0
+        self.match_number = 1
+        self.match_catches = 0
+        self.match_rope_history: list[float] = []
+        self.last_match: str = ""
 
     def free_spot(self, avoid: House | None = None) -> tuple[float, float]:
         """A house position that respects the hundred-pixel rule."""
@@ -285,8 +292,46 @@ class Arena:
         self.flash = ""
         self.flash_left = 0
         self.rewrite_banner = 0
+        self.match_banner = 0
+        self.match_started = time.monotonic()
         self.canvas.bind("<Configure>", self.on_resize)
         self.tick()
+
+    # ── the match clock ───────────────────────────────────────────────────
+    def match_seconds_left(self) -> float:
+        return max(0.0, MATCH_SECONDS - (time.monotonic() - self.match_started))
+
+    def end_match(self) -> None:
+        """Close the match, announce it, and start another with the same agents.
+
+        The point of a match boundary is not the score: it is that the agents carry
+        their evolved strategies into the next one. A chaser that lost the first
+        three minutes and wins the next is the thing worth watching.
+        """
+        world = self.world
+        assert world is not None
+        chaser_won = world.match_catches >= max(1, world.round_number // 12)
+        winner = "CHASER takes the match" if chaser_won else "HIDER takes the match"
+        world.last_match = (
+            f"match {world.match_number}: {winner} — {world.match_catches} catches"
+            f" in {world.round_number} rounds"
+        )
+        world.match_number += 1
+        world.match_catches = 0
+        world.match_rope_history.append(world.rope)
+        world.rope = 0.0
+        world.rope_history.clear()
+        world.rounds.clear()
+        world.round_number = 0
+        world.houses = [House(*world.free_spot()) for _ in range(HOUSE_COUNT)]
+        world.house_index = 0
+        world.stay = 0
+        world.travelling = False
+        world.x, world.y = world.houses[0].x, world.houses[0].y
+        world.last_seen_house = 0
+        self.transitions = {}
+        self.match_started = time.monotonic()
+        self.match_banner = 60
 
     def toggle_pause(self, _event: object = None) -> None:
         self.paused = not self.paused
@@ -315,7 +360,7 @@ class Arena:
 
     def on_resize(self, event: tk.Event) -> None:
         self.width = float(event.width)
-        self.height = float(event.height) - 250
+        self.height = float(event.height) - 330
         if self.world is None:
             self.world = World(self.width, self.height)
             self.begin_round()
@@ -511,10 +556,9 @@ class Arena:
                 w.house_index = index
                 w.last_seen_house = index
 
-        # A moving average, not a running total. Summed, eight catches against a
-        # hundred and twenty escapes pins the rope at the end of its travel and it
-        # stops carrying information - which is the opposite of what a rope is for.
         w.rope = _clamp(w.rope * 0.94 + (0.35 if hit_hider else -0.12), -1.0, 1.0)
+        if hit_hider:
+            w.match_catches += 1
         w.rope_history.append(w.rope)
         if len(w.rope_history) > 900:
             w.rope_history.pop(0)
@@ -544,7 +588,7 @@ class Arena:
         if not self.paused and self.world is not None and self.width > 0:
             self.phase_tick += 1
             if self.phase == "move":
-                steps = 4
+                steps = CROSS_TICKS
                 world = self.world
                 # The crossing is animated to the halfway point, because halfway is
                 # where the click lands. Resolving it after the hider had arrived
@@ -566,6 +610,10 @@ class Arena:
                 if self.phase_tick >= 3:
                     self.finish_round()
                     self.begin_round()
+                    if self.match_seconds_left() <= 0:
+                        self.end_match()
+        if self.match_banner > 0:
+            self.match_banner -= 1
         self.draw()
         self.root.after(max(16, int(1000 / (self.speed * 8))), self.tick)
 
@@ -716,9 +764,24 @@ class Arena:
                            f"   speed {self.speed:.1f}x   hiding {'on' if self.hide else 'shown'}"
                            f"   {'PAUSED' if self.paused else 'running'}",
                       fill="#7b8794", font=("Consolas", 12))
-        c.create_text(mid, strip_y + 42,
-                      text="space pause · ←/→ speed · w rewrite · h toggle hiding · r restart · Esc quit",
+
+        # The match clock. Three minutes is long enough for the agents to rewrite
+        # themselves a dozen times, so a match is a unit of evolution rather than a
+        # unit of play.
+        left = self.match_seconds_left()
+        minutes, seconds = divmod(int(left), 60)
+        clock = f"match {world.match_number}   {minutes}:{seconds:02d} left   {world.match_catches} catches"
+        c.create_text(mid, strip_y + 42, text=clock,
+                      fill="#f0c419" if left < 30 else "#98a4b0", font=("Consolas", 13, "bold"))
+        if world.last_match:
+            c.create_text(mid, strip_y + 60, text=world.last_match, fill="#5f6b77",
+                          font=("Consolas", 10))
+        c.create_text(mid, strip_y + 96,
+                      text="space pause · ←/→ speed · w rewrite · h hiding · r restart · Esc quit",
                       fill="#4a5560", font=("Consolas", 10))
+        if self.match_banner > 0:
+            c.create_text(mid, self.height - 130, text="NEW MATCH — the strategies carry over",
+                          fill="#f0c419", font=("Consolas", 18, "bold"))
 
     def draw_agent(self, agent: Agent, x: float, y: float, side: str, colour: str) -> None:
         c = self.canvas
