@@ -245,6 +245,77 @@ explores a shape at random 20% of the time, and the radical rewrite's choice of
 shape between matches is a written rule ("if you died crossing, cross less"), not
 something the agent worked out. Those are the next three things to make adaptive.
 
+## Real reinforcement learning, and the five bugs it took
+
+The arena's own adaptation is hill climbing: one score per generation, no value
+function, no credit assignment. `rl_train.py` does the real thing — tabular
+Q-learning with a per-shot reward — and runs it in parallel.
+
+```bash
+python rl_train.py --iterations 150 --workers 12 --episodes 150
+python rl_train.py --show                       # the learning curve and the policy
+python arena_houses.py --rl --speed 9           # drive the arena from the tables
+```
+
+The decision it learns is genuinely sequential: the shooter's magazine holds eight
+shots and then it reloads for two seconds, so **whether to spend a partial burst now
+or give up the crossing and reload** is a choice, and the crossing is **bowed**, so
+aiming at the straight midpoint is not the best shot. Neither is told to it. It sees
+one cue — which way the hare leaned as it left — and must work out what that implies.
+
+### What it learned
+
+The bow is `1.2 × lean` in aim-offset units. The shooter was told the lean and
+nothing else. After training:
+
+| lean | it aims at | the truth |
+|---|---|---|
+| -1 | **-1** | -1.2 |
+| 0 | **0** | 0.0 |
+| +1 | **+1** | +1.2 |
+
+Computed exactly, the policies are worth:
+
+| policy | accuracy |
+|---|---|
+| always aim at the straight midpoint | 0.473 |
+| aim randomly | 0.354 |
+| **what it learned** | **0.58 – 0.59** |
+| the theoretical optimum | 0.603 |
+
+Against a hare that also learns, accuracy stays flat around 0.55 — the target is
+moving — but **kills rose from 752 to 1133 over 150 iterations** and the return from
+60 to 93. On the arena itself, three minutes produced **19 matches, each ending in
+a kill**, where the hill-climbed shooter needed 80 to 108 rounds for one.
+
+### The five defects, because the path is the point
+
+Every one was found by running it and reading a number. None by reading the code.
+
+1. **The next state was random.** `nxt = state(..., random.choice(leans))` is not a
+   transition, it is noise injected into the target. The unknown part has to be
+   *averaged*, not sampled.
+2. **The hare was rewarded for being shot.** Its punishment tested `armour > 0`,
+   which is true again by the time it runs, because a kill restores the armour.
+3. **Q-tables were averaged across processes.** Two workers that diverge learn
+   contradictory values for the same state, and the mean of two contradictions is
+   not a value function. Workers now report the *change* from the table they were
+   given.
+4. **A safe action became a trap.** Reloading costs a small certain amount and
+   avoids the penalty for missing — and missing is what an untried aim offset looks
+   like. The agent learned two of the three mappings and answered "reload" to the
+   third. Optimistic initial values are the textbook fix.
+5. **Q-learning was the wrong algorithm.** This is the one that mattered. The aim
+   offset does not change what happens next — the next lean is random whatever was
+   fired — so the bootstrapped term (`γ = 0.92`) contributed nothing but the noise
+   of a value estimated from other states. The kill bonus arrives on the same step
+   as the hit, so there is no credit to carry backwards. With **γ = 0** it is a
+   contextual bandit, which is what the decision actually is, and it converged to
+   the optimum from the first iteration.
+
+A learning curve that oscillated between 0.35 and 0.55 for a hundred iterations
+became a flat line at 0.58 the moment the algorithm matched the problem.
+
 ## Requirements
 
 Python 3.9 or newer and Pillow. No numpy: the vision is channel arithmetic through

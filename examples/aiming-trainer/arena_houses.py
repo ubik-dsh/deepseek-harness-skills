@@ -24,6 +24,7 @@ Keys:  space pause · ←/→ speed · w rewrite now · r restart · h toggle hi
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import random
 import textwrap
@@ -46,6 +47,15 @@ SHOTS_PER_MAGAZINE = 8   # then the shooter is reloading
 RELOAD_SECONDS = 2.0
 ARMOR_MAX = 3            # clicks to strip the armour, then one more to kill
 MATCH_SECONDS = 600.0    # a safety net; a match is supposed to end with a kill
+
+# The crossing is a curve, not a straight line, and the bow is what a trained
+# shooter can correct for and an untrained one cannot. OFFSET_PX is what one unit
+# of the learned aim offset is worth in pixels; LEAN_EFFECT is how far the path
+# really bows, in the same units. The two are deliberately close, so the policy the
+# reinforcement learner found transfers as the aim it learned to make.
+LEAN_EFFECT = 1.2
+OFFSET_PX = 14.0
+RL_DIR = Path(__file__).with_name("rl")
 
 # The shooter is paid for damage and for the kill; the hare is paid for time, and
 # time is the only thing it is paid for. A second of life is one point, which makes
@@ -74,6 +84,45 @@ RULES = (
 
 def _clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, v))
+
+
+def mag_bucket(shots: int) -> int:
+    if shots <= 0:
+        return 0
+    return 1 if shots <= 4 else 2
+
+
+def hp_bucket(hp: int) -> int:
+    return 0 if hp <= 6 else (1 if hp <= 13 else 2)
+
+
+class RlPolicy:
+    """The trained tables, and the two questions the arena asks of them.
+
+    Loaded rather than learned here: the learning happened in rl_train.py, on a
+    compact model of this game, over a hundred iterations across twelve processes.
+    What arrives is a policy - a mapping from what each agent can see to what it
+    should do - and the arena simply obeys it.
+    """
+
+    def __init__(self, directory: Path) -> None:
+        self.shooter = json.loads((directory / "shooter_q.json").read_text(encoding="utf-8"))
+        self.hare = json.loads((directory / "hare_q.json").read_text(encoding="utf-8"))
+
+    @staticmethod
+    def _best(row: dict[str, float], default: str) -> str:
+        if not row:
+            return default
+        top = max(row.values())
+        return random.choice([a for a, v in row.items() if v == top])
+
+    def shooter_action(self, armour: int, shots: int, lean: int) -> str:
+        """One of the five aim offsets, in units of OFFSET_PX, or 'reload'."""
+        return self._best(self.shooter.get(f"{armour}|{mag_bucket(shots)}|{lean}", {}), "0")
+
+    def hare_action(self, armour: int, stay: int, best_hp: int) -> str:
+        """'stay', 'near' or 'far'."""
+        return self._best(self.hare.get(f"{armour}|{min(stay, 2)}|{hp_bucket(best_hp)}", {}), "near")
 
 
 @dataclass
@@ -342,6 +391,7 @@ class World:
         self.progress = 1.0
         self.x, self.y = self.houses[0].x, self.houses[0].y
         self.stay = 0                   # rounds spent in the current house
+        self.lean = 0                   # which way this crossing bows
         self.last_seen_house: int | None = 0    # the chaser's belief
         self.last_click: tuple[float, float] | None = None
         self.rope = 0.0
@@ -377,12 +427,51 @@ class World:
     def visible(self) -> bool:
         return self.travelling
 
+    def path_point(self, t: float) -> tuple[float, float]:
+        """A point along the crossing, which is a curve rather than a line.
+
+        A quadratic Bezier from the house it left to the house it is heading for,
+        with the control point pushed sideways by the lean. A straight line here
+        would leave a trained aimer nothing to correct, and the learner's whole
+        finding - that a crossing bows and by how much - would be unusable.
+        """
+        start = self.houses[self.from_house]
+        end = self.houses[self.to_house]
+        mid_x = (start.x + end.x) / 2
+        mid_y = (start.y + end.y) / 2
+        dx, dy = end.x - start.x, end.y - start.y
+        length = math.hypot(dx, dy) or 1.0
+        # Perpendicular to the line, pushed by the lean.
+        bow = LEAN_EFFECT * OFFSET_PX * self.lean
+        ctrl_x = mid_x - dy / length * bow
+        ctrl_y = mid_y + dx / length * bow
+        inv = 1 - t
+        return (
+            inv * inv * start.x + 2 * inv * t * ctrl_x + t * t * end.x,
+            inv * inv * start.y + 2 * inv * t * ctrl_y + t * t * end.y,
+        )
+
+    def middle(self) -> tuple[float, float]:
+        """The straight-line midpoint - where an aimer who knows nothing would shoot."""
+        start = self.houses[self.from_house]
+        end = self.houses[self.to_house]
+        return ((start.x + end.x) / 2, (start.y + end.y) / 2)
+
+    def perpendicular(self) -> tuple[float, float]:
+        start = self.houses[self.from_house]
+        end = self.houses[self.to_house]
+        dx, dy = end.x - start.x, end.y - start.y
+        length = math.hypot(dx, dy) or 1.0
+        return (-dy / length, dx / length)
+
 
 class Arena:
-    def __init__(self, root: tk.Tk, windowed: bool, speed: float, hide: bool) -> None:
+    def __init__(self, root: tk.Tk, windowed: bool, speed: float, hide: bool,
+                 policy: RlPolicy | None = None) -> None:
         self.root = root
         self.speed = speed
         self.hide = hide
+        self.policy = policy
         self.paused = False
 
         if not windowed:
@@ -547,6 +636,21 @@ class Arena:
         current = w.houses[w.house_index]
         pressure = 1.0 - current.hp / HOUSE_HP
 
+        # With trained tables loaded, the hare's decision is the policy's and the
+        # hand-written modes are not consulted at all. That is the point of the
+        # exercise: the same state it learned on, answered from what it learned.
+        if self.policy is not None:
+            best_hp = max(h.hp for h in w.houses)
+            action = self.policy.hare_action(w.armor, w.stay, best_hp)
+            if action == "stay" and w.stay < MAX_STAY:
+                return None
+            options = [i for i in range(len(w.houses)) if i != w.house_index]
+            if not options:
+                return None
+            if action == "far":
+                return max(options, key=lambda i: w.houses[i].hp)
+            return random.choice(options)
+
         threshold = 1.0 - p.get("patience", 0.5) * 0.85
         should_leave = pressure >= threshold
         # The rule that keeps the game alive. Without it a hider whose house is not
@@ -665,6 +769,11 @@ class Arena:
             w.from_house = w.house_index
             w.to_house = target
             w.progress = 0.0
+            # Which way the crossing bows. The shooter can see the lean - it is the
+            # cue the policy was trained on - but not how far the path really bends.
+            w.lean = random.choice((-1, 0, 1))
+        if self.policy is not None and w.travelling:
+            self.pending["rl"] = self.policy.shooter_action(w.armor, self.shots_fired, w.lean)
         self.phase = "move"
         self.phase_tick = 0
 
@@ -693,23 +802,28 @@ class Arena:
             self.chaser.points += POINTS_HOUSE
             outcome = "HOUSE"
         elif w.travelling:
-            # One shot per tick of the crossing. This is what makes a slower target
-            # easier rather than merely prettier: with a single click per round the
-            # chaser needed four consecutive hits across four separate crossings to
-            # kill anything, and a measured run produced twenty-four armour hits and
-            # no kills at all in two hundred and fifty rounds. A crossing that lasts
-            # nine ticks is nine chances, which is what a slower target means.
-            start = w.houses[w.from_house]
-            end = w.houses[w.to_house]
             spread = (1.0 - self.chaser.params.get("commit", 0.5)) * HOUSE_W * 0.5
             if w.armor == 0:
                 spread *= 0.35
+
+            # With trained tables the aim is the policy's: the straight midpoint,
+            # shifted sideways by the offset it learned. Without them it is whatever
+            # the hand-written modes decided, which is also the straight midpoint
+            # plus a little noise - which is exactly why the untrained shooter cannot
+            # hit a curved crossing as well, and what the comparison is for.
+            rl_action = self.pending.get("rl")
+            mid_x, mid_y = w.middle()
+            perp_x, perp_y = w.perpendicular()
+            if rl_action is not None and rl_action != "reload":
+                offset = int(rl_action) * OFFSET_PX
+                ax = mid_x + perp_x * offset
+                ay = mid_y + perp_y * offset
+
             landed = 0
             for _ in range(CROSS_TICKS):
-                # The magazine. Eight shots, then two seconds of reloading during
-                # which the trigger does nothing at all - which turns a long crossing
-                # from a guaranteed kill into a burst with a ceiling on it.
                 now = time.monotonic()
+                if rl_action == "reload":
+                    continue                        # the whole crossing is given up
                 if now < self.reload_until:
                     continue
                 if self.shots_fired >= SHOTS_PER_MAGAZINE:
@@ -722,9 +836,7 @@ class Arena:
                 shot_y = ay + random.uniform(-spread, spread)
                 shot_hit = False
                 for step in range(17):
-                    t = step / 16
-                    px = start.x + (end.x - start.x) * t
-                    py = start.y + (end.y - start.y) * t
+                    px, py = w.path_point(step / 16)
                     if math.hypot(shot_x - px, shot_y - py) <= EVADER_RADIUS + 6:
                         shot_hit = True
                         break
@@ -852,10 +964,8 @@ class Arena:
                 # be hit.
                 if self.pending.get("run_to") is not None:
                     world.progress = min(0.5, world.progress + 0.5 / steps)
-                    start = world.houses[world.from_house]
-                    end = world.houses[world.to_house]
-                    world.x = start.x + (end.x - start.x) * world.progress
-                    world.y = start.y + (end.y - start.y) * world.progress
+                    # Along the curve, not along a line.
+                    world.x, world.y = world.path_point(world.progress)
                 if self.phase_tick >= steps:
                     self.phase = "click"
                     self.phase_tick = 0
@@ -914,11 +1024,20 @@ class Arena:
         if world.travelling:
             start = world.houses[world.from_house]
             end = world.houses[world.to_house]
-            c.create_line(start.x, start.y, end.x, end.y, fill="#4a4130", dash=(4, 4))
+            # The path as it really is: a curve, drawn as a chain of segments.
+            points: list[float] = []
+            for step in range(19):
+                px, py = world.path_point(step / 18)
+                points.extend([px, py])
+            c.create_line(*points, fill="#4a4130", dash=(4, 4))
             c.create_oval(world.x - EVADER_RADIUS, world.y - EVADER_RADIUS,
                           world.x + EVADER_RADIUS, world.y + EVADER_RADIUS,
                           fill="#f0c419", outline="#fff3c4", width=2)
             self.draw_armour(world.x, world.y - 24)
+            # Where a shooter that knows nothing would aim, against where this one did.
+            mid_x, mid_y = world.middle()
+            c.create_line(mid_x - 5, mid_y - 5, mid_x + 5, mid_y + 5, fill="#39424e", width=2)
+            c.create_line(mid_x - 5, mid_y + 5, mid_x + 5, mid_y - 5, fill="#39424e", width=2)
 
         # Where the armour stands, drawn wherever the hider is known to be. Three
         # pips: full means three more clicks will not kill it, empty means the next
@@ -1100,11 +1219,21 @@ def main() -> int:
     parser.add_argument("--windowed", action="store_true")
     parser.add_argument("--speed", type=float, default=2.5)
     parser.add_argument("--no-hide", action="store_true", help="draw the hider inside houses too")
+    parser.add_argument("--rl", action="store_true", help="drive both agents from the trained tables")
+    parser.add_argument("--rl-dir", type=Path, default=RL_DIR)
     args = parser.parse_args()
 
+    policy = None
+    if args.rl:
+        if not (args.rl_dir / "shooter_q.json").exists():
+            print(f"no trained tables in {args.rl_dir} - run rl_train.py first")
+            return 1
+        policy = RlPolicy(args.rl_dir)
+        print(f"driving both agents from {args.rl_dir}")
+
     root = tk.Tk()
-    root.title("Houses: chaser vs hider")
-    Arena(root, windowed=args.windowed, speed=args.speed, hide=not args.no_hide)
+    root.title("Houses: chaser vs hider" + (" [RL]" if policy else ""))
+    Arena(root, windowed=args.windowed, speed=args.speed, hide=not args.no_hide, policy=policy)
     root.mainloop()
     return 0
 

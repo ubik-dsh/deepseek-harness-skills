@@ -1,0 +1,1352 @@
+[
+ {
+  "hits": 3747,
+  "shots": 6716,
+  "accuracy": 0.5579,
+  "kills": 752,
+  "return": 60.22,
+  "iteration": 1,
+  "states": 18
+ },
+ {
+  "hits": 5613,
+  "shots": 10040,
+  "accuracy": 0.5591,
+  "kills": 1102,
+  "return": 89.86,
+  "iteration": 2,
+  "states": 18
+ },
+ {
+  "hits": 4075,
+  "shots": 7396,
+  "accuracy": 0.551,
+  "kills": 793,
+  "return": 64.54,
+  "iteration": 3,
+  "states": 18
+ },
+ {
+  "hits": 5185,
+  "shots": 9564,
+  "accuracy": 0.5421,
+  "kills": 960,
+  "return": 80.37,
+  "iteration": 4,
+  "states": 18
+ },
+ {
+  "hits": 3273,
+  "shots": 6080,
+  "accuracy": 0.5383,
+  "kills": 623,
+  "return": 50.94,
+  "iteration": 5,
+  "states": 18
+ },
+ {
+  "hits": 3421,
+  "shots": 6208,
+  "accuracy": 0.5511,
+  "kills": 670,
+  "return": 54.14,
+  "iteration": 6,
+  "states": 18
+ },
+ {
+  "hits": 5234,
+  "shots": 9396,
+  "accuracy": 0.557,
+  "kills": 991,
+  "return": 82.16,
+  "iteration": 7,
+  "states": 18
+ },
+ {
+  "hits": 5569,
+  "shots": 10352,
+  "accuracy": 0.538,
+  "kills": 1058,
+  "return": 87.51,
+  "iteration": 8,
+  "states": 18
+ },
+ {
+  "hits": 4198,
+  "shots": 7540,
+  "accuracy": 0.5568,
+  "kills": 807,
+  "return": 66.14,
+  "iteration": 9,
+  "states": 18
+ },
+ {
+  "hits": 4328,
+  "shots": 8160,
+  "accuracy": 0.5304,
+  "kills": 789,
+  "return": 66.29,
+  "iteration": 10,
+  "states": 18
+ },
+ {
+  "hits": 2158,
+  "shots": 4088,
+  "accuracy": 0.5279,
+  "kills": 389,
+  "return": 32.19,
+  "iteration": 11,
+  "states": 18
+ },
+ {
+  "hits": 3973,
+  "shots": 7456,
+  "accuracy": 0.5329,
+  "kills": 737,
+  "return": 61.28,
+  "iteration": 12,
+  "states": 18
+ },
+ {
+  "hits": 4090,
+  "shots": 7516,
+  "accuracy": 0.5442,
+  "kills": 792,
+  "return": 64.58,
+  "iteration": 13,
+  "states": 18
+ },
+ {
+  "hits": 5452,
+  "shots": 9588,
+  "accuracy": 0.5686,
+  "kills": 1051,
+  "return": 86.49,
+  "iteration": 14,
+  "states": 18
+ },
+ {
+  "hits": 3289,
+  "shots": 6272,
+  "accuracy": 0.5244,
+  "kills": 599,
+  "return": 50.0,
+  "iteration": 15,
+  "states": 18
+ },
+ {
+  "hits": 5498,
+  "shots": 10116,
+  "accuracy": 0.5435,
+  "kills": 1042,
+  "return": 86.32,
+  "iteration": 16,
+  "states": 18
+ },
+ {
+  "hits": 4198,
+  "shots": 7672,
+  "accuracy": 0.5472,
+  "kills": 807,
+  "return": 66.09,
+  "iteration": 17,
+  "states": 18
+ },
+ {
+  "hits": 5480,
+  "shots": 9828,
+  "accuracy": 0.5576,
+  "kills": 1048,
+  "return": 86.52,
+  "iteration": 18,
+  "states": 18
+ },
+ {
+  "hits": 5726,
+  "shots": 10116,
+  "accuracy": 0.566,
+  "kills": 1126,
+  "return": 91.81,
+  "iteration": 19,
+  "states": 18
+ },
+ {
+  "hits": 5469,
+  "shots": 9772,
+  "accuracy": 0.5597,
+  "kills": 1068,
+  "return": 87.28,
+  "iteration": 20,
+  "states": 18
+ },
+ {
+  "hits": 4872,
+  "shots": 8440,
+  "accuracy": 0.5773,
+  "kills": 975,
+  "return": 78.69,
+  "iteration": 21,
+  "states": 18
+ },
+ {
+  "hits": 3329,
+  "shots": 5976,
+  "accuracy": 0.5571,
+  "kills": 653,
+  "return": 52.72,
+  "iteration": 22,
+  "states": 18
+ },
+ {
+  "hits": 4015,
+  "shots": 7192,
+  "accuracy": 0.5583,
+  "kills": 771,
+  "return": 63.17,
+  "iteration": 23,
+  "states": 18
+ },
+ {
+  "hits": 4387,
+  "shots": 7908,
+  "accuracy": 0.5548,
+  "kills": 846,
+  "return": 69.28,
+  "iteration": 24,
+  "states": 18
+ },
+ {
+  "hits": 5681,
+  "shots": 10212,
+  "accuracy": 0.5563,
+  "kills": 1105,
+  "return": 90.51,
+  "iteration": 25,
+  "states": 18
+ },
+ {
+  "hits": 5609,
+  "shots": 10224,
+  "accuracy": 0.5486,
+  "kills": 1081,
+  "return": 88.87,
+  "iteration": 26,
+  "states": 18
+ },
+ {
+  "hits": 2826,
+  "shots": 5348,
+  "accuracy": 0.5284,
+  "kills": 540,
+  "return": 43.85,
+  "iteration": 27,
+  "states": 18
+ },
+ {
+  "hits": 3455,
+  "shots": 6248,
+  "accuracy": 0.553,
+  "kills": 673,
+  "return": 54.55,
+  "iteration": 28,
+  "states": 18
+ },
+ {
+  "hits": 5112,
+  "shots": 9312,
+  "accuracy": 0.549,
+  "kills": 984,
+  "return": 80.83,
+  "iteration": 29,
+  "states": 18
+ },
+ {
+  "hits": 4350,
+  "shots": 7876,
+  "accuracy": 0.5523,
+  "kills": 841,
+  "return": 68.76,
+  "iteration": 30,
+  "states": 18
+ },
+ {
+  "hits": 5819,
+  "shots": 10196,
+  "accuracy": 0.5707,
+  "kills": 1131,
+  "return": 92.81,
+  "iteration": 31,
+  "states": 18
+ },
+ {
+  "hits": 5536,
+  "shots": 9828,
+  "accuracy": 0.5633,
+  "kills": 1082,
+  "return": 88.43,
+  "iteration": 32,
+  "states": 18
+ },
+ {
+  "hits": 4044,
+  "shots": 7616,
+  "accuracy": 0.531,
+  "kills": 758,
+  "return": 62.72,
+  "iteration": 33,
+  "states": 18
+ },
+ {
+  "hits": 4331,
+  "shots": 7772,
+  "accuracy": 0.5573,
+  "kills": 821,
+  "return": 67.8,
+  "iteration": 34,
+  "states": 18
+ },
+ {
+  "hits": 2431,
+  "shots": 4704,
+  "accuracy": 0.5168,
+  "kills": 459,
+  "return": 37.26,
+  "iteration": 35,
+  "states": 18
+ },
+ {
+  "hits": 4376,
+  "shots": 8036,
+  "accuracy": 0.5445,
+  "kills": 836,
+  "return": 68.72,
+  "iteration": 36,
+  "states": 18
+ },
+ {
+  "hits": 5739,
+  "shots": 10220,
+  "accuracy": 0.5615,
+  "kills": 1118,
+  "return": 91.55,
+  "iteration": 37,
+  "states": 18
+ },
+ {
+  "hits": 3841,
+  "shots": 7096,
+  "accuracy": 0.5413,
+  "kills": 716,
+  "return": 59.39,
+  "iteration": 38,
+  "states": 18
+ },
+ {
+  "hits": 2646,
+  "shots": 4956,
+  "accuracy": 0.5339,
+  "kills": 505,
+  "return": 40.97,
+  "iteration": 39,
+  "states": 18
+ },
+ {
+  "hits": 4508,
+  "shots": 8092,
+  "accuracy": 0.5571,
+  "kills": 845,
+  "return": 70.22,
+  "iteration": 40,
+  "states": 18
+ },
+ {
+  "hits": 5333,
+  "shots": 9888,
+  "accuracy": 0.5393,
+  "kills": 1000,
+  "return": 83.21,
+  "iteration": 41,
+  "states": 18
+ },
+ {
+  "hits": 3807,
+  "shots": 6928,
+  "accuracy": 0.5495,
+  "kills": 733,
+  "return": 59.87,
+  "iteration": 42,
+  "states": 18
+ },
+ {
+  "hits": 3522,
+  "shots": 6496,
+  "accuracy": 0.5422,
+  "kills": 678,
+  "return": 55.25,
+  "iteration": 43,
+  "states": 18
+ },
+ {
+  "hits": 4308,
+  "shots": 7924,
+  "accuracy": 0.5437,
+  "kills": 824,
+  "return": 67.66,
+  "iteration": 44,
+  "states": 18
+ },
+ {
+  "hits": 4379,
+  "shots": 7828,
+  "accuracy": 0.5594,
+  "kills": 864,
+  "return": 69.99,
+  "iteration": 45,
+  "states": 18
+ },
+ {
+  "hits": 5657,
+  "shots": 10356,
+  "accuracy": 0.5463,
+  "kills": 1076,
+  "return": 89.03,
+  "iteration": 46,
+  "states": 18
+ },
+ {
+  "hits": 5811,
+  "shots": 10336,
+  "accuracy": 0.5622,
+  "kills": 1114,
+  "return": 91.97,
+  "iteration": 47,
+  "states": 18
+ },
+ {
+  "hits": 4935,
+  "shots": 8732,
+  "accuracy": 0.5652,
+  "kills": 978,
+  "return": 79.26,
+  "iteration": 48,
+  "states": 18
+ },
+ {
+  "hits": 5075,
+  "shots": 9300,
+  "accuracy": 0.5457,
+  "kills": 963,
+  "return": 79.64,
+  "iteration": 49,
+  "states": 18
+ },
+ {
+  "hits": 3586,
+  "shots": 6760,
+  "accuracy": 0.5305,
+  "kills": 663,
+  "return": 55.08,
+  "iteration": 50,
+  "states": 18
+ },
+ {
+  "hits": 4876,
+  "shots": 8660,
+  "accuracy": 0.563,
+  "kills": 939,
+  "return": 77.14,
+  "iteration": 51,
+  "states": 18
+ },
+ {
+  "hits": 4541,
+  "shots": 8496,
+  "accuracy": 0.5345,
+  "kills": 862,
+  "return": 71.06,
+  "iteration": 52,
+  "states": 18
+ },
+ {
+  "hits": 5634,
+  "shots": 10592,
+  "accuracy": 0.5319,
+  "kills": 1038,
+  "return": 87.15,
+  "iteration": 53,
+  "states": 18
+ },
+ {
+  "hits": 3960,
+  "shots": 7220,
+  "accuracy": 0.5485,
+  "kills": 775,
+  "return": 62.85,
+  "iteration": 54,
+  "states": 18
+ },
+ {
+  "hits": 3839,
+  "shots": 6724,
+  "accuracy": 0.5709,
+  "kills": 754,
+  "return": 61.1,
+  "iteration": 55,
+  "states": 18
+ },
+ {
+  "hits": 5803,
+  "shots": 10124,
+  "accuracy": 0.5732,
+  "kills": 1130,
+  "return": 92.65,
+  "iteration": 56,
+  "states": 18
+ },
+ {
+  "hits": 4040,
+  "shots": 7420,
+  "accuracy": 0.5445,
+  "kills": 748,
+  "return": 62.34,
+  "iteration": 57,
+  "states": 18
+ },
+ {
+  "hits": 5814,
+  "shots": 10348,
+  "accuracy": 0.5618,
+  "kills": 1129,
+  "return": 92.62,
+  "iteration": 58,
+  "states": 18
+ },
+ {
+  "hits": 5801,
+  "shots": 10152,
+  "accuracy": 0.5714,
+  "kills": 1148,
+  "return": 93.37,
+  "iteration": 59,
+  "states": 18
+ },
+ {
+  "hits": 4253,
+  "shots": 7752,
+  "accuracy": 0.5486,
+  "kills": 809,
+  "return": 66.62,
+  "iteration": 60,
+  "states": 18
+ },
+ {
+  "hits": 3876,
+  "shots": 7020,
+  "accuracy": 0.5521,
+  "kills": 740,
+  "return": 60.73,
+  "iteration": 61,
+  "states": 18
+ },
+ {
+  "hits": 5098,
+  "shots": 9304,
+  "accuracy": 0.5479,
+  "kills": 978,
+  "return": 80.46,
+  "iteration": 62,
+  "states": 18
+ },
+ {
+  "hits": 4821,
+  "shots": 8984,
+  "accuracy": 0.5366,
+  "kills": 920,
+  "return": 75.74,
+  "iteration": 63,
+  "states": 18
+ },
+ {
+  "hits": 3598,
+  "shots": 6648,
+  "accuracy": 0.5412,
+  "kills": 664,
+  "return": 55.27,
+  "iteration": 64,
+  "states": 18
+ },
+ {
+  "hits": 3852,
+  "shots": 7380,
+  "accuracy": 0.522,
+  "kills": 697,
+  "return": 58.58,
+  "iteration": 65,
+  "states": 18
+ },
+ {
+  "hits": 5468,
+  "shots": 10088,
+  "accuracy": 0.542,
+  "kills": 1038,
+  "return": 85.9,
+  "iteration": 66,
+  "states": 18
+ },
+ {
+  "hits": 4023,
+  "shots": 7236,
+  "accuracy": 0.556,
+  "kills": 770,
+  "return": 63.18,
+  "iteration": 67,
+  "states": 18
+ },
+ {
+  "hits": 2793,
+  "shots": 5280,
+  "accuracy": 0.529,
+  "kills": 533,
+  "return": 43.29,
+  "iteration": 68,
+  "states": 18
+ },
+ {
+  "hits": 3428,
+  "shots": 6396,
+  "accuracy": 0.536,
+  "kills": 647,
+  "return": 53.17,
+  "iteration": 69,
+  "states": 18
+ },
+ {
+  "hits": 4244,
+  "shots": 7884,
+  "accuracy": 0.5383,
+  "kills": 797,
+  "return": 65.99,
+  "iteration": 70,
+  "states": 18
+ },
+ {
+  "hits": 2700,
+  "shots": 5008,
+  "accuracy": 0.5391,
+  "kills": 516,
+  "return": 41.88,
+  "iteration": 71,
+  "states": 18
+ },
+ {
+  "hits": 5757,
+  "shots": 10080,
+  "accuracy": 0.5711,
+  "kills": 1120,
+  "return": 91.85,
+  "iteration": 72,
+  "states": 18
+ },
+ {
+  "hits": 5814,
+  "shots": 10076,
+  "accuracy": 0.577,
+  "kills": 1157,
+  "return": 93.89,
+  "iteration": 73,
+  "states": 18
+ },
+ {
+  "hits": 3447,
+  "shots": 6152,
+  "accuracy": 0.5603,
+  "kills": 687,
+  "return": 55.1,
+  "iteration": 74,
+  "states": 18
+ },
+ {
+  "hits": 4658,
+  "shots": 8640,
+  "accuracy": 0.5391,
+  "kills": 881,
+  "return": 72.83,
+  "iteration": 75,
+  "states": 18
+ },
+ {
+  "hits": 2528,
+  "shots": 4788,
+  "accuracy": 0.528,
+  "kills": 487,
+  "return": 39.25,
+  "iteration": 76,
+  "states": 18
+ },
+ {
+  "hits": 5064,
+  "shots": 9092,
+  "accuracy": 0.557,
+  "kills": 973,
+  "return": 80.04,
+  "iteration": 77,
+  "states": 18
+ },
+ {
+  "hits": 1660,
+  "shots": 3268,
+  "accuracy": 0.508,
+  "kills": 304,
+  "return": 24.61,
+  "iteration": 78,
+  "states": 18
+ },
+ {
+  "hits": 5851,
+  "shots": 10256,
+  "accuracy": 0.5705,
+  "kills": 1147,
+  "return": 93.73,
+  "iteration": 79,
+  "states": 18
+ },
+ {
+  "hits": 4576,
+  "shots": 7936,
+  "accuracy": 0.5766,
+  "kills": 903,
+  "return": 73.3,
+  "iteration": 80,
+  "states": 18
+ },
+ {
+  "hits": 4829,
+  "shots": 8592,
+  "accuracy": 0.562,
+  "kills": 939,
+  "return": 76.76,
+  "iteration": 81,
+  "states": 18
+ },
+ {
+  "hits": 3106,
+  "shots": 5788,
+  "accuracy": 0.5366,
+  "kills": 583,
+  "return": 47.92,
+  "iteration": 82,
+  "states": 18
+ },
+ {
+  "hits": 3419,
+  "shots": 6240,
+  "accuracy": 0.5479,
+  "kills": 658,
+  "return": 53.61,
+  "iteration": 83,
+  "states": 18
+ },
+ {
+  "hits": 3685,
+  "shots": 6740,
+  "accuracy": 0.5467,
+  "kills": 717,
+  "return": 58.21,
+  "iteration": 84,
+  "states": 18
+ },
+ {
+  "hits": 5757,
+  "shots": 10208,
+  "accuracy": 0.564,
+  "kills": 1118,
+  "return": 91.72,
+  "iteration": 85,
+  "states": 18
+ },
+ {
+  "hits": 5756,
+  "shots": 10124,
+  "accuracy": 0.5685,
+  "kills": 1136,
+  "return": 92.49,
+  "iteration": 86,
+  "states": 18
+ },
+ {
+  "hits": 4170,
+  "shots": 8016,
+  "accuracy": 0.5202,
+  "kills": 757,
+  "return": 63.63,
+  "iteration": 87,
+  "states": 18
+ },
+ {
+  "hits": 4719,
+  "shots": 8312,
+  "accuracy": 0.5677,
+  "kills": 918,
+  "return": 75.03,
+  "iteration": 88,
+  "states": 18
+ },
+ {
+  "hits": 4445,
+  "shots": 8232,
+  "accuracy": 0.54,
+  "kills": 828,
+  "return": 68.91,
+  "iteration": 89,
+  "states": 18
+ },
+ {
+  "hits": 4106,
+  "shots": 7412,
+  "accuracy": 0.554,
+  "kills": 793,
+  "return": 64.8,
+  "iteration": 90,
+  "states": 18
+ },
+ {
+  "hits": 3783,
+  "shots": 6752,
+  "accuracy": 0.5603,
+  "kills": 728,
+  "return": 59.52,
+  "iteration": 91,
+  "states": 18
+ },
+ {
+  "hits": 3717,
+  "shots": 6984,
+  "accuracy": 0.5322,
+  "kills": 694,
+  "return": 57.43,
+  "iteration": 92,
+  "states": 18
+ },
+ {
+  "hits": 3296,
+  "shots": 6172,
+  "accuracy": 0.534,
+  "kills": 629,
+  "return": 51.35,
+  "iteration": 93,
+  "states": 18
+ },
+ {
+  "hits": 5254,
+  "shots": 9532,
+  "accuracy": 0.5512,
+  "kills": 1004,
+  "return": 82.82,
+  "iteration": 94,
+  "states": 18
+ },
+ {
+  "hits": 4413,
+  "shots": 8232,
+  "accuracy": 0.5361,
+  "kills": 844,
+  "return": 69.3,
+  "iteration": 95,
+  "states": 18
+ },
+ {
+  "hits": 4649,
+  "shots": 8812,
+  "accuracy": 0.5276,
+  "kills": 890,
+  "return": 73.06,
+  "iteration": 96,
+  "states": 18
+ },
+ {
+  "hits": 3001,
+  "shots": 5788,
+  "accuracy": 0.5185,
+  "kills": 537,
+  "return": 45.08,
+  "iteration": 97,
+  "states": 18
+ },
+ {
+  "hits": 4022,
+  "shots": 7156,
+  "accuracy": 0.562,
+  "kills": 759,
+  "return": 62.75,
+  "iteration": 98,
+  "states": 18
+ },
+ {
+  "hits": 5588,
+  "shots": 9964,
+  "accuracy": 0.5608,
+  "kills": 1095,
+  "return": 89.38,
+  "iteration": 99,
+  "states": 18
+ },
+ {
+  "hits": 3866,
+  "shots": 6952,
+  "accuracy": 0.5561,
+  "kills": 756,
+  "return": 61.34,
+  "iteration": 100,
+  "states": 18
+ },
+ {
+  "hits": 5654,
+  "shots": 10336,
+  "accuracy": 0.547,
+  "kills": 1058,
+  "return": 88.26,
+  "iteration": 101,
+  "states": 18
+ },
+ {
+  "hits": 4558,
+  "shots": 8332,
+  "accuracy": 0.547,
+  "kills": 862,
+  "return": 71.28,
+  "iteration": 102,
+  "states": 18
+ },
+ {
+  "hits": 5580,
+  "shots": 10192,
+  "accuracy": 0.5475,
+  "kills": 1080,
+  "return": 88.59,
+  "iteration": 103,
+  "states": 18
+ },
+ {
+  "hits": 4866,
+  "shots": 8820,
+  "accuracy": 0.5517,
+  "kills": 923,
+  "return": 76.33,
+  "iteration": 104,
+  "states": 18
+ },
+ {
+  "hits": 5797,
+  "shots": 10160,
+  "accuracy": 0.5706,
+  "kills": 1129,
+  "return": 92.54,
+  "iteration": 105,
+  "states": 18
+ },
+ {
+  "hits": 4683,
+  "shots": 8620,
+  "accuracy": 0.5433,
+  "kills": 886,
+  "return": 73.26,
+  "iteration": 106,
+  "states": 18
+ },
+ {
+  "hits": 5650,
+  "shots": 10336,
+  "accuracy": 0.5466,
+  "kills": 1072,
+  "return": 88.81,
+  "iteration": 107,
+  "states": 18
+ },
+ {
+  "hits": 4619,
+  "shots": 8992,
+  "accuracy": 0.5137,
+  "kills": 847,
+  "return": 70.93,
+  "iteration": 108,
+  "states": 18
+ },
+ {
+  "hits": 4430,
+  "shots": 8380,
+  "accuracy": 0.5286,
+  "kills": 818,
+  "return": 68.3,
+  "iteration": 109,
+  "states": 18
+ },
+ {
+  "hits": 5649,
+  "shots": 10276,
+  "accuracy": 0.5497,
+  "kills": 1079,
+  "return": 89.12,
+  "iteration": 110,
+  "states": 18
+ },
+ {
+  "hits": 5609,
+  "shots": 10520,
+  "accuracy": 0.5332,
+  "kills": 1053,
+  "return": 87.59,
+  "iteration": 111,
+  "states": 18
+ },
+ {
+  "hits": 5382,
+  "shots": 9932,
+  "accuracy": 0.5419,
+  "kills": 1040,
+  "return": 85.29,
+  "iteration": 112,
+  "states": 18
+ },
+ {
+  "hits": 4241,
+  "shots": 7516,
+  "accuracy": 0.5643,
+  "kills": 834,
+  "return": 67.65,
+  "iteration": 113,
+  "states": 18
+ },
+ {
+  "hits": 3325,
+  "shots": 5948,
+  "accuracy": 0.559,
+  "kills": 652,
+  "return": 52.65,
+  "iteration": 114,
+  "states": 18
+ },
+ {
+  "hits": 3517,
+  "shots": 6496,
+  "accuracy": 0.5414,
+  "kills": 676,
+  "return": 55.12,
+  "iteration": 115,
+  "states": 18
+ },
+ {
+  "hits": 2529,
+  "shots": 4864,
+  "accuracy": 0.5199,
+  "kills": 456,
+  "return": 37.93,
+  "iteration": 116,
+  "states": 18
+ },
+ {
+  "hits": 5781,
+  "shots": 10364,
+  "accuracy": 0.5578,
+  "kills": 1107,
+  "return": 91.41,
+  "iteration": 117,
+  "states": 18
+ },
+ {
+  "hits": 3084,
+  "shots": 5960,
+  "accuracy": 0.5174,
+  "kills": 572,
+  "return": 47.2,
+  "iteration": 118,
+  "states": 18
+ },
+ {
+  "hits": 2398,
+  "shots": 4516,
+  "accuracy": 0.531,
+  "kills": 441,
+  "return": 36.3,
+  "iteration": 119,
+  "states": 18
+ },
+ {
+  "hits": 5342,
+  "shots": 9728,
+  "accuracy": 0.5491,
+  "kills": 1046,
+  "return": 85.27,
+  "iteration": 120,
+  "states": 18
+ },
+ {
+  "hits": 5709,
+  "shots": 10344,
+  "accuracy": 0.5519,
+  "kills": 1091,
+  "return": 90.12,
+  "iteration": 121,
+  "states": 18
+ },
+ {
+  "hits": 4711,
+  "shots": 8676,
+  "accuracy": 0.543,
+  "kills": 889,
+  "return": 73.61,
+  "iteration": 122,
+  "states": 18
+ },
+ {
+  "hits": 4302,
+  "shots": 7780,
+  "accuracy": 0.553,
+  "kills": 831,
+  "return": 67.96,
+  "iteration": 123,
+  "states": 18
+ },
+ {
+  "hits": 3373,
+  "shots": 6200,
+  "accuracy": 0.544,
+  "kills": 645,
+  "return": 52.68,
+  "iteration": 124,
+  "states": 18
+ },
+ {
+  "hits": 3420,
+  "shots": 6464,
+  "accuracy": 0.5291,
+  "kills": 638,
+  "return": 52.7,
+  "iteration": 125,
+  "states": 18
+ },
+ {
+  "hits": 5750,
+  "shots": 10356,
+  "accuracy": 0.5552,
+  "kills": 1095,
+  "return": 90.64,
+  "iteration": 126,
+  "states": 18
+ },
+ {
+  "hits": 3642,
+  "shots": 6916,
+  "accuracy": 0.5266,
+  "kills": 687,
+  "return": 56.51,
+  "iteration": 127,
+  "states": 18
+ },
+ {
+  "hits": 4911,
+  "shots": 8828,
+  "accuracy": 0.5563,
+  "kills": 953,
+  "return": 77.97,
+  "iteration": 128,
+  "states": 18
+ },
+ {
+  "hits": 5162,
+  "shots": 9968,
+  "accuracy": 0.5179,
+  "kills": 938,
+  "return": 79.1,
+  "iteration": 129,
+  "states": 18
+ },
+ {
+  "hits": 5834,
+  "shots": 10396,
+  "accuracy": 0.5612,
+  "kills": 1127,
+  "return": 92.69,
+  "iteration": 130,
+  "states": 18
+ },
+ {
+  "hits": 4958,
+  "shots": 8828,
+  "accuracy": 0.5616,
+  "kills": 948,
+  "return": 78.17,
+  "iteration": 131,
+  "states": 18
+ },
+ {
+  "hits": 5033,
+  "shots": 9180,
+  "accuracy": 0.5483,
+  "kills": 974,
+  "return": 79.77,
+  "iteration": 132,
+  "states": 18
+ },
+ {
+  "hits": 5120,
+  "shots": 9580,
+  "accuracy": 0.5344,
+  "kills": 933,
+  "return": 78.67,
+  "iteration": 133,
+  "states": 18
+ },
+ {
+  "hits": 2808,
+  "shots": 5628,
+  "accuracy": 0.4989,
+  "kills": 495,
+  "return": 41.71,
+  "iteration": 134,
+  "states": 18
+ },
+ {
+  "hits": 5560,
+  "shots": 9792,
+  "accuracy": 0.5678,
+  "kills": 1108,
+  "return": 89.74,
+  "iteration": 135,
+  "states": 18
+ },
+ {
+  "hits": 5767,
+  "shots": 10056,
+  "accuracy": 0.5735,
+  "kills": 1148,
+  "return": 93.11,
+  "iteration": 136,
+  "states": 18
+ },
+ {
+  "hits": 3677,
+  "shots": 6520,
+  "accuracy": 0.564,
+  "kills": 726,
+  "return": 58.6,
+  "iteration": 137,
+  "states": 18
+ },
+ {
+  "hits": 4376,
+  "shots": 7992,
+  "accuracy": 0.5475,
+  "kills": 854,
+  "return": 69.48,
+  "iteration": 138,
+  "states": 18
+ },
+ {
+  "hits": 4235,
+  "shots": 7816,
+  "accuracy": 0.5418,
+  "kills": 794,
+  "return": 65.81,
+  "iteration": 139,
+  "states": 18
+ },
+ {
+  "hits": 5681,
+  "shots": 10068,
+  "accuracy": 0.5643,
+  "kills": 1128,
+  "return": 91.52,
+  "iteration": 140,
+  "states": 18
+ },
+ {
+  "hits": 3267,
+  "shots": 5828,
+  "accuracy": 0.5606,
+  "kills": 631,
+  "return": 51.31,
+  "iteration": 141,
+  "states": 18
+ },
+ {
+  "hits": 3338,
+  "shots": 6308,
+  "accuracy": 0.5292,
+  "kills": 622,
+  "return": 51.38,
+  "iteration": 142,
+  "states": 18
+ },
+ {
+  "hits": 5657,
+  "shots": 10580,
+  "accuracy": 0.5347,
+  "kills": 1052,
+  "return": 87.94,
+  "iteration": 143,
+  "states": 18
+ },
+ {
+  "hits": 4138,
+  "shots": 7760,
+  "accuracy": 0.5332,
+  "kills": 776,
+  "return": 64.24,
+  "iteration": 144,
+  "states": 18
+ },
+ {
+  "hits": 5792,
+  "shots": 10224,
+  "accuracy": 0.5665,
+  "kills": 1117,
+  "return": 91.97,
+  "iteration": 145,
+  "states": 18
+ },
+ {
+  "hits": 5029,
+  "shots": 9140,
+  "accuracy": 0.5502,
+  "kills": 966,
+  "return": 79.42,
+  "iteration": 146,
+  "states": 18
+ },
+ {
+  "hits": 5752,
+  "shots": 10216,
+  "accuracy": 0.563,
+  "kills": 1121,
+  "return": 91.79,
+  "iteration": 147,
+  "states": 18
+ },
+ {
+  "hits": 4144,
+  "shots": 7724,
+  "accuracy": 0.5365,
+  "kills": 787,
+  "return": 64.76,
+  "iteration": 148,
+  "states": 18
+ },
+ {
+  "hits": 4775,
+  "shots": 8904,
+  "accuracy": 0.5363,
+  "kills": 911,
+  "return": 75.0,
+  "iteration": 149,
+  "states": 18
+ },
+ {
+  "hits": 5824,
+  "shots": 10292,
+  "accuracy": 0.5659,
+  "kills": 1133,
+  "return": 92.89,
+  "iteration": 150,
+  "states": 18
+ }
+]
