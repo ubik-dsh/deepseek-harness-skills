@@ -45,9 +45,14 @@ that carries it gives every agent that opens it the same capability.
   quick-note.md         ← a flat file, for a skill with nothing to bundle
 ```
 
-`name` must match the folder exactly, be 1–64 characters of `a-z`, digits and
-single hyphens, and not begin, end or double up on a hyphen. A wrong name is
-**ignored in silence** — no error reaches the conversation, only the log.
+`name` must match the folder exactly — or, for a flat file, the file's own name.
+It is 1–64 characters of `a-z`, digits and single hyphens, and may not begin, end
+or double up on a hyphen.
+
+The standard says the name **must** match the directory it sits in. DSH does not
+enforce it — it registers whatever the frontmatter says and never compares the
+two — so a mismatch works here and breaks in a harness that does check. Treat the
+match as a portability rule, not a local one.
 
 Where *your* harness looks, including the seven roots and precedence ranks
 measured for DSH and the conventions of several others:
@@ -68,11 +73,20 @@ metadata:
 ---
 ```
 
-Required: `name`, `description`. Optional and supported: `license`,
-`compatibility` (≤500 chars, for skills needing a package, network or a specific
-product), `metadata` (free-form map), `allowed-tools` (experimental).
-`disable-model-invocation` and `user-invocable` are DSH additions — kebab-case,
-and the older camelCase spellings are rejected with a message saying so.
+Required: `name`, `description`. The description may run to 1024 characters and
+the name to 64. Optional and supported: `license`, `compatibility` (≤500 chars,
+for skills needing a package, network or a specific product), `metadata`
+(free-form map), `allowed-tools` (experimental).
+
+`disable-model-invocation` and `user-invocable` are not in the standard but are
+read by Claude Code and by DSH, spelled in kebab-case. DSH rejects the older
+camelCase spellings with a message saying so. A portable skill uses them for what
+they do locally and does not rely on them.
+
+One caution about `compatibility`: declare dependencies there, because it is the
+field the standard provides, but do not expect a harness to install anything from
+it. Claude Code accepts the field without acting on it, and DSH does not read it
+at all. It is a note to a human, not an instruction to a machine.
 
 ## The description is the whole matching surface
 
@@ -103,33 +117,52 @@ a plausible one.
 - **Say what failure looks like.** For each step that can fail: the error text,
   the silent wrong answer, what to do about it. A happy-path skill breaks the
   first time it meets reality.
-- **Nothing time-sensitive.** "As of Q4 2024" rots. Read live data, or omit.
+- **Nothing time-sensitive.** `As of Q4 2024` rots. Read live data, or omit.
 - **Relative paths, forward slashes**, resolved against the skill's own directory
   — the agent is told that directory when the skill loads.
 - **One level deep.** `references/x.md`, never `references/a/b/c.md`.
 
 Keep `SKILL.md` focused. Move detail into `references/`, templates into
 `assets/`, and anything deterministic into `scripts/` — a script gives the same
-answer twice and costs fewer tokens than regenerated code. Budgets: metadata
-about 100 tokens, body under about 5,000 tokens, and under 500 lines as a hard
-ceiling — under 100 if the skill is a single procedure.
+answer twice and costs fewer tokens than regenerated code. The standard suggests
+metadata around 100 tokens, a body under about 5,000 tokens, and **keeping
+`SKILL.md` under 500 lines**. None of these is enforced anywhere; DSH caps the
+body at nothing at all. Treat 500 as the point at which a reader should be
+splitting the file, and 100 as a sign the skill may be doing more than one thing.
+
+## Write the body as a procedure
+
+A body that leaves the reader to work out the order is a body that gets followed
+differently each time. Give it numbered steps, and make **step 1 the success
+test**: the command to run, and the output that means it worked. Everything after
+it is the method; step 4 of the next section checks the result against it, and a
+body without it cannot be verified at all.
+
+Name the inputs the skill expects, and say what to do when one is missing. A
+skill that assumes a file, a credential or a network read it never mentions fails
+on first use and looks like the agent's fault.
 
 ## Prove it before you finish
 
 1. **Does it load?** Write the file, then check the session's skill catalogue. A
    correct skill appears within a second. If it is absent, the frontmatter is the
-   reason — the name rule first, then the YAML.
+   first suspect — the name rule, then the YAML.
+   A skill written in this turn may not be visible until the next one; a new file
+   is not always re-read mid-turn. If you cannot see the catalogue, say so rather
+   than claiming the skill loads.
 2. **Does the body arrive?** Ask for it by name. A load returns the instructions
-   and the base directory; a missing body means the frontmatter delimiters are
-   wrong.
-3. **Run the checklist.** `python scripts/check-skill.py <skill-dir>` — checks the
-   name against its folder, the description, the size, absolute paths,
-   time-sensitive phrases, and files that should not be there.
+   and the base directory. If the body is missing, the frontmatter delimiters are
+   wrong — and if the harness can be handed a path instead, hand it the path.
+3. **Run the checklist.** `python <skill-dir>/scripts/check-skill.py <skill-dir>`
+   — the path is written in full because a shell resolves a relative one against
+   the working directory, not against the skill. It checks the name against its
+   folder, the description, the size, absolute paths, time-sensitive phrases,
+   files that should not be there, and references that do not resolve. Test the
+   checker itself with `python <skill-dir>/scripts/test-check-skill.py`.
 4. **Does it actually work?** Run the task on a real input and compare against the
-   success test written in step 1 of the body. Then do it properly, with and
-   without the skill, per [references/eval-protocol.md](references/eval-protocol.md).
-   A skill that loads but produces the wrong thing is worse than none: it will be
-   trusted.
+   success test in step 1 of the body. Then do it properly, with and without the
+   skill, per [references/eval-protocol.md](references/eval-protocol.md). A skill
+   that loads but produces the wrong thing is worse than none: it will be trusted.
 
 **No completion claim without fresh evidence.** Identify the command that proves
 the claim, run it in full, read the whole output and count the failures, and only

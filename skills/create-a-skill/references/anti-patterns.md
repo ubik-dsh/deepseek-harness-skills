@@ -46,7 +46,10 @@ catalogue, so it loses every competition for the task.
 
 If the work needs a parser, install the package. Pasting a library into a skill
 means maintaining someone else's code forever and shipping a version that will
-quietly age. Declare the dependency in `compatibility` instead.
+quietly age. Declare the dependency in `compatibility` instead — while knowing
+that no harness installs anything from that field. Claude Code accepts it without
+acting on it and DSH does not read it. It documents the requirement for a human;
+it does not satisfy it for a machine.
 
 ## Don't build a framework
 
@@ -79,8 +82,13 @@ skills work in the demonstration and break in use.
 ## Don't date yourself
 
 `As of Q4 2024…` is wrong within a quarter and confidently wrong forever after.
-Read live data through a script, or leave it out. Version facts belong in the
-`verified_against` metadata where they can be seen for what they are.
+Read live data through a script, or leave it out.
+
+The version a skill was checked against is worth recording, and a `verified_against`
+key inside `metadata` is a reasonable place for it — that key is this project's
+convention, not something the standard defines, and `metadata` accepts any
+map you like. What matters is that the reader can see the claim is a snapshot
+rather than a fact.
 
 ## Don't use absolute paths
 
@@ -113,9 +121,13 @@ decided by then. Say when to use it; let the body say what it does.
 ## Don't name it after nothing
 
 `helper`, `utils`, `tools` — names that could belong to anything match everything
-weakly. Prefer a gerund that says the action: `creating-skills`,
-`reviewing-migrations`, `scanning-dependencies`. The name is also the folder name,
-and the folder name must match exactly.
+weakly. Say what the skill does to what: `pdf-processing`, `data-analysis`,
+`code-review`. A gerund (`reviewing-migrations`, `scanning-dependencies`) is one
+good way to do that and not a requirement — the standard's own examples are noun
+phrases, the ecosystem is full of them, and this skill is called `create-a-skill`.
+Treat the shape as a style choice and the match with the folder as the rule,
+because the folder name must be identical and that part is enforced by the
+standard.
 
 ## Don't skip the checklist
 
