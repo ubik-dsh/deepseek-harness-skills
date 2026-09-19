@@ -316,6 +316,31 @@ Every one was found by running it and reading a number. None by reading the code
 A learning curve that oscillated between 0.35 and 0.55 for a hundred iterations
 became a flat line at 0.58 the moment the algorithm matched the problem.
 
+### House life is the dial that decides whether houses matter
+
+The houses originally stood for twenty clicks each. Measured over three minutes:
+the shooter destroyed **zero** of them. Twenty clicks is more than a crossing is
+worth — by the time a house is half down, the hare has left and the shooter has
+moved on, so the houses were scenery.
+
+At **five clicks** the same three minutes produced:
+
+| | 20 lives | 5 lives |
+|---|---|---|
+| matches | 19 | **23** |
+| houses destroyed | **0** | **16** |
+| rounds to a kill | ~9 | ~9 |
+
+The houses are now consumable. The shooter breaks them, the hare is forced out of
+cover, and the crossings that result are the only chances either of them gets. A
+resource nobody can exhaust is not a resource.
+
+One honest consequence: the hare's trained state includes *how much life the best
+house has*, with thresholds set for a twenty-life scale. At five, every house falls
+into the same bucket, so the hare has effectively **lost that dimension** of its
+state. Its table still answers, and the policy still works, but it is answering a
+coarser question than it was trained on.
+
 ## Requirements
 
 Python 3.9 or newer and Pillow. No numpy: the vision is channel arithmetic through

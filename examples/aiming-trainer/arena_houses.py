@@ -1,8 +1,8 @@
-"""The arena with houses: four shelters, each with twenty clicks of life.
+"""The arena with houses: four shelters, each with five clicks of life.
 
 The rules the hiding model is given, in its own generated source:
 
-  * there are four houses, and every one of them stands for twenty clicks;
+  * there are four houses, and every one of them stands for five clicks;
   * a click that lands on a house is taken by the house, not by whoever is inside;
   * while you are inside a house you are not visible to the chaser;
   * when a house runs out it vanishes and comes back somewhere else, at least a
@@ -39,7 +39,7 @@ GEN = Path(__file__).with_name("gen-houses")
 HOUSE_COUNT = 4
 HOUSE_W = 118
 HOUSE_H = 86
-HOUSE_HP = 20
+HOUSE_HP = 5
 MIN_RESPAWN_DISTANCE = 100.0
 MAX_STAY = 8             # rounds in one house before it is too hot to keep
 CROSS_TICKS = 13         # was 4, then 6, then 9, now a third slower again
@@ -69,7 +69,7 @@ LATENCY = 3
 ROUNDS_PER_GENERATION = 5
 EVADER_RADIUS = 9
 RULES = (
-    "Four houses stand, twenty clicks each.",
+    f"Four houses stand, {HOUSE_HP} clicks each.",
     "A click on a house is taken by the house, never by whoever is inside.",
     "Inside a house you cannot be seen.",
     "A house that runs out returns at least a hundred pixels away.",
