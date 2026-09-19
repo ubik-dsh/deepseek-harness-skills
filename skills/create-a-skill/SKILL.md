@@ -188,23 +188,16 @@ layout and a monitor count, and all five have broken this work in one afternoon.
 So the branch reads like this, and the reader evaluates it:
 
 > If the success test needs this program driven, **and** it has no API, no CLI, no
-> scriptable interface and no readable file format, read
-> [references/controlling-an-interface.md](references/controlling-an-interface.md)
-> and start from `scripts/learn-an-interface.py`. Otherwise do not — and if you are
-> unsure, the answer is no.
+> scriptable interface and no readable file format, that is a subject of its own —
+> use the **`learn-an-interface`** skill, which carries the method, the measured
+> traps and a runnable learning loop. Otherwise do not — and if you are unsure, the
+> answer is no.
 
 If the skill does drive an interface, say in the body **why the alternatives were
 rejected**. That sentence is the difference between a considered choice and a habit,
 and it tells the next person where to look when a release breaks it.
 
-The important part is not the clicking, it is that the automator **learns** rather
-than carries coordinates: a small bandit that tries a handful of candidates, grades
-each by a *verified* outcome, and writes the counts to a file beside the script.
-Measured on a real task, exploring six candidates once cost six attempts and then
-there were no further misses; the same values found by hand cost the same six
-attempts and went stale on the next run.
-
-Two rules from that file belong here, because they are not about interfaces at all:
+Two rules from that work belong here, because they are not about interfaces at all:
 
 - **the success test must check the thing, not its shadow.** "The file exists"
   certified a Paint project file named `.png` as a saved image, every time. Check a
@@ -214,6 +207,9 @@ Two rules from that file belong here, because they are not about interfaces at a
 - **"the action failed" and "there was nothing to act on" are different findings.**
   A twelve-attempt run scored zero on every try because the program had died
   mid-run, and the learner concluded that no candidate worked.
+
+If the success test is graded rather than yes-or-no — anything a learner is trained
+against — the reward is the subject of a third skill: **`design-a-reward`**.
 
 ## Prove it before you finish
 
