@@ -56,6 +56,31 @@ deliberately noisy: [references/untrusted-content.md](references/untrusted-conte
 
 ---
 
+## Step 0 — read the store before searching anything
+
+There is a store of skills already found and judged: every entry carries its source, its
+description, what the hearing decided, the rating, and the date it entered. **It is read
+before any search**, and this is not an optimisation — it is the reason the store exists.
+
+```
+$DSH_HOME/skill-catalogue.json      the finds, as the panel shows them
+```
+
+Three rules:
+
+1. **Read it first, always.** Combing GitHub again for something already in the store
+   spends the whole budget to learn what was already known.
+2. **Nothing enters it without a verdict.** A row is written only after a hearing, so a
+   match in the store is a *judged* match — trust it as far as its rating's case count
+   warrants, and no further.
+3. **A match is not an answer.** The store says what was decided and when. If the entry
+   is old, or the repository has moved on, re-check before relying on it; the date is
+   there precisely so that stale entries are visible as stale rather than remembered as
+   fresh.
+
+Only when the store has nothing does the search go out — to the roots this harness
+resolves, and then to GitHub.
+
 ## Step 1 — Notice that this is the moment
 
 Search before creating. The triggers are broader than they look:
