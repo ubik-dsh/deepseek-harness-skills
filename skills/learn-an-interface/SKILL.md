@@ -130,6 +130,12 @@ and moved every colour two places to the right.
 
 More: [references/measuring-a-window.md](references/measuring-a-window.md).
 
+
+A worked run of the whole method on a second program, where the answer turned out to be
+**"there is nothing to learn"**, is in
+[a-worked-example.md](references/a-worked-example.md). It is worth reading before
+building anything: the probe removed most of the work, and it only does that if it
+happens first.
 ## Step 4 — Measure the input layer too
 
 The input calls are not interchangeable, and the failures are silent.
