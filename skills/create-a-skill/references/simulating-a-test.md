@@ -158,3 +158,51 @@ needs no knowledge of speed or delay — and drives that to zero.
 This is the same discipline as *no completion claim without fresh evidence*, one
 level down. There it is about what you tell the user. Here it is about what your
 code is allowed to believe.
+
+## Four more from building the hiding game
+
+A second arena was built to the same pattern — four houses, twenty clicks of life
+each, a hider who is invisible inside them and reachable only while crossing
+between them. Getting it to be a *game* rather than a walkover took six attempts,
+and every one was found by reading the score, never by reasoning about it.
+
+### Separate the win condition from the progress signal
+
+The chaser's strategy score counted **catches**. So the shape that applies pressure
+— grinding a house down until the hider is forced out — scored zero, was never
+selected, and the chaser spent a hundred rounds aiming at open ground between
+houses. Score 118 to 11 for the hider, houses broken: none.
+
+Pressure has a delayed payoff, and an evaluation that cannot see the delay throws
+the strategy away. The fix was two numbers instead of one: **the rope scores the
+win condition** (a catch, nothing else), and **the per-shape score measures
+progress** (a catch *or* a house damaged). The same run then went to 65 against 64,
+with all four houses ground down to five lives each.
+
+This is the rule above in its most expensive form. The quantity the code believed
+was "am I winning", and the quantity it needed was "am I getting closer".
+
+### If the interesting event needs an incentive that does not exist, make it a rule
+
+The hider had no reason to move while its house was intact, so it never crossed, so
+the chaser never had anything to intercept, so 155 rounds produced three catches.
+The crossings are the entire game. They had to become compulsory — *you may not sit
+in one house longer than eight rounds* — and the rule went into the rulebook the
+hider is given, not hidden in the code.
+
+A simulation where the event you want to observe is optional will mostly not
+observe it.
+
+### Resolve against the segment, not the instant
+
+A crossing is a line, not a point. Resolving the click against the single position
+the hider held at that instant meant that even guessing the destination correctly
+usually missed. Sampling along the whole crossing is both more forgiving and more
+truthful: an interception happens somewhere on the path.
+
+### An average that accumulates stops being an average
+
+The rope was a running total, so eight catches against a hundred and twenty escapes
+pinned it to the end of its travel and it stopped carrying information — the
+opposite of what a rope is for. A decaying average over recent rounds moves when
+something changes and settles when nothing does.

@@ -7,3 +7,4 @@ __pycache__/
 *.pyo
 
 # Written by the arena each time it plays; a run produces hundreds.\nexamples/aiming-trainer/gen/\n
+examples/aiming-trainer/gen-houses/

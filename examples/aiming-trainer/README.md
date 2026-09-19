@@ -126,6 +126,54 @@ the next round runs it, so a call to a model there changes nothing else in the
 program. What is demonstrated here is the *loop* — score, rewrite, reload, compete
 — not the sophistication of what gets written.
 
+## The hiding game: four houses, twenty clicks each
+
+`arena_houses.py` is the same adversarial pattern with a space to hide in. Four
+houses stand, each worth twenty clicks; a click on a house is taken by the house,
+never by whoever is inside; the hider is invisible while sheltered and reachable
+only while crossing between houses; and a house that runs out returns at least a
+hundred pixels away.
+
+```bash
+python arena_houses.py            # fullscreen
+python arena_houses.py --no-hide  # draw the hider inside houses too
+```
+
+![A catch mid-crossing](houses.png)
+
+The rules are written into the hider's own generated source, so the model that
+hides is literally handed the rulebook it is playing by:
+
+```
+"""Generation 33 of the Hider.
+
+The rules it is playing by:
+#   - Four houses stand, twenty clicks each.
+#   - A click on a house is taken by the house, never by whoever is inside.
+#   - Inside a house you cannot be seen.
+#   - A house that runs out returns at least a hundred pixels away.
+#   - You are visible only while travelling, and that is when a click can reach you.
+#   - You may not sit in one house longer than 8 rounds; it gets too hot.
+"""
+```
+
+### Six attempts to make it a game, all of them found by reading the score
+
+| Run | Score | What was wrong |
+|---|---|---|
+| aim at houses | 80 – 0 | the chaser could not reach the hider at all; it never aimed at a crossing |
+| add interception | 155 – 3 | the hider never *had* to move, so there were almost no crossings to intercept |
+| compulsory movement | 111 – 4 | better, but seven clicks in eight still landed on open ground |
+| segment interception | 110 – 5 | a crossing is a line, but the chaser was still only guessing well one time in three |
+| pressure mode added | 118 – 11 | **the pressure strategy scored 0.00 and was discarded**, because the score counted catches and pressure wins nothing immediately |
+| progress scored separately | **65 – 64** | a game |
+
+The fifth row is the one worth keeping. The chaser's strategy score measured
+*catches*, so the shape that grinds a house down until the hider is forced out had
+no score, was never selected, and the chaser spent a hundred rounds shooting at
+empty ground. **The win condition and the progress signal are different numbers**,
+and scoring a strategy by the first discards every strategy whose value is delayed.
+
 ## Requirements
 
 Python 3.9 or newer and Pillow. No numpy: the vision is channel arithmetic through
