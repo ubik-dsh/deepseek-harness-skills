@@ -63,6 +63,47 @@ Four lines. They convert "I clicked an unknown place on a live desktop" into a
 stopped run with a message. On a desktop that belongs to someone, this is not
 optional.
 
+### Verify the window is in front, before pressing anything — the other half
+
+The pointer check is only half of it, and the missing half put a click into a
+stranger's browser window **twice**.
+
+`SendInput` goes to whatever is **focused**, not to whatever rectangle the arithmetic
+pointed at. A window-relative coordinate can be computed perfectly and the click still
+land in another application, because that application was in front.
+
+```python
+def _require_foreground(self):
+    foreground = user32.GetForegroundWindow()
+    if foreground and foreground != self.hwnd:
+        root = user32.GetAncestor(foreground, 2)      # GA_ROOT
+        if root != self.hwnd:
+            raise RuntimeError(f"refusing to click: {title_of(foreground)!r} is in "
+                               f"front, not {self.title!r} - activate the window first")
+```
+
+**And declare the handle types, or the check passes everything silently:**
+
+```python
+user32.GetForegroundWindow.restype = wintypes.HWND
+user32.GetAncestor.restype = wintypes.HWND
+user32.GetAncestor.argtypes = [wintypes.HWND, wintypes.UINT]
+```
+
+ctypes assumes `int` for an unprototyped return and **truncates a 64-bit handle**. A
+truncated handle never compares equal to a real one, so a guard written without these
+two lines refuses nothing and looks like it works.
+
+Two more findings from trialling that guard:
+
+- **the pointer check fires first when a window is minimised.** A minimised window's
+  rectangle is the iconic placeholder — measured as `-31734, -31901` — so the pointer
+  cannot arrive and the pointer guard refuses before the focus guard is reached. Both
+  are needed; the order is not a design choice.
+- **a programmatic `SetWindowPos` does not necessarily move the foreground.** A window
+  can be reported as the foreground window and still have lost the input focus. Verify
+  the precondition at the moment of pressing, not once at the start of the run.
+
 ### Typing goes through the keyboard layout
 
 `VkKeyScanW` answers with the key that produces the character **in the current

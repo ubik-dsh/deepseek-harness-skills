@@ -5,8 +5,8 @@ license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text. The script in scripts/ needs Python 3.8+ with Pillow, and drives Windows; the method itself is platform-neutral and the traps are documented so they can be recognised elsewhere.
 metadata:
   spec: https://agentskills.io/specification
-  version: 0.1.0
-  status: first formulation, to be sharpened by use
+  version: 0.2.0
+  status: sharpened by a survey of 105 rival skills, each read and trialled — see references/borrowed-practices.md
   measured_on: Windows 11, Paint (Microsoft Store build), two monitors at 2560x1440 and 1920x1440
   verified_against: DSH 0.1.5-rc.2
   borrowed_from: youngjunning/windows-app-automation and affaan-m/ECC (UI Automation with AutomationId selectors), BanmaXM/operate-ui-by-screenshot (an interface ladder that starts at API), alchaincyf/huashu-mac-use (the macOS side) — found by a GitHub survey of 105 repositories shipping a SKILL.md for interface control, and kept only after a live trial on Paint confirmed the tree reaches the tools and the palette by name
@@ -146,12 +146,33 @@ The input calls are not interchangeable, and the failures are silent.
   screen, and the click landed in a stranger's browser. Plain `SetCursorPos` is
   right about monitors and wrong about drags: no move events, so press and release
   land in one place and a stroke becomes a dot.
-- **Send typed text as Unicode.** `VkKeyScanW` answers with the key that produces
-  the character *in the current keyboard layout*; on a Russian layout a folder path
-  came out as `\\W/Y\/L/.` and the dialog answered "The file name is not valid."
-  `KEYEVENTF_UNICODE` bypasses the layout entirely.
-- **Verify-before-press is not optional.** Four lines, and they turn "I clicked
-  something unintended on somebody's live desktop" into a stopped run.
+- **Send typed text as Unicode, or better, do not type at all.** `VkKeyScanW` answers
+  with the key that produces the character *in the current keyboard layout*; on a
+  Russian layout a folder path came out as `\\W/Y\/L/.` and the dialog answered "The
+  file name is not valid." `KEYEVENTF_UNICODE` bypasses the layout — and where the
+  automation tree offers a `ValuePattern`, `SetValue` bypasses the keyboard entirely.
+- **Verify-before-press is not optional, and it is two checks, not one.** The pointer
+  must have arrived **and** this window must be the one that will receive the input.
+  `SendInput` goes to whatever is **focused**, not to whatever rectangle the arithmetic
+  pointed at — and getting that wrong put a click into a stranger's browser window
+  **twice** in this work. The fix is four lines and it names the offending window:
+
+  ```
+  refusing to click: 'Яндекс Браузер' is in front, not 'Paint' - activate the window first
+  ```
+
+  Two traps inside those four lines: **`ctypes` truncates handles** — `GetForegroundWindow`
+  and `GetAncestor` return 64-bit handles and ctypes assumes `int`, so the first version
+  of the guard silently passed everything until both had `restype = wintypes.HWND`; and
+  **the pointer check fires first** when a window is minimised, because a minimised
+  window's rectangle is the iconic placeholder, so both checks are needed.
+- **Prefer a pattern to an input, and a value to a toggle.** If a control exposes
+  `Toggle`, `SelectionItem`, `Value` or `Invoke`, use it — it is atomic, it cannot miss,
+  and it does not care where the window is. And **set a value rather than flipping a
+  state**: a state that is already set does not change when it is set again, which is
+  what made a probe report "no effect" for a tool a previous run had left selected.
+  Selecting an identified item also beats counting arrow keys, which is a failure this
+  work has on record.
 
 ## Step 5 — Name the unknown as a small finite set of actions
 
@@ -230,8 +251,18 @@ lands. And **check the world is still there** before judging an action.
 - Run `--apply` and confirm it succeeds with no exploration.
 - Delete the memory file and confirm the skill still works from cold.
 - Run the **wrong-thing** case from step 2 and watch the test fail.
-- Confirm the automator **raises** rather than clicking when the pointer misses, and
-  when the target window has vanished.
+- Confirm the automator **raises** rather than clicking when the pointer misses, **when
+  the target window has vanished**, and **when another window is in front**.
+- **Bound the retries.** First failure: re-observe and re-resolve the target. Second:
+  change the control method if the evidence points at focus, a stale element, or an
+  unsupported pattern. Same failure again: **stop** and report the repeated condition.
+  Our own code retried by re-running with no bound and no count of identical failures.
+- **Leave a step-level trace**, off by default and switched on to reproduce a flaky
+  case — a line per step, with typed text excluded unless explicitly asked for.
+- **Write the display scale beside every artefact.** `GetDpiForWindow(hwnd) / 96` into
+  the metadata. A capture taken without `all_screens=True` once came back as a blank
+  rectangle from the second monitor and was read as "the application did not paint";
+  the scale line makes that kind of postmortem obvious instead of guesswork.
 
 Two findings that must not be averaged together:
 
@@ -266,13 +297,27 @@ Two findings that must not be averaged together:
 
 ## Refining this skill
 
-It is version 0.1.0 and meant to be sharpened. The parts most likely to be wrong:
+It is version 0.2.0 and meant to be sharpened. **What follows came from a survey of 105
+repositories that ship a `SKILL.md` for interface control, each read in full and tried
+here** - nine practices kept, one technique rejected on measurement, one set aside as
+belonging to a different problem. The record, with the trial behind every line, is
+[references/borrowed-practices.md](references/borrowed-practices.md). Two outcomes were
+worth more than any technique: a **defect in our own click code**, found by taking a
+rival's rule seriously, and **template matching rejected with a number** - it located
+the wrong button at a score of 0.889 against a 0.85 threshold, which is a confident
+click on the wrong thing with a number attached that says it was right.
 
-- the gate's ordering — a case where a file format existed but driving the
-  interface was still right would change it;
-- the bandit's action sets — every measured example was small and discrete, so
-  nothing here has been tested against a large or continuous space;
-- the classification table — six elements in one program is a thin sample.
+The parts still most likely to be wrong:
+
+- the gate's ordering - a case where a file format existed but driving the interface
+  was still right would change it;
+- the bandit's action sets - every measured example was small and discrete, so nothing
+  here has been tested against a large or continuous space;
+- the classification table - six elements in one program is a thin sample;
+- the focus guard - it was verified by bringing another window forward on purpose, and
+  **not** verified against every way a window can lose focus;
+- the vision fallback - rejected for reachable controls, and **not trialled on a
+  surface the tree cannot see**, which is the case it is still kept for.
 
 When a use contradicts something written here, **the use wins**: change the file,
 add the measurement, and keep the counter-example.
