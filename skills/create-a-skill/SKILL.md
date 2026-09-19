@@ -15,6 +15,33 @@ metadata:
 A skill is a file an agent reads when a task matches it. It is not a plugin: no
 install, no restart, no code. Write one and the capability exists.
 
+## First, find out whether it already exists
+
+Before deciding anything else, **search**. The cheapest skill to maintain is the one
+somebody else already wrote and tested, and the skill you write without looking will be
+missing whatever the one you did not read had already learned.
+
+This is not advice, it is the procedure: **`find-a-skill`**, a sibling skill, searches
+the seven roots this harness resolves, then GitHub, ranks what comes back, and requires
+the candidates to be **trialled on your own case** before any of them is kept.
+
+```bash
+python <find-a-skill>/scripts/scout.py <keywords> --synonyms <words,you,did,not,think,of>
+```
+
+Two things it will tell you that reading a description cannot: whether an existing skill
+does the thing or something **adjacent** to it, and **where a borrowed practice stops
+working**. Both come from the trial, and the trial is the half of it that this skill
+used to leave out.
+
+If the user says to skip the search, skip it and **say that you skipped it**. What must
+not happen is the search being skipped silently, because then nobody knows whether the
+duplication was a choice.
+
+> This section exists because it was learned the hard way. `learn-an-interface` was
+> written and published before anyone checked whether others had done it. **105
+> repositories had**, and one of them contained the rung our gate was missing.
+
 ## First, decide what kind of skill this is
 
 Two kinds, and they are built differently. Pick before writing a line.

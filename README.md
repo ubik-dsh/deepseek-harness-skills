@@ -13,10 +13,11 @@ standard. Plain text, nothing to build, nothing to install.
 | Skill | What it does |
 |---|---|
 | **[create-a-skill](skills/create-a-skill)** | Teaches an agent to write a good skill — and to measure whether it works. Ships a **checklist runner** and a **measured evaluation protocol**, not advice alone. |
+| **[find-a-skill](skills/find-a-skill)** | Look for a skill that already does the job **before** writing a new one: search the seven roots this harness resolves, then GitHub, rank, read the candidates in full, and **trial** them on your own case. Ships a runnable scout and a trial checklist. Written after `learn-an-interface` was published before anyone checked — 105 repositories had already done it. |
 | **[learn-an-interface](skills/learn-an-interface)** | Drive a real window, and **learn** its coordinates instead of hard-coding them: a small bandit that finds the unknown detail, grades it by a verified outcome, and remembers it in a file. Opens with the gate that says when *not* to do this at all, and carries the measured traps — `mouse_event` reaching nothing, a cursor thrown onto the wrong monitor, a modal prompt blocking six attempts while the log said nothing happened. Ships a runnable learning loop. |
 | **[design-a-reward](skills/design-a-reward)** | Design the number anything learns from — RL, a bandit, a hill climb, a grader. Eleven rules a reward must satisfy, how to find the limits and the step sizes, and an ordered checklist for a curve that will not rise. Ships a **probing harness** that scores degenerate and adversarial policies against your reward, so a reward that can be won without doing the task is caught before it trains anything. |
 
-The three fit together: `create-a-skill` writes the skill, `learn-an-interface` is what
+The four fit together: `find-a-skill` finds out whether it already exists, `create-a-skill` writes it, `learn-an-interface` is what
 it reaches for when the success test lives behind pixels, and `design-a-reward` is what
 it reaches for when the test has to become a number. Each names the other two rather
 than repeating them.
