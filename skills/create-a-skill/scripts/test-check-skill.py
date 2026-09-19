@@ -134,6 +134,39 @@ def main() -> int:
         expect("a flat skill is not claimed during a recursive walk",
                check_skill.locate_skill_file(nested, allow_flat=False)[0] is None, "claimed")
 
+        # Turning flat detection off during the walk fixed one false positive and
+        # created a real one: a root holding nothing but flat skills reported
+        # "no skill found".
+        flat_only = root / "flat-only"
+        flat_only.mkdir(parents=True, exist_ok=True)
+        (flat_only / "quick-note.md").write_text(frontmatter("quick-note"), encoding="utf-8")
+        found = check_skill.collect_targets(flat_only)
+        expect("a root holding only a flat skill is found by the walk",
+               len(found) == 1 and found[0] == flat_only, f"found {len(found)}")
+
+        print("files that are not human-facing")
+        path = fixture(root, "scripts-at-root", "", extra={"install.sh": "#!/bin/sh\necho hi\n"})
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a script called install.sh is not mistaken for a human document",
+               "install.sh" not in failures, failures[:90])
+
+        path = fixture(root, "readme-in-references", "\nSee references for detail.\n")
+        (path / "references").mkdir(exist_ok=True)
+        (path / "references" / "README.md").write_text("# readme\n", encoding="utf-8")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a README inside references/ is reported too",
+               "references/README.md" in failures, failures[:90] or "not reported")
+
+        print("folded descriptions")
+        folded = root / "folded"
+        folded.mkdir(parents=True, exist_ok=True)
+        (folded / "SKILL.md").write_text(
+            "---\nname: folded\ndescription: >\n  Handles documents of many kinds.\n  Nothing here says when to reach for it.\n---\n\nBody.\n",
+            encoding="utf-8")
+        warnings = " ".join(check_skill.check(folded).warnings)
+        expect("a folded description is parsed and judged",
+               "does not say when to use" in warnings, warnings[:90] or "not judged")
+
         print("name versus folder")
         path = fixture(root, "folder-name", "", name="different-name")
         failures = " ".join(check_skill.check(path).failures)

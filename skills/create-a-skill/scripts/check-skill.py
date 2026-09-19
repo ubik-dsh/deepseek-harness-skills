@@ -42,12 +42,20 @@ RESOURCE_DIRS = {"references", "reference", "scripts", "assets", "examples", "do
 # `^(readme|changelog|...)$` never matches `README.md`, so the checker was blind
 # to the three files its own anti-patterns page names verbatim.
 FORBIDDEN_STEM = re.compile(
-    r"^(readme|changelog|changes|installation|installing|install|contributing|"
+    r"^(readme|changelog|changes|installation|contributing|"
     r"history|notes|todo|roadmap|authors|credits|getting[-_]started)"
     r"([._-][a-z0-9._-]*)?$",
     re.IGNORECASE,
 )
 LICENCE_STEM = re.compile(r"^licen[cs]e", re.IGNORECASE)
+
+# Inside a resource folder, `notes.md` and `history.md` are ordinary documents
+# that the skill is supposed to have. Only names that belong to a human reader -
+# a readme, a changelog - are wrong anywhere in the tree.
+FORBIDDEN_ANYWHERE = re.compile(
+    r"^(readme|changelog|changes|contributing|getting[-_]started)([._-][a-z0-9._-]*)?$",
+    re.IGNORECASE,
+)
 
 # `(?<![A-Za-z0-9])` is load-bearing: without it "subscripts/superscripts"
 # matches `scripts/superscripts`, and the checker reports a broken link in a
@@ -247,17 +255,22 @@ def check(path: Path) -> Result:
         result.note(f"the body has {len(body_lines)} non-empty lines — fine for a procedure, worth watching")
 
     # ── files that should not be there ────────────────────────────────────
-    for entry in sorted(path.iterdir()):
-        if entry.is_dir() or entry.name == skill_file.name:
+    # Walked, not just listed: a README dropped into references/ is the same
+    # anti-pattern as one at the root. A script called install.sh is not.
+    for entry in sorted(path.rglob("*")):
+        if any(part in SKIP_DIRS for part in entry.parts) or entry.is_dir() or entry.name == skill_file.name:
             continue
         if LICENCE_STEM.match(entry.stem):
             continue
-        if FORBIDDEN_STEM.match(entry.stem):
-            result.fail(f"`{entry.name}` is a human-facing file; a skill is read by an agent")
-        elif entry.suffix.lower() == ".txt":
-            result.fail(f"`{entry.name}` is a human-facing file; a skill is read by an agent")
+        where = entry.relative_to(path).as_posix()
+        nested = "/" in where
+        pattern = FORBIDDEN_ANYWHERE if nested else FORBIDDEN_STEM
+        if pattern.match(entry.stem):
+            result.fail(f"`{where}` is a human-facing file; a skill is read by an agent")
+        elif entry.suffix.lower() == ".txt" and not nested:
+            result.fail(f"`{where}` is a human-facing file; a skill is read by an agent")
         if UNEXPECTED_BINARY.search(entry.name):
-            result.warn(f"`{entry.name}` is compiled or binary and cannot be reviewed by reading it")
+            result.warn(f"`{where}` is compiled or binary and cannot be reviewed by reading it")
 
     # ── paths, per line so that quoted counter-examples can be skipped ────
     candidates: set[str] = set()
@@ -304,12 +317,20 @@ def collect_targets(root: Path) -> list[Path]:
     only if you read the count.
     """
     targets: list[Path] = []
-    for path in sorted(root.rglob("*")):
+    # The root is evaluated as well as everything under it. `rglob` yields
+    # descendants only, so a root that *is* a flat skill directory was invisible
+    # and the walk reported that it had found nothing.
+    candidates = [root, *sorted(root.rglob("*"))]
+    for path in candidates:
         if any(part in SKIP_DIRS for part in path.parts):
             continue
         if not path.is_dir():
             continue
-        skill_file, _ = locate_skill_file(path, allow_flat=False)
+        # Flat detection stays on during the walk. The resource-folder guard in
+        # locate_skill_file is what prevents a lone document inside references/
+        # from being read as a skill; turning flat detection off here instead
+        # made the walk blind to a root that holds nothing but flat skills.
+        skill_file, _ = locate_skill_file(path)
         if skill_file is not None:
             targets.append(path)
     return targets

@@ -2,7 +2,7 @@
 name: create-a-skill
 description: Author a new agent skill, or improve an existing one — a folder of instructions an agent loads on demand, from a SKILL.md that works in DeepSeek Harness, Claude Code and any other harness reading the Agent Skills standard. Ships a bundled checklist runner and a measured evaluation protocol, not just advice. Use when the user asks you to learn a tool, a site, or a workflow and keep it for later; says "make yourself a skill for X"; asks to write, fix, review, or evaluate a skill; or wants a repeated procedure turned into something reusable.
 license: MIT
-compatibility: Agent Skills standard. SKILL.md is plain text with no runtime; only scripts/check-skill.py needs Python 3.8 or newer, standard library.
+compatibility: Agent Skills standard. SKILL.md is plain text with no runtime; the two files in scripts/ need Python 3.8 or newer, standard library only, and neither is required for the skill to work.
 metadata:
   spec: https://agentskills.io/specification
   assembled_from: anthropics/skills (skill-creator), mattpocock via alirezarezvani/claude-skills (write-a-skill), sickn33/agentic-awesome-skills (effective-agent-skills, writing-skills, verification-before-completion), deanpeters/Product-Manager-Skills
@@ -177,7 +177,7 @@ confidence, and it is how a broken skill ships.
 - [ ] every referenced file exists, one level deep, relative
 - [ ] no README, no bundled library, no course material
 - [ ] failure modes written down, not just the happy path
-- [ ] `python scripts/check-skill.py <skill-dir>` passes
+- [ ] `python <skill-dir>/scripts/check-skill.py <skill-dir>` passes
 - [ ] tested on a real input — with the skill and without it
 
 More traps, and the reasoning behind each: [references/anti-patterns.md](references/anti-patterns.md).
@@ -196,10 +196,12 @@ it.
 
 Кратко по-русски: скилл — это папка с `SKILL.md`, которую агент читает, когда
 задача совпала с описанием. Сначала реши, что это: обёртка над инструментом или
-метод работы. Имя обязано совпадать с именем папки и быть kebab-case, иначе
-скилл молча игнорируется. Описание — единственное, что агент видит до загрузки,
-поэтому в нём должны стоять слова пользователя и фраза «Use when…». Тело пиши
-как процедуру: точные команды, признак успеха и то, как выглядит ошибка. Держи
-`SKILL.md` до 500 строк, детали — в `references/`, детерминированную работу — в
-`scripts/`. Перед сдачей прогони `scripts/check-skill.py` и проверь скилл на
+метод работы. Имя обязано совпадать с именем папки (это требует стандарт; DSH
+сам это не проверяет, но другой инструмент может) и быть kebab-case. Описание —
+единственное, что агент видит до загрузки, поэтому в нём должны стоять слова
+пользователя и фраза «Use when…». Тело пиши процедурой: шаг 1 — признак успеха,
+дальше точные команды и то, как выглядит ошибка. 500 строк — рекомендация
+стандарта, а не потолок. Детали — в `references/`, детерминированную работу — в
+`scripts/`. Перед сдачей прогони
+`python <папка-скилла>/scripts/check-skill.py <папка-скилла>` и проверь скилл на
 настоящей задаче — с ним и без него.

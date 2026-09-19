@@ -137,5 +137,9 @@ that should not be there. All of them are cheap to check and expensive to
 discover later, when the skill is already trusted.
 
 ```bash
-python scripts/check-skill.py <skill-directory>
+python <skill-directory>/scripts/check-skill.py <skill-directory>
 ```
+
+The path is written in full because a shell resolves a relative one against the
+working directory, not against the skill — which is how the first version of this
+page told readers to run a file that was not there.
