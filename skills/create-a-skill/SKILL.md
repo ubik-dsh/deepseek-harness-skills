@@ -178,6 +178,43 @@ exploiting it**, because the seam is where it clamps and a tester who follows th
 rules never finds it; and **measure what you can, not what you want to know**,
 which is the one mistake behind every broken learner in that file.
 
+## When the test needs a real interface driven
+
+**Only if nothing else will do.** Most tasks that look like they need a mouse have
+an API, a command-line tool, or a file format behind them, and every one of those is
+better: a coordinate is coupled to a version, a theme, a display scale, a keyboard
+layout and a monitor count, and all five have broken this work in one afternoon.
+
+So the branch reads like this, and the reader evaluates it:
+
+> If the success test needs this program driven, **and** it has no API, no CLI, no
+> scriptable interface and no readable file format, read
+> [references/controlling-an-interface.md](references/controlling-an-interface.md)
+> and start from `scripts/learn-an-interface.py`. Otherwise do not — and if you are
+> unsure, the answer is no.
+
+If the skill does drive an interface, say in the body **why the alternatives were
+rejected**. That sentence is the difference between a considered choice and a habit,
+and it tells the next person where to look when a release breaks it.
+
+The important part is not the clicking, it is that the automator **learns** rather
+than carries coordinates: a small bandit that tries a handful of candidates, grades
+each by a *verified* outcome, and writes the counts to a file beside the script.
+Measured on a real task, exploring six candidates once cost six attempts and then
+there were no further misses; the same values found by hand cost the same six
+attempts and went stale on the next run.
+
+Two rules from that file belong here, because they are not about interfaces at all:
+
+- **the success test must check the thing, not its shadow.** "The file exists"
+  certified a Paint project file named `.png` as a saved image, every time. Check a
+  property only the right result has — magic bytes, a parse that succeeds, a count
+  that rose by the amount it should — and then **run the test against the wrong
+  thing once**, to watch it fail. A test that has never failed is not yet a test.
+- **"the action failed" and "there was nothing to act on" are different findings.**
+  A twelve-attempt run scored zero on every try because the program had died
+  mid-run, and the learner concluded that no candidate worked.
+
 ## Prove it before you finish
 
 1. **Does it load?** Write the file, then check the session's skill catalogue. A
