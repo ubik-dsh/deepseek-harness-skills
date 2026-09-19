@@ -41,8 +41,20 @@ HOUSE_H = 86
 HOUSE_HP = 20
 MIN_RESPAWN_DISTANCE = 100.0
 MAX_STAY = 8             # rounds in one house before it is too hot to keep
-CROSS_TICKS = 6          # ticks spent crossing; was 4, which was a blink
-MATCH_SECONDS = 180.0    # a match lasts three minutes
+CROSS_TICKS = 13         # was 4, then 6, then 9, now a third slower again
+SHOTS_PER_MAGAZINE = 8   # then the shooter is reloading
+RELOAD_SECONDS = 2.0
+ARMOR_MAX = 3            # clicks to strip the armour, then one more to kill
+MATCH_SECONDS = 600.0    # a safety net; a match is supposed to end with a kill
+
+# The shooter is paid for damage and for the kill; the hare is paid for time, and
+# time is the only thing it is paid for. A second of life is one point, which makes
+# the two totals comparable without pretending they measure the same thing.
+POINTS_HIT = 1.0
+POINTS_KILL = 2.0
+POINTS_HOUSE = 0.5
+POINTS_PER_SECOND_ALIVE = 1.0
+
 LATENCY = 3
 ROUNDS_PER_GENERATION = 5
 EVADER_RADIUS = 9
@@ -53,6 +65,10 @@ RULES = (
     "A house that runs out returns at least a hundred pixels away.",
     "You are visible only while travelling, and that is when a click can reach you.",
     f"You may not sit in one house longer than {MAX_STAY} rounds; it gets too hot.",
+    f"You wear armour worth {ARMOR_MAX} clicks. When it is gone, the next click kills you.",
+    "Reaching a house repairs your armour, and the house pays for every point restored.",
+    f"The shooter fires {SHOTS_PER_MAGAZINE} shots, then reloads for {RELOAD_SECONDS:.0f} seconds.",
+    "Your score is the time you stay alive. Nothing else is worth anything to you.",
 )
 
 
@@ -102,41 +118,144 @@ class Agent:
     losses: int = 0
     generation: int = 1
     last_note: str = "born"
+    points: float = 0.0
+    battle: dict[str, float] = field(default_factory=dict)
+
+    # ── learning state ────────────────────────────────────────────────────
+    # The first version of this arena had none of this. Every rewrite multiplied
+    # the *template* value by a random factor, so whatever had been tuned was
+    # thrown away each time and the parameters were re-rolled from scratch. That is
+    # not learning, it is a lottery with a memory for the shape only. Now a change
+    # is proposed, tried, and kept only if the score it produced was better, with
+    # the step size growing when it works and shrinking when it does not.
+    best_params: dict[str, float] = field(default_factory=dict)
+    best_score: float = -1.0
+    on_trial: dict[str, float] | None = None
+    step: dict[str, float] = field(default_factory=dict)
+    gen_wins: float = 0.0
+    gen_total: float = 0.0
+    accepted: int = 0
+    rejected: int = 0
 
     def __post_init__(self) -> None:
         if not self.params:
             self.params = dict(self.modes[self.mode])
+        self.best_params = dict(self.params)
         if not self.scores:
             self.scores = {name: 0.0 for name in self.modes}
+        if not self.step:
+            self.step = {key: 0.18 for key in self.params}
 
     def score(self, won: bool) -> None:
         if won:
             self.wins += 1
+            self.gen_wins += 1
         else:
             self.losses += 1
+        self.gen_total += 1
         self.scores[self.mode] = self.scores[self.mode] * 0.7 + (1.0 if won else 0.0) * 0.3
 
-    def rewrite(self) -> str:
+    def rewrite(self, radical: bool = False) -> str:
+        """Keep what worked, revert what did not, and propose one change.
+
+        This is a hill climb with one candidate at a time. The generation just
+        played was a trial of the parameters currently in `params`; its score is
+        compared with the best seen so far, and the trial is accepted or thrown
+        away accordingly. The step size follows the simplest rule there is - grow it
+        when a change is accepted, shrink it when one is rejected - so the search
+        settles instead of oscillating, and can escape again if it stops improving.
+
+        The shape is a separate decision, and a coarser one: a four-armed bandit over
+        the modes, scored by a decaying average, plus the battle statistics on a
+        radical rewrite. Numbers tune a strategy; only a different shape can fix a
+        strategy whose shape is wrong.
+        """
         self.generation += 1
-        previous_mode, previous = self.mode, dict(self.params)
-        best = max(self.scores.items(), key=lambda item: item[1])
-        self.mode = best[0] if random.random() < 0.75 else random.choice(list(self.modes))
+        previous_mode, previous_params = self.mode, dict(self.params)
+
+        # 1. Judge the trial that just finished.
+        verdict = "first"
+        if self.gen_total > 0:
+            trial_score = self.gen_wins / self.gen_total
+            if trial_score > self.best_score:
+                self.best_params = dict(self.params)
+                self.best_score = trial_score
+                self.accepted += 1
+                self.step = {k: min(0.45, v * 1.25) for k, v in self.step.items()}
+                verdict = f"kept {trial_score:.2f}"
+            else:
+                self.params = dict(self.best_params)
+                self.rejected += 1
+                self.step = {k: max(0.02, v * 0.8) for k, v in self.step.items()}
+                verdict = f"reverted from {trial_score:.2f}"
+
+        # 2. Choose a shape: mostly the best so far, sometimes another.
+        if radical and self.battle:
+            wanted = self.preferred_mode()
+            if wanted is not None:
+                self.mode = wanted
+            else:
+                self.mode = max(self.scores.items(), key=lambda kv: kv[1])[0]
+        else:
+            best = max(self.scores.items(), key=lambda kv: kv[1])
+            self.mode = best[0] if random.random() < 0.8 else random.choice(list(self.modes))
+
+        # 3. If the shape changed, the numbers belonged to the old shape.
+        if self.mode != previous_mode:
+            self.params = dict(self.modes[self.mode])
+            self.best_params = dict(self.params)
+            self.best_score = -1.0
+            self.step = {key: 0.18 for key in self.params}
+
+        # 4. Propose one change to the numbers, from where they are now - not from
+        # the template, which is what made the earlier version a re-roll.
         self.params = {
-            key: _clamp(value * (1 + random.uniform(-0.35, 0.35)), 0.0, 1.0)
-            for key, value in self.modes[self.mode].items()
+            key: _clamp(value + random.gauss(0, self.step.get(key, 0.18)), 0.0, 1.0)
+            for key, value in self.params.items()
         }
+        self.gen_wins = 0.0
+        self.gen_total = 0.0
+
+        changed = [f"{k} {previous_params.get(k, 0):.2f}->{v:.2f}"
+                   for k, v in self.params.items()
+                   if abs(previous_params.get(k, 0) - v) > 0.02]
         if self.mode != previous_mode:
             note = f"mode {previous_mode} -> {self.mode}"
         else:
-            changed = [
-                f"{k} {previous.get(k, 0):.2f}->{v:.2f}"
-                for k, v in self.params.items()
-                if abs(previous.get(k, 0) - v) > 0.02
-            ]
-            note = ", ".join(changed) if changed else "kept, nothing worth changing"
-        self.last_note = note
+            note = ", ".join(changed) if changed else "no change worth making"
+        self.last_note = f"{verdict}; {note}"
         self.write_source()
-        return note
+        return self.last_note
+
+    def preferred_mode(self) -> str | None:
+        """A shape suggested by the match that just ended.
+
+        This is the whole reason a radical rewrite is worth having. Tuning numbers
+        cannot fix a strategy whose shape is wrong, and the running score cannot say
+        what went wrong - but the battle can. The hider's statistics know whether it
+        died in the open or was cornered; the chaser's know whether its clicks were
+        finding anything at all.
+        """
+        b = self.battle
+        if self.name == "Chaser":
+            if b.get("wasted", 0) > max(1.0, b.get("useful", 0)):
+                return "siege"              # too many clicks landing on nothing
+            if b.get("kills", 0) >= 1:
+                return None                 # it worked; keep the shape and tune it
+            return "intercept"
+        if self.name == "Hider":
+            if b.get("died_crossing", 0) >= 1 or b.get("hits_taken", 0) >= 2:
+                return "leave-late"         # being caught in the open; stay put longer
+            if b.get("repairs", 0) >= 2:
+                return "leave-early"        # repairing saved it; do it sooner
+            return None
+        return None
+
+    def battle_summary(self) -> str:
+        # Short on purpose: the rewrite note is drawn beside the other agent's lines
+        # and a full battle dump runs straight through them.
+        items = sorted(self.battle.items())[:3]
+        return " ".join(f"{k}={v:.0f}" for k, v in items)
 
     def write_source(self) -> Path:
         GEN.mkdir(exist_ok=True)
@@ -234,6 +353,13 @@ class World:
         self.match_catches = 0
         self.match_rope_history: list[float] = []
         self.last_match: str = ""
+        self.armor = ARMOR_MAX
+        self.killed = False
+        self.armor_damage = 0
+        self.repairs = 0
+        self.died_crossing = False
+        self.wasted = 0
+        self.useful = 0
 
     def free_spot(self, avoid: House | None = None) -> tuple[float, float]:
         """A house position that respects the hundred-pixel rule."""
@@ -294,6 +420,8 @@ class Arena:
         self.rewrite_banner = 0
         self.match_banner = 0
         self.match_started = time.monotonic()
+        self.shots_fired = 0
+        self.reload_until = 0.0
         self.canvas.bind("<Configure>", self.on_resize)
         self.tick()
 
@@ -301,21 +429,49 @@ class Arena:
     def match_seconds_left(self) -> float:
         return max(0.0, MATCH_SECONDS - (time.monotonic() - self.match_started))
 
-    def end_match(self) -> None:
-        """Close the match, announce it, and start another with the same agents.
+    def end_match(self, killed: bool = False) -> None:
+        """Close the match, hand both agents the battle, and let them rewrite.
 
-        The point of a match boundary is not the score: it is that the agents carry
-        their evolved strategies into the next one. A chaser that lost the first
-        three minutes and wins the next is the thing worth watching.
+        The boundary is not about the score. It is the moment the two agents are
+        allowed to change shape - not nudge numbers, which they do every five rounds,
+        but read what actually happened and become something else. A hider whose
+        statistics say it died in the open should stop crossing so much; a chaser
+        whose clicks mostly landed on nothing should stop shooting at nothing.
+        Numbers cannot express either of those, which is why this exists.
         """
         world = self.world
         assert world is not None
-        chaser_won = world.match_catches >= max(1, world.round_number // 12)
-        winner = "CHASER takes the match" if chaser_won else "HIDER takes the match"
+        world.armor = 0 if killed else world.armor
+
+        if killed:
+            headline = f"hider KILLED in {world.round_number} rounds"
+        else:
+            headline = f"time up after {world.round_number} rounds"
         world.last_match = (
-            f"match {world.match_number}: {winner} — {world.match_catches} catches"
-            f" in {world.round_number} rounds"
+            f"match {world.match_number}: {headline} — "
+            f"shooter {self.chaser.points:.1f} / hare {self.hider.points:.0f}s alive"
         )
+
+        # The battle, in the terms each role can act on.
+        self.chaser.battle = {
+            "rounds": world.round_number,
+            "useful": world.useful,
+            "wasted": world.wasted,
+            "armour": world.armor_damage,
+            "kills": 1 if killed else 0,
+        }
+        self.hider.battle = {
+            "rounds": world.round_number,
+            "hits": world.armor_damage,
+            "repairs": world.repairs,
+            "crossings": world.destroyed,
+            "died": 1 if killed else 0,
+        }
+        self.chaser.rewrite(radical=True)
+        self.hider.rewrite(radical=True)
+        self.rewrite_banner = 70
+        self.match_banner = 110
+
         world.match_number += 1
         world.match_catches = 0
         world.match_rope_history.append(world.rope)
@@ -323,15 +479,28 @@ class Arena:
         world.rope_history.clear()
         world.rounds.clear()
         world.round_number = 0
+        world.armor = ARMOR_MAX
+        world.killed = False
+        world.armor_damage = 0
+        world.repairs = 0
+        world.died_crossing = False
+        world.wasted = 0
+        world.useful = 0
         world.houses = [House(*world.free_spot()) for _ in range(HOUSE_COUNT)]
         world.house_index = 0
         world.stay = 0
         world.travelling = False
         world.x, world.y = world.houses[0].x, world.houses[0].y
         world.last_seen_house = 0
+        # Points are per match, because the two of them only mean anything next to
+        # each other: a shooter's damage against a hare's seconds.
+        self.chaser.points = 0.0
+        self.hider.points = 0.0
         self.transitions = {}
         self.match_started = time.monotonic()
-        self.match_banner = 60
+        self.shots_fired = 0
+        self.reload_until = 0.0
+        self.begin_round()
 
     def toggle_pause(self, _event: object = None) -> None:
         self.paused = not self.paused
@@ -385,6 +554,13 @@ class Arena:
         # nothing to intercept and the score runs 155 to 3 while nothing happens.
         if w.stay >= MAX_STAY:
             should_leave = True
+        # Armour only comes back on arrival, so a damaged hider has to cross to
+        # repair - and crossing is exactly when it can be hit. The lower the armour,
+        # the stronger the pull to run, which is the trade the mechanic creates.
+        if w.armor < ARMOR_MAX:
+            urge = 0.3 + 0.5 * (1.0 - w.armor / ARMOR_MAX)
+            if random.random() < urge:
+                should_leave = True
         if random.random() < p.get("panic", 0.3) * 0.35:
             should_leave = True
         if mode == "restless" and w.round_number % 4 == 0:
@@ -419,6 +595,11 @@ class Arena:
         p = self.chaser.params
         mode = self.chaser.mode
         spread = (1.0 - p.get("commit", 0.5)) * HOUSE_W * 0.5
+        # The armour is on screen, so the chaser knows when the next hit is the last
+        # one. It tightens up: this is the shot worth being careful about, and a
+        # strategy that cannot tell a graze from a kill wastes its best chances.
+        if w.armor == 0:
+            spread *= 0.35
 
         if mode == "spread" or random.random() < p.get("spread", 0.15):
             x = random.uniform(0, self.width)
@@ -500,34 +681,89 @@ class Arena:
                 break
 
         # A click on a house is taken by the house, never by whoever is inside.
-        hit_hider = False
+        w.last_click = (ax, ay)
+        outcome = "MISS"
+        killed_now = False
+        struck_hider = False
+
         if hit_house is not None:
             w.houses[hit_house].hp -= 1
             w.houses[hit_house].flash = 4
+            w.useful += 1
+            self.chaser.points += POINTS_HOUSE
+            outcome = "HOUSE"
         elif w.travelling:
-            # Interception, not a snapshot. The first version resolved the click
-            # against the single point the hider occupied at that instant - halfway
-            # across - so guessing the destination correctly still usually missed,
-            # and the score ran 111 to 4 while houses were never even broken. A
-            # crossing is a segment, and a click anywhere along it should count.
+            # One shot per tick of the crossing. This is what makes a slower target
+            # easier rather than merely prettier: with a single click per round the
+            # chaser needed four consecutive hits across four separate crossings to
+            # kill anything, and a measured run produced twenty-four armour hits and
+            # no kills at all in two hundred and fifty rounds. A crossing that lasts
+            # nine ticks is nine chances, which is what a slower target means.
             start = w.houses[w.from_house]
             end = w.houses[w.to_house]
-            for step in range(17):
-                t = step / 16
-                px = start.x + (end.x - start.x) * t
-                py = start.y + (end.y - start.y) * t
-                if math.hypot(ax - px, ay - py) <= EVADER_RADIUS + 6:
-                    hit_hider = True
-                    break
+            spread = (1.0 - self.chaser.params.get("commit", 0.5)) * HOUSE_W * 0.5
+            if w.armor == 0:
+                spread *= 0.35
+            landed = 0
+            for _ in range(CROSS_TICKS):
+                # The magazine. Eight shots, then two seconds of reloading during
+                # which the trigger does nothing at all - which turns a long crossing
+                # from a guaranteed kill into a burst with a ceiling on it.
+                now = time.monotonic()
+                if now < self.reload_until:
+                    continue
+                if self.shots_fired >= SHOTS_PER_MAGAZINE:
+                    self.reload_until = now + RELOAD_SECONDS
+                    self.shots_fired = 0
+                    continue
+                self.shots_fired += 1
 
-        w.last_click = (ax, ay)
-        w.rounds.append({"hit": hit_hider, "aim": (ax, ay), "house": hit_house})
+                shot_x = ax + random.uniform(-spread, spread)
+                shot_y = ay + random.uniform(-spread, spread)
+                shot_hit = False
+                for step in range(17):
+                    t = step / 16
+                    px = start.x + (end.x - start.x) * t
+                    py = start.y + (end.y - start.y) * t
+                    if math.hypot(shot_x - px, shot_y - py) <= EVADER_RADIUS + 6:
+                        shot_hit = True
+                        break
+                if not shot_hit:
+                    continue
+
+                landed += 1
+                struck_hider = True
+                if w.armor > 0:
+                    w.armor -= 1
+                    w.armor_damage += 1
+                    self.chaser.points += POINTS_HIT
+                    outcome = f"HIT armour {w.armor}"
+                elif not killed_now:
+                    # Stripped, and this is the extra hit: the hare dies and the
+                    # match is over.
+                    killed_now = True
+                    w.died_crossing = True
+                    self.chaser.points += POINTS_KILL
+                    outcome = f"KILLED after {landed} hit(s)"
+            if landed:
+                w.useful += 1
+            else:
+                w.wasted += 1
+        else:
+            w.wasted += 1
+
+        # The hare is paid in time and in nothing else, so its score is simply how
+        # long it has been alive. Read live rather than accumulated, because that is
+        # exactly what it means: the clock is the score.
+        self.hider.points = time.monotonic() - self.match_started
+
+        w.rounds.append({"hit": struck_hider, "aim": (ax, ay), "house": hit_house})
         if len(w.rounds) > 24:
             w.rounds.pop(0)
         w.round_number += 1
 
         # Arrive, and remember who saw what. This happens after the click, because
-        # the click was resolved against the halfway point of the crossing.
+        # the click was resolved against the crossing.
         if w.travelling:
             w.progress = 1.0
             w.travelling = False
@@ -539,6 +775,19 @@ class Arena:
             w.stay = 0
             house = w.houses[w.house_index]
             w.x, w.y = house.x, house.y
+
+            # Shelter repairs the armour, and the house pays for every point of it.
+            # That is the hare's whole economy: safety costs the thing it hides
+            # behind, so a hare that repairs often destroys its own cover. No points
+            # change hands for it - the hare is paid in seconds, and a repair buys
+            # exactly that.
+            missing = ARMOR_MAX - w.armor
+            if missing > 0 and house.hp > 0 and not killed_now:
+                paid = min(missing, house.hp)
+                house.hp -= paid
+                w.armor += paid
+                w.repairs += paid
+                outcome = f"REPAIRED {paid}"
         else:
             w.stay += 1
 
@@ -556,27 +805,33 @@ class Arena:
                 w.house_index = index
                 w.last_seen_house = index
 
-        w.rope = _clamp(w.rope * 0.94 + (0.35 if hit_hider else -0.12), -1.0, 1.0)
-        if hit_hider:
+        # The rope is the points, normalised. Two different currencies, so it is a
+        # balance rather than a tally: the hider is paid for time and repairs, the
+        # chaser for damage and for the kill.
+        # The rope is the points, normalised: the shooter's damage against the
+        # hare's seconds alive, on one scale so the balance is visible at a glance.
+        total = max(12.0, float(self.chaser.points + self.hider.points))
+        w.rope = _clamp((self.chaser.points - self.hider.points) / total, -1.0, 1.0)
+        if struck_hider:
             w.match_catches += 1
         w.rope_history.append(w.rope)
         if len(w.rope_history) > 900:
             w.rope_history.pop(0)
 
-        # Two different scores, and confusing them broke this game.
-        #
-        # The rope is the actual win condition: a catch pulls it, anything else does
-        # not. The per-shape score decides which strategy is worth keeping, and a
-        # strategy that only applies pressure wins nothing immediately - so scored on
-        # catches alone the siege shape sat at 0.00, was never selected, and the
-        # chaser spent a hundred rounds aiming at empty ground between houses. The
-        # value of pressure is delayed, and an evaluation that cannot see the delay
-        # throws the strategy away. House damage is the measurable proxy.
-        useful = hit_hider or hit_house is not None
-        self.chaser.score(useful)
-        self.hider.score(not hit_hider)
-        self.flash = "CAUGHT" if hit_hider else ("HOUSE" if hit_house is not None else "MISS")
-        self.flash_left = 6
+        # Which shape is worth keeping is a different question from who is winning,
+        # and confusing the two threw away the pressure strategy earlier: it scored
+        # nothing, because pressure wins nothing immediately.
+        self.chaser.score(hit_house is not None or struck_hider)
+        self.hider.score(not killed_now)
+        self.flash = outcome
+        self.flash_left = 8
+        if killed_now:
+            self.flash = outcome
+            self.flash_left = 20
+
+        if killed_now:
+            self.end_match(killed=True)
+            return
 
         if w.round_number % ROUNDS_PER_GENERATION == 0:
             self.chaser.rewrite()
@@ -653,9 +908,7 @@ class Arena:
                           text=f"house {index + 1}   {max(0, house.hp)}/{HOUSE_HP}",
                           fill="#7f8b98", font=("Consolas", 10))
             if occupied and not self.hide:
-                c.create_oval(house.x - EVADER_RADIUS, house.y - EVADER_RADIUS,
-                              house.x + EVADER_RADIUS, house.y + EVADER_RADIUS,
-                              fill="#f0c419", outline="")
+                self.draw_armour(house.x, house.y - 26)
 
         # the hider, visible only while it is between houses
         if world.travelling:
@@ -665,6 +918,14 @@ class Arena:
             c.create_oval(world.x - EVADER_RADIUS, world.y - EVADER_RADIUS,
                           world.x + EVADER_RADIUS, world.y + EVADER_RADIUS,
                           fill="#f0c419", outline="#fff3c4", width=2)
+            self.draw_armour(world.x, world.y - 24)
+
+        # Where the armour stands, drawn wherever the hider is known to be. Three
+        # pips: full means three more clicks will not kill it, empty means the next
+        # click does.
+        if not world.travelling:
+            house = world.houses[world.house_index]
+            self.draw_armour(house.x, house.y + HOUSE_H / 2 + 14, hint=True)
 
         # clicks of the recent rounds
         for entry in world.rounds:
@@ -690,6 +951,24 @@ class Arena:
                           fill="#5f6b77", font=("Consolas", 10))
 
         self.draw_panels()
+
+    def draw_armour(self, cx: float, cy: float, hint: bool = False) -> None:
+        """Three pips. Filled means the click will be absorbed, empty means it kills."""
+        c = self.canvas
+        world = self.world
+        assert world is not None
+        gap = 11
+        for index in range(ARMOR_MAX):
+            x = cx + (index - (ARMOR_MAX - 1) / 2) * gap
+            filled = index < world.armor
+            if hint:
+                colour = "#2f6fbf" if filled else "#3a4550"
+                size = 4
+            else:
+                colour = "#59b0ff" if filled else "#3a4550"
+                size = 5
+            c.create_oval(x - size, cy - size, x + size, cy + size,
+                          fill=colour, outline="#0e1116" if filled else "")
 
     def draw_panels(self) -> None:
         c = self.canvas
@@ -749,9 +1028,19 @@ class Arena:
 
         if self.flash_left > 0:
             self.flash_left -= 1
-            tones = {"CAUGHT": "#e05561", "HOUSE": "#8a6d1f", "MISS": "#5a6672"}
-            c.create_text(mid, self.height - 40, text=self.flash,
-                          fill=tones.get(self.flash, "#fff"), font=("Consolas", 34, "bold"))
+            text = self.flash
+            if text.startswith("ARMOUR"):
+                tone = "#e05561"
+            elif text.startswith("KILLED"):
+                tone = "#ff2d55"
+            elif text.startswith("REPAIRED"):
+                tone = "#59b0ff"
+            elif text == "HOUSE":
+                tone = "#8a6d1f"
+            else:
+                tone = "#5a6672"
+            c.create_text(mid, self.height - 60, text=text, fill=tone,
+                          font=("Consolas", 34, "bold"))
         if self.rewrite_banner > 0:
             self.rewrite_banner -= 1
             c.create_text(mid, self.height - 86, text="REWRITING THE PROGRAM",
@@ -770,14 +1059,19 @@ class Arena:
         # unit of play.
         left = self.match_seconds_left()
         minutes, seconds = divmod(int(left), 60)
-        clock = f"match {world.match_number}   {minutes}:{seconds:02d} left   {world.match_catches} catches"
+        reloading = time.monotonic() < self.reload_until
+        magazine = "RELOAD" if reloading else f"mag {self.shots_fired}/{SHOTS_PER_MAGAZINE}"
+        # Kept short on purpose: the centre band between the two agent panels is
+        # about fifty characters wide, and a longer line runs straight through them.
+        clock = (f"match {world.match_number}  {minutes}:{seconds:02d}  {magazine}"
+                 f"  |  shooter {self.chaser.points:.1f} vs hare {self.hider.points:.0f}s")
         c.create_text(mid, strip_y + 42, text=clock,
-                      fill="#f0c419" if left < 30 else "#98a4b0", font=("Consolas", 13, "bold"))
+                      fill="#f0c419" if left < 30 else "#98a4b0", font=("Consolas", 12, "bold"))
         if world.last_match:
-            c.create_text(mid, strip_y + 60, text=world.last_match, fill="#5f6b77",
-                          font=("Consolas", 10))
+            c.create_text(mid, strip_y + 60, text=textwrap.shorten(world.last_match, 52, placeholder=" …"),
+                          fill="#5f6b77", font=("Consolas", 10))
         c.create_text(mid, strip_y + 96,
-                      text="space pause · ←/→ speed · w rewrite · h hiding · r restart · Esc quit",
+                      text="space pause · ←/→ speed · w rewrite · h hiding · r restart · Esc",
                       fill="#4a5560", font=("Consolas", 10))
         if self.match_banner > 0:
             c.create_text(mid, self.height - 130, text="NEW MATCH — the strategies carry over",
@@ -788,16 +1082,16 @@ class Arena:
         anchor = "w" if side == "left" else "e"
         c.create_text(x, y, text=f"{agent.name.upper()}  gen {agent.generation}",
                       anchor=anchor, fill=colour, font=("Consolas", 13, "bold"))
-        c.create_text(x, y + 17, text=f"shape: {agent.mode}    won {agent.wins} / lost {agent.losses}",
+        c.create_text(x, y + 17, text=f"shape {agent.mode}   {agent.points:.1f} pts   kept {agent.accepted}/{agent.rejected}",
                       anchor=anchor, fill="#98a4b0", font=("Consolas", 10))
-        c.create_text(x, y + 33, text="  ".join(f"{k}={v:.2f}" for k, v in agent.params.items()),
+        c.create_text(x, y + 33, text="  ".join(f"{k}={v:.2f}" for k, v in list(agent.params.items())[:3]),
                       anchor=anchor, fill="#6b7783", font=("Consolas", 10))
-        shapes = "   ".join(
+        shapes = "  ".join(
             f"{name}:{score:.2f}{'*' if name == agent.mode else ''}"
-            for name, score in sorted(agent.scores.items(), key=lambda kv: -kv[1])
+            for name, score in sorted(agent.scores.items(), key=lambda kv: -kv[1])[:3]
         )
         c.create_text(x, y + 49, text=shapes, anchor=anchor, fill="#5f6b77", font=("Consolas", 9))
-        c.create_text(x, y + 65, text=f"rewrite: {textwrap.shorten(agent.last_note, 80, placeholder=' …')}",
+        c.create_text(x, y + 65, text=f"rewrite: {textwrap.shorten(agent.last_note, 58, placeholder=' …')}",
                       anchor=anchor, fill="#5a6672", font=("Consolas", 10))
 
 

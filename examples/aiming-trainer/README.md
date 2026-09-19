@@ -188,6 +188,45 @@ click is resolved against the whole crossing either way, so the metric barely
 moves. It is a watchability change wearing the clothes of a difficulty setting, and
 saying so is cheaper than implying otherwise.
 
+### Armour, repairs, and a match that ends in a kill
+
+The hider wears **armour worth three clicks**. Three hits strip it; the next hit
+kills, and the match stops there — a match is not a timer, it is a life.
+
+Arriving at a house **repairs the armour, and the house pays for every point
+restored**. That is the hider's entire economy, and it is a genuine trap: armour
+only comes back on arrival, so repairing means crossing, and crossing is the only
+time it can be hit. A hider that repairs often destroys its own cover; one that
+never repairs dies on the fourth hit.
+
+Both sides are paid, and **not for the same thing**:
+
+| | |
+|---|---|
+| **Chaser** | 2 points per point of armour stripped, 25 for the kill |
+| **Hider** | 1 point for every round it stays alive, 3 for every point of armour repaired |
+
+The rope is the normalised difference, so it is a balance between two different
+currencies rather than a tally of one. This is the same lesson the earlier runs
+taught, applied deliberately from the start rather than rediscovered: **scoring
+both sides on the same event is what threw away the pressure strategy.**
+
+Between matches, both agents are handed the statistics of the battle that just
+ended and allowed to **change shape**, not just nudge numbers. Tuning cannot fix a
+strategy whose shape is wrong, and the running score cannot say what went wrong —
+but the battle can:
+
+```
+hider battle  {rounds 41, hits 3, repairs 2, crossings 4, died 1}
+               -> preferred shape: leave-late   (it was caught in the open)
+chaser battle {rounds 41, useful 12, wasted 29, armour 3, kills 1}
+               -> preferred shape: siege        (most clicks hit nothing)
+```
+
+A hider whose statistics say it died crossing should cross less. A chaser whose
+clicks mostly landed on empty ground should stop shooting at empty ground. Neither
+is expressible as a number, which is the whole reason the radical rewrite exists.
+
 ## Requirements
 
 Python 3.9 or newer and Pillow. No numpy: the vision is channel arithmetic through
