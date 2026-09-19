@@ -117,3 +117,63 @@ The rung of the ladder did the work, and it was reached because the probe happen
 
 **Probe before you measure.** The cheapest step in the method turned out to be the one
 that removed most of the work — and it is only cheap if it happens first.
+
+---
+
+# Second example: the hybrid, which is what most real tasks are
+
+Calculator was the pure case - the tree had everything and no coordinate was needed.
+Drawing a picture in Paint is the **mixed** case, and most tasks land here: the tree
+supplies the controls, and coordinates remain for the one thing the tree cannot
+describe.
+
+## What the tree supplied, with no measurement at all
+
+| | how |
+|---|---|
+| tools and shapes | `press("Oval")`, `press("Rounded rectangle")` - **by name**, through `TogglePattern` |
+| all 20 colours | named, with rectangles: **pitch 24 from x 800** |
+| the canvas bounds | `ScrollViewer`, 1920x821, **read from the tree** |
+
+The colour row is the part worth dwelling on. An earlier session recovered that pitch
+by **scanning pixels for it**, after asking for yellow and being given green. The same
+number came straight from the program, and matched the hand measurement exactly.
+
+## What remained coordinates
+
+**Only where in the picture each thing goes.** That is a decision about the drawing,
+not a measurement of the program - which is exactly the boundary this skill predicts.
+
+## What the tree could not do
+
+- **`Shape fill` pressed, and offered no selectable options.** The fill mode had to be
+  done with the bucket, which is what a person does too.
+- **The colour swatches have no selection pattern.** They are clicked - but aimed at a
+  rectangle **the tree reported**, re-read every run, rather than at a number measured
+  off a screenshot once.
+
+## Two defects found while doing it
+
+**The fill order matters.** The wheels came out as white circles with black lids: the
+fill point had landed inside the car body's region, so the bucket flooded only the cap
+of each wheel. Drawing the wheels **first** and the body over them gives a whole circle
+and hides the half that should be hidden. A flood fill cares about what has already
+been drawn, so ordering is part of correctness and not only of appearance.
+
+**The pattern is not guessable from the control type.** `press("Pencil")` failed with
+"no pattern" - Paint's ribbon buttons answer to **`Toggle`**, not to `Invoke`, and the
+first trial of this work had *already* demonstrated that without it being noticed. The
+helper now tries Invoke, then Toggle, then SelectionItem.
+
+## And the learning paid for itself
+
+The save went to the **row the bandit learned in an earlier session**, first try, and
+produced a real PNG with no search:
+
+```
+saving (first candidate row 553)
+row 553: first bytes 89 50 4e 47 0d 0a 1a 0a -> PNG
+```
+
+That is the whole point of keeping the counts in a file. Six exploratory attempts once,
+and every run afterwards begins at the answer.
