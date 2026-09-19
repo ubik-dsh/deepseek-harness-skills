@@ -5,3 +5,5 @@
 __pycache__/
 *.pyc
 *.pyo
+
+# Written by the arena each time it plays; a run produces hundreds.\nexamples/aiming-trainer/gen/\n

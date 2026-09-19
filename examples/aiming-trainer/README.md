@@ -52,6 +52,80 @@ The 23% at a five-tick delay is not a broken trainee. It is the honest ceiling f
 anything with a reflex that slow, and a skill built on this number can say what it
 is worth.
 
+## The adversarial version: two agents, one target, a rope between them
+
+`sim.py` measures one trainee against a world. `arena.py` makes the world fight
+back. It is a fullscreen window with two agents:
+
+| | |
+|---|---|
+| **Clicker** | owns the click. Scores by landing on the target. |
+| **Evader** | owns the target. Scores by being somewhere else. |
+
+Neither sees the other's decision for the round — both commit from the same
+picture, which is what makes it a game rather than a demonstration. A hit pulls a
+shared rope towards the clicker, a miss towards the evader, and the rope is drawn
+over time as well as in the moment: one position says who is ahead this second, the
+shape says whether anyone is winning, and those are different questions.
+
+```bash
+python arena.py                # fullscreen
+python arena.py --windowed     # a window, for looking at
+python arena.py --speed 4      # rounds per second
+```
+
+Keys: `space` pause · `←/→` speed · `w` rewrite now · `r` restart · `Esc` quit
+
+![The arena mid-round](arena.png)
+
+### They rewrite their own program
+
+Every five rounds each agent writes a new version of itself. This is not a
+metaphor: real files appear in `gen/`, one per agent per generation, and the next
+round runs the shape that file describes.
+
+```
+gen/
+  clicker_gen42.py    MODE = 'read'      SHAPES = {lead: 0.38, read: 0.37, …}
+  clicker_gen43.py    MODE = 'patient'   # mode read -> patient
+  evader_gen43.py     MODE = 'warp'      # speed 0.41->0.58, warp 0.25->0.45
+```
+
+Each agent keeps a decaying score **per shape**, so the rewrite is a decision
+rather than a twitch: it mostly keeps the best shape it has tried and tunes its
+numbers, and occasionally tries another, because a shape that never runs cannot be
+scored and the search would stall on its first idea. The scores are on screen, so
+you can see *why* a rewrite happened rather than only that one did.
+
+A run to generation 43, watched on screen:
+
+```
+CLICKER  shape: patient   won 157 / lost 57    rope +0.55
+   lead:0.38   read:0.37   patient:0.17*   hold:0.06      rewrite: mode read -> patient
+EVADER   shape: warp      won 57 / lost 157
+   warp:0.77*  jitter:0.02 flee:0.01 drift:0.00          rewrite: speed 0.41->0.58, warp 0.25->0.45
+```
+
+The clicker came from behind to lead 157 to 57, and the screen says how: it moved
+off raw prediction onto a smoothed one, twice, while the evader's only shape that
+scored at all was the one that occasionally teleports.
+
+### What the evader found on its own
+
+Given only the last crosshair it saw, it learned to sit near a wall. That is not
+in its strategy anywhere; it is a consequence of the rules — the clicker's aim is
+clamped to the field, so a target in a corner cannot be aimed past, and the evader
+discovered the exploit by being scored.
+
+### The honest limit
+
+The rewrite is bounded to a set of shapes and numbers, not free-form code
+generation. A language model writing arbitrary new strategy code is the obvious
+next version and would drop into the same place: `Agent.rewrite` writes a file and
+the next round runs it, so a call to a model there changes nothing else in the
+program. What is demonstrated here is the *loop* — score, rewrite, reload, compete
+— not the sophistication of what gets written.
+
 ## Requirements
 
 Python 3.9 or newer and Pillow. No numpy: the vision is channel arithmetic through
