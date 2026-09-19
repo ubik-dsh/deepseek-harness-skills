@@ -318,6 +318,29 @@ def main() -> int:
         expect("a script named without its extension resolves",
                "does not exist" not in failures, failures[:90])
 
+        print("a stated limit")
+        # Borrowed from the vendor skill's early-stop disclosure, and mechanised
+        # here because the rule says anything checkable belongs in the checker.
+        path = fixture(root, "no-limits", "\n## Steps\n\n1. Do the thing.\n")
+        warnings = " ".join(check_skill.check(path).warnings)
+        expect("a body with no stated limit warns",
+               "does not say what the skill does not cover" in warnings, warnings[:100] or "not reported")
+
+        path = fixture(root, "with-limits", "\n## Steps\n\n1. Do the thing.\n\n## What this does not cover\n\nWindows only.\n")
+        warnings = " ".join(check_skill.check(path).warnings)
+        expect("a stated limit satisfies the rule",
+               "does not say what the skill does not cover" not in warnings, warnings[:100])
+
+        path = fixture(root, "limits-with-a-noun", "\n## Steps\n\n1. Do the thing.\n\n## What this skill does not cover\n\nWindows only.\n")
+        warnings = " ".join(check_skill.check(path).warnings)
+        expect("the phrasing with a noun in the middle also counts",
+               "does not say what the skill does not cover" not in warnings, warnings[:100])
+
+        path = fixture(root, "limits-as-limitations", "\n## Limitations\n\nNone measured.\n")
+        warnings = " ".join(check_skill.check(path).warnings)
+        expect("a Limitations heading counts too",
+               "does not say what the skill does not cover" not in warnings, warnings[:100])
+
         print("name versus folder")
         path = fixture(root, "folder-name", "", name="different-name")
         failures = " ".join(check_skill.check(path).failures)

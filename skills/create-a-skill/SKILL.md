@@ -6,7 +6,8 @@ compatibility: Agent Skills standard. SKILL.md is plain text with no runtime; th
 metadata:
   spec: https://agentskills.io/specification
   assembled_from: anthropics/skills (skill-creator), mattpocock via alirezarezvani/claude-skills (write-a-skill), sickn33/agentic-awesome-skills (effective-agent-skills, writing-skills, verification-before-completion), deanpeters/Product-Manager-Skills
-  verified_against: DSH 0.1.5-rc.2
+  borrowed_from_skill_creator: status vocabularies, early-stop disclosure, bounds instead of refusal, calibration against an existing skill, form before substance, and a description that claims the work — see references/borrowed-practices.md
+  verified_against: DSH 0.1.5-rc.2, by live probes of all seven roots and their precedence
 ---
 
 # Authoring a DSH skill
@@ -117,6 +118,13 @@ a plausible one.
 - **Say what failure looks like.** For each step that can fail: the error text,
   the silent wrong answer, what to do about it. A happy-path skill breaks the
   first time it meets reality.
+- **Say where each fact came from.** A behaviour you ran and a behaviour you read
+  about look identical on the page. Mark them — `returns 0 (observed)`,
+  `must match the folder (spec §name)`, `rejects the camelCase spelling (source:
+  dsh-skill-filesystem)`. One clause per fact, and the reader knows what to trust.
+- **Write `## What this does not cover`.** The inputs you did not try, the
+  harnesses you did not test on, the case you skipped because it was slow. Silence
+  about the edges is read as covering them; it is a claim, and a false one.
 - **Nothing time-sensitive.** `As of Q4 2024` rots. Read live data, or omit.
 - **Relative paths, forward slashes**, resolved against the skill's own directory
   — the agent is told that directory when the skill loads.
@@ -187,8 +195,62 @@ confidence, and it is how a broken skill ships.
 - [ ] failure modes written down, not just the happy path
 - [ ] `python <skill-dir>/scripts/check-skill.py <skill-dir>` passes
 - [ ] tested on a real input — with the skill and without it
+- [ ] `## What this does not cover` written, and each claim says how it was established
 
 More traps, and the reasoning behind each: [references/anti-patterns.md](references/anti-patterns.md).
+
+## What this skill does not cover
+
+- **Harnesses other than DSH.** The seven roots, their ranks and the precedence
+  rule were measured on DSH `0.1.5-rc.2` by live probes. The conventions of Claude
+  Code and the others in
+  [references/harness-locations.md](references/harness-locations.md) come from
+  their documentation, not from a probe on this machine.
+- **What is inside a bundled script.** The checker reads markdown. Whether a
+  script a skill ships is correct, safe or worth running is outside it — that is
+  what reading it is for.
+- **Whether the capability is worth having.** Structure, triggering and
+  measurement are checkable. Whether this skill should exist at all is a judgement
+  this file cannot make.
+- **Long skills.** The advice here is untested above a few hundred lines. The one
+  live head-to-head comparison produced skills of 122 to 315 lines, so everything
+  in this file rests on that range.
+- **Non-English skills.** Every rule was written and tested in English. The name
+  and description rules come from a specification that says nothing about
+  language, and the Russian summary at the end of this file has never been read by
+  a harness.
+
+## Take what is better, then earn the right to keep it
+
+Almost nothing in this skill is original, and that is the point. Every rule here
+was learned the expensive way by somebody else first and taken on purpose; the
+sources are in the metadata and the most recent six are in
+[references/borrowed-practices.md](references/borrowed-practices.md).
+
+Keep doing it. When a skill, a tool, a repository or a person does something
+better than this file does, take it — that is not plagiarism, it is the whole
+method, and a rule that stays because it was ours is a rule that has stopped
+being useful.
+
+**Taking it is not adopting it.** The order is:
+
+1. **Find it and read it** — not the summary of it. Read the thing.
+2. **Try it on your own case**, not on the case its author had in mind.
+3. **Keep it only if the trial agreed**, and say what the trial was.
+
+A practice adopted because it sounded right becomes a rule defended long after it
+stopped being true. This file has had several of those; each was removed by
+measurement and none by argument. So when you adopt something:
+
+- write it into [references/borrowed-practices.md](references/borrowed-practices.md)
+  with its source, what it means here, and **how to tell whether it worked**;
+- if it can be checked mechanically, put it in `scripts/check-skill.py` and add a
+  regression test — an unenforced rule is a paragraph, and paragraphs drift;
+- name where it came from. A borrowed practice with no source cannot be checked
+  later, and cannot be re-borrowed when it improves.
+
+The same rule runs in the other direction: when a rule here fails a test, it is
+wrong and it goes. Nothing in this file is above being measured.
 
 ## Skills you did not write
 

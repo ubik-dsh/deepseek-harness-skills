@@ -96,6 +96,15 @@ TIME_SENSITIVE = re.compile(
 
 UNEXPECTED_BINARY = re.compile(r"\.(pyc|pyo|exe|dll|so|dylib|class|jar|bin)$", re.IGNORECASE)
 
+# A heading that admits the limit of the skill. Any of these phrasings counts.
+# The optional word in the middle is not decoration: this file's own heading reads
+# "What this skill does not cover", and the first version of the pattern missed it.
+COVERAGE_SECTION = re.compile(
+    r"^#{1,4}\s*.*(what this(?:\s+\w+){0,2}\s+(does not|doesn't) cover|not covered"
+    r"|out of scope|limitations|what this is not|not tested|uncovered|known gaps)",
+    re.IGNORECASE | re.MULTILINE,
+)
+
 # Text that marks a line as teaching by counter-example: `references/x.md`, never
 # `references/a/b/c.md`, or "As of Q4 2024" rots.
 NEGATION = re.compile(r"\b(never|avoid|don't|do not|not |instead|rots?|bad|wrong|anti-?pattern|counter-?example)\b", re.IGNORECASE)
@@ -278,6 +287,17 @@ def check(path: Path) -> Result:
         )
     elif len(non_empty) > COMFORTABLE_BODY_LINES:
         result.note(f"the body has {len(non_empty)} non-empty lines — fine for a procedure, worth watching")
+
+    # ── a stated limit ────────────────────────────────────────────────────
+    # Silence about the edges is read as covering them, which makes it a claim.
+    # Borrowed from the vendor skill's early-stop disclosure; see
+    # references/borrowed-practices.md.
+    if not COVERAGE_SECTION.search(body):
+        result.warn(
+            "the body does not say what the skill does not cover. Name the inputs it "
+            "was not tried on and the cases it skips, or a reader will assume there "
+            "are none"
+        )
 
     # ── files that should not be there, and binaries ──────────────────────
     # Walked, not just listed: a README dropped into references/ is the same

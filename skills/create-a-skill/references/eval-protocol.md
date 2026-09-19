@@ -107,6 +107,12 @@ Assertions first — the mechanical checks a script can make. Then read both out
 side by side and answer one question: **what did the skill change?** If the answer
 is "nothing", either the skill is redundant or the task was too easy to show it.
 
+**Record what you stopped short of.** Every run is partial, and the partiality is
+part of the result. *"Two tasks run, the third skipped because it needed a
+database; the trigger set was ten queries, not twenty"* is a finding; the same run
+reported as "tested" is a story. Write the stopping point into the same record as
+the numbers, while you still know what it was.
+
 Numbers worth having, when the task allows them: turns taken, tokens spent, and
 the count of failed attempts. A skill that succeeds in half the turns with the
 same result is a better skill.
