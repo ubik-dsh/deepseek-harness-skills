@@ -20,6 +20,11 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+# Importing the checker would otherwise leave a __pycache__ beside it, and a
+# skill that ships a rule against compiled files should not create one by being
+# tested. The checker warns about them, correctly, so the suite must not make
+# them.
+sys.dont_write_bytecode = True
 spec = importlib.util.spec_from_file_location("check_skill", HERE / "check-skill.py")
 check_skill = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
@@ -166,6 +171,74 @@ def main() -> int:
         warnings = " ".join(check_skill.check(folded).warnings)
         expect("a folded description is parsed and judged",
                "does not say when to use" in warnings, warnings[:90] or "not judged")
+
+        print("the same rules inside references/")
+        # The first version read SKILL.md and stopped, so every content rule was
+        # unenforced in the one folder the document tells authors to use.
+        path = fixture(root, "refs-dated", "\nSee [the notes](references/notes.md).\n")
+        (path / "references").mkdir(exist_ok=True)
+        (path / "references" / "notes.md").write_text(
+            "# Notes\n\nAs of Q4 2024 the API took two arguments.\n", encoding="utf-8")
+        warnings = " ".join(check_skill.check(path).warnings)
+        expect("a dated fact inside references/ is reported",
+               "will age badly" in warnings and "references/notes.md" in warnings, warnings[:100] or "not reported")
+
+        path = fixture(root, "refs-absolute", "\nSee [the notes](references/notes.md).\n")
+        (path / "references").mkdir(exist_ok=True)
+        (path / "references" / "notes.md").write_text("# Notes\n\nRead /home/ci/cache first.\n", encoding="utf-8")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("an absolute path inside references/ is reported", "/home/" in failures, failures[:100] or "not reported")
+
+        path = fixture(root, "refs-broken-link", "\nSee [the notes](references/notes.md).\n")
+        (path / "references").mkdir(exist_ok=True)
+        (path / "references" / "notes.md").write_text("# Notes\n\nSee [detail](detail.md).\n", encoding="utf-8")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a broken link inside references/ is reported", "detail.md" in failures, failures[:100] or "not reported")
+
+        print("compiled files")
+        # The author of this checker committed a .pyc while shipping a rule
+        # against binary files, and the skip list hid it from the checker itself.
+        path = fixture(root, "has-bytecode", "")
+        (path / "scripts").mkdir(exist_ok=True)
+        (path / "scripts" / "__pycache__").mkdir(exist_ok=True)
+        (path / "scripts" / "__pycache__" / "thing.cpython-312.pyc").write_bytes(b"\x00\x01\x02")
+        warnings = " ".join(check_skill.check(path).warnings)
+        expect("a compiled file is reported even inside __pycache__",
+               "compiled or binary" in warnings, warnings[:100] or "not reported")
+
+        print("the size ceiling")
+        path = fixture(root, "long-body", "\n" + "\n".join(f"line {i}" for i in range(520)) + "\n")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a body over 500 lines fails", "500" in failures, failures[:100] or "not reported")
+
+        path = fixture(root, "padded-body", "\n" + "\n".join([""] * 520) + "\nshort\n")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("padding with blank lines does not hide a long body", "500" in failures, failures[:100] or "passed on blank lines")
+
+        print("word boundaries")
+        # Both of these were real false positives found by running the checker
+        # over other people's skills.
+        path = fixture(root, "uri-not-a-drive", "\nconst m = uri.match(/^file:\\/\\/documents\\/(.+)$/);\n")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("e:\\ inside file:\\/\\/ is not read as a Windows drive",
+               "absolute path" not in failures, failures[:90])
+
+        path = fixture(root, "prose-not-a-path", "\n- Better scripts/tools that produced better output?\n")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("an unquoted prose mention of scripts/tools is not a broken link",
+               "does not exist" not in failures, failures[:90])
+
+        path = fixture(root, "quoted-missing-script", "\nRun `scripts/missing.py` to begin.\n")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a quoted path to a file that is not there is still reported",
+               "missing.py" in failures, failures[:90] or "not reported")
+
+        path = fixture(root, "script-without-suffix", "\nRun `scripts/helper` to begin.\n")
+        (path / "scripts").mkdir(exist_ok=True)
+        (path / "scripts" / "helper.py").write_text("print('ok')\n", encoding="utf-8")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a script named without its extension resolves",
+               "does not exist" not in failures, failures[:90])
 
         print("name versus folder")
         path = fixture(root, "folder-name", "", name="different-name")

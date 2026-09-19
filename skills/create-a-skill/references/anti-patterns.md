@@ -94,7 +94,8 @@ rather than a fact.
 
 `C:\Users\…` and `/home/…` do not exist on the next machine. Relative paths from
 the skill root, forward slashes regardless of operating system, and the runtime's
-own placeholder for the skill directory. One level deep: `references/x.md`.
+own placeholder for the skill directory. One level deep: `references/<name>.md`,
+never a chain through nested folders.
 
 ## Don't trust a skill you have not read
 

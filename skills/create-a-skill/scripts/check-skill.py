@@ -33,6 +33,12 @@ MAX_DESCRIPTION = 1024
 MAX_BODY_LINES = 500
 COMFORTABLE_BODY_LINES = 100
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv"}
+# `__pycache__` is skipped when looking for skills, but not when looking for
+# binaries: a compiled file inside a skill is exactly what a reader should be
+# told about, and this checker's author committed one while shipping a rule
+# against them.
+BINARY_SCAN_SKIP = {".git", "node_modules", ".venv", "venv"}
+MAX_SCAN_BYTES = 2 * 1024 * 1024
 # Folders that hold a skill's own material. A single `.md` inside one of these is
 # a document belonging to a skill, not a skill of its own.
 RESOURCE_DIRS = {"references", "reference", "scripts", "assets", "examples", "docs", "templates", "data"}
@@ -65,7 +71,11 @@ REFERENCE = re.compile(r"(?<![A-Za-z0-9])(?:references|scripts|assets)/[A-Za-z0-
 MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)#\s]+)")
 PLACEHOLDER = re.compile(r"(<[^>]*>|\$\{?[A-Za-z_]|\{\{|%s|\{name\})")
 
-ABSOLUTE_PATH = re.compile(r"(?:[A-Za-z]:\\|/home/|/Users/|/root/|/var/|/etc/)")
+# `(?<![A-Za-z0-9])` guards the drive letter for the same reason it guards the
+# reference paths: without it the `e:\` inside `file:\/\/documents` reads as an
+# absolute Windows path, and a JavaScript URI example is reported as a portability
+# defect. A drive letter starts a token or it is not a drive letter.
+ABSOLUTE_PATH = re.compile(r"(?<![A-Za-z0-9])(?:[A-Za-z]:\\|/home/|/Users/|/root/|/var/|/etc/)")
 
 TIME_SENSITIVE = re.compile(
     r"\b(as of (q[1-4]|20\d\d)|in (january|february|march|april|may|june|july|"
@@ -243,68 +253,111 @@ def check(path: Path) -> Result:
 
     # ── size ──────────────────────────────────────────────────────────────
     # The standard recommends keeping SKILL.md under 500 lines; it is not a hard
-    # limit and DSH caps nothing. The number here is the recommendation, and the
-    # lower figure is only a prompt to think about splitting.
-    body_lines = [line for line in body.splitlines() if line.strip() != ""]
-    if len(body_lines) > MAX_BODY_LINES:
+    # limit and DSH caps nothing. Total lines, not non-empty ones: counting only
+    # the lines with content let a 605-line file pass a 500-line rule.
+    total_lines = len(body.splitlines())
+    non_empty = [line for line in body.splitlines() if line.strip() != ""]
+    if total_lines > MAX_BODY_LINES:
         result.fail(
-            f"the body has {len(body_lines)} non-empty lines. The standard recommends "
-            f"staying under {MAX_BODY_LINES}; move detail into references/"
+            f"the body is {total_lines} lines. The standard recommends staying under "
+            f"{MAX_BODY_LINES}; move detail into references/"
         )
-    elif len(body_lines) > COMFORTABLE_BODY_LINES:
-        result.note(f"the body has {len(body_lines)} non-empty lines — fine for a procedure, worth watching")
+    elif len(non_empty) > COMFORTABLE_BODY_LINES:
+        result.note(f"the body has {len(non_empty)} non-empty lines — fine for a procedure, worth watching")
 
-    # ── files that should not be there ────────────────────────────────────
+    # ── files that should not be there, and binaries ──────────────────────
     # Walked, not just listed: a README dropped into references/ is the same
     # anti-pattern as one at the root. A script called install.sh is not.
+    documents: list[Path] = []
     for entry in sorted(path.rglob("*")):
-        if any(part in SKIP_DIRS for part in entry.parts) or entry.is_dir() or entry.name == skill_file.name:
+        if entry.is_dir() or entry.name == skill_file.name:
+            continue
+        if any(part in BINARY_SCAN_SKIP for part in entry.parts):
+            continue
+        where = entry.relative_to(path).as_posix()
+        if UNEXPECTED_BINARY.search(entry.name):
+            result.warn(f"`{where}` is compiled or binary and cannot be reviewed by reading it")
+        if any(part in SKIP_DIRS for part in entry.parts):
             continue
         if LICENCE_STEM.match(entry.stem):
             continue
-        where = entry.relative_to(path).as_posix()
         nested = "/" in where
         pattern = FORBIDDEN_ANYWHERE if nested else FORBIDDEN_STEM
         if pattern.match(entry.stem):
             result.fail(f"`{where}` is a human-facing file; a skill is read by an agent")
         elif entry.suffix.lower() == ".txt" and not nested:
             result.fail(f"`{where}` is a human-facing file; a skill is read by an agent")
-        if UNEXPECTED_BINARY.search(entry.name):
-            result.warn(f"`{where}` is compiled or binary and cannot be reviewed by reading it")
+        if entry.suffix.lower() == ".md" and entry.stat().st_size <= MAX_SCAN_BYTES:
+            documents.append(entry)
 
-    # ── paths, per line so that quoted counter-examples can be skipped ────
-    candidates: set[str] = set()
-    for index, line in enumerate(text.splitlines(), 1):
-        ranges = quoted_ranges(line)
-        example = NEGATION.search(line) is not None
-        for match in ABSOLUTE_PATH.finditer(line):
-            if example and inside(match.start(), ranges):
-                continue
-            result.fail(f"line {index}: absolute path `{match.group(0)}` — use a path relative to the skill folder")
-        for match in TIME_SENSITIVE.finditer(line):
-            if example and inside(match.start(), ranges):
-                continue
-            result.warn(f"line {index}: `{match.group(0)}` will age badly; read live data or drop it")
-        for match in REFERENCE.finditer(line):
-            if example and inside(match.start(), ranges):
-                continue
-            candidates.add(match.group(0).rstrip(".,;:)"))
-        for match in MARKDOWN_LINK.finditer(line):
-            target = match.group(1).strip()
-            if target.startswith(("http://", "https://", "mailto:", "#")):
-                continue
-            candidates.add(target)
-
-    # ── references resolve ────────────────────────────────────────────────
-    for candidate in sorted(candidates):
-        if PLACEHOLDER.search(candidate):
+    # ── the same rules, applied to everything the agent will read ─────────
+    # The first version read SKILL.md and stopped. A dated fact or an absolute
+    # path in references/ was invisible, which made the checker's scope narrower
+    # than its own rule: the material in references/ is loaded by the agent just
+    # as the body is.
+    for document in [skill_file, *sorted(set(documents))]:
+        if document != skill_file and document.resolve() == skill_file.resolve():
             continue
-        if not (path / candidate).exists():
-            result.fail(f"referenced file does not exist: `{candidate}`")
-        elif candidate.count("/") > 1:
-            result.warn(f"`{candidate}` is nested more than one level deep")
+        where = document.relative_to(path).as_posix()
+        try:
+            body_text = document.read_bytes().decode("utf-8-sig", errors="replace")
+        except OSError:
+            continue
+        candidates: set[str] = set()
+        for index, line in enumerate(body_text.splitlines(), 1):
+            ranges = quoted_ranges(line)
+            example = NEGATION.search(line) is not None
+            for match in ABSOLUTE_PATH.finditer(line):
+                if example and inside(match.start(), ranges):
+                    continue
+                result.fail(f"{where}:{index}: absolute path `{match.group(0)}` — use a path relative to the skill folder")
+            for match in TIME_SENSITIVE.finditer(line):
+                if example and inside(match.start(), ranges):
+                    continue
+                result.warn(f"{where}:{index}: `{match.group(0)}` will age badly; read live data or drop it")
+            for match in REFERENCE.finditer(line):
+                if example and inside(match.start(), ranges):
+                    continue
+                # Only a quoted or linked path is a claim about a file. Prose
+                # that happens to contain `scripts/tools` - "Better scripts/tools
+                # that produced better output?" - is a sentence, not a reference.
+                if inside(match.start(), ranges):
+                    candidates.add(match.group(0).rstrip(".,;:)"))
+            for match in MARKDOWN_LINK.finditer(line):
+                target = match.group(1).strip()
+                if target.startswith(("http://", "https://", "mailto:", "#")):
+                    continue
+                candidates.add(target)
+
+        # Links inside a document resolve against that document's own folder.
+        base = document.parent
+        for candidate in sorted(candidates):
+            if PLACEHOLDER.search(candidate):
+                continue
+            if resolves(base, path, candidate):
+                if candidate.count("/") > 1:
+                    result.warn(f"{where}: `{candidate}` is nested more than one level deep")
+                continue
+            result.fail(f"{where}: referenced file does not exist: `{candidate}`")
 
     return result
+
+
+def resolves(base: Path, root: Path, candidate: str) -> bool:
+    """Does a path mentioned in the text point at something real?
+
+    Prose names a script without its extension (`scripts/check_fields` for
+    `check_fields.py`) and names folders as readily as files. Failing those as
+    broken links makes the checker cry wolf, so a match is accepted when the
+    path exists, exists with a common suffix, or exists as a directory.
+    """
+    for target in (base / candidate, root / candidate):
+        if target.exists():
+            return True
+        for suffix in (".py", ".sh", ".mjs", ".js", ".md", ".json", ".yaml", ".yml", ".txt"):
+            if target.with_suffix(suffix).exists():
+                return True
+    return False
 
 
 def collect_targets(root: Path) -> list[Path]:
