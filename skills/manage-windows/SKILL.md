@@ -7,18 +7,8 @@ metadata:
   spec: https://agentskills.io/specification
   version: 0.1.0
   status: first formulation, assembled from twelve hearings and one session of getting it wrong
-  borrowed_from: >-
-    raphaol/powershell-windows-best-skill (powershell-windows-master) for the trap list —
-    ConvertTo-Json without -Depth, parentheses around cmdlets used with logical operators,
-    null checks before property access, the script header template, and the exact PowerShell
-    invocation; browser-use/windows-harness for one call per decision point, the
-    foreground-first input ladder, and writing generated scripts to the tool's own directory;
-    Lucien-1127/strata-skill (windows-automation) for the CMD encoding trap and the shortcut
-    COM lines; mturac/everything-openai-codex (windows-desktop-e2e) for the accessibility-tree
-    rung. All found through find-a-skill, judged through judge-a-skill, and recorded with the
-    parts each was rejected down to.
-  sibling: learn-an-interface, which holds the method — the order of channels and how to find
-    an unknown control. This skill holds the platform: what Windows does that surprises you.
+  borrowed_from: raphaol/powershell-windows-best-skill for the trap list, browser-use/windows-harness for one call per decision point and the input ladder, Lucien-1127/strata-skill for the CMD encoding trap, mturac/everything-openai-codex for the accessibility-tree rung - all found through find-a-skill and judged through judge-a-skill
+  sibling: learn-an-interface holds the method, the order of channels and how to find an unknown control; this skill holds the platform, and what Windows does that surprises you
 ---
 
 # Working on Windows

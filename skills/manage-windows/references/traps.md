@@ -145,7 +145,7 @@ This repository has done it repeatedly. **[ours]**
 | Fails | Works |
 |---|---|
 | a path with spaces, unquoted | quoted, always |
-| a path ending in a backslash, inside a string | drop it, or double it вЂ” a trailing backslash escapes the closing quote |
+| a path ending in a backslash, inside a string | drop it, or double it — a trailing backslash escapes the closing quote |
 | assuming `\` | `Join-Path`, or accept both and normalise |
 | a command over 8191 characters | a script file |
 
