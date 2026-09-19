@@ -1,6 +1,6 @@
 ---
 name: create-a-skill
-description: Author a new agent skill, or improve an existing one — a folder of instructions an agent loads on demand, from a SKILL.md that works in DeepSeek Harness, Claude Code and any other harness reading the Agent Skills standard. Ships a bundled checklist runner and a measured evaluation protocol, not just advice. Use when the user asks you to learn a tool, a site, or a workflow and keep it for later; says "make yourself a skill for X"; asks to write, fix, review, or evaluate a skill; or wants a repeated procedure turned into something reusable.
+description: Author a new agent skill, or improve an existing one — a folder of instructions an agent loads on demand, from a SKILL.md that works in DeepSeek Harness, Claude Code and any other harness reading the Agent Skills standard. Ships a bundled checklist runner and a measured evaluation protocol, not just advice. Use when the user asks you to learn a tool, a site, or a workflow and keep it for later; says "make yourself a skill for X"; asks to write, fix, review, or evaluate a skill; wants a repeated procedure turned into something reusable; or asks whether a skill's description actually fires, what its trigger eval says, or how it performs with and without the skill.
 license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text with no runtime; the two files in scripts/ need Python 3.8 or newer, standard library only, and neither is required for the skill to work.
 metadata:
@@ -153,12 +153,20 @@ on first use and looks like the agent's fault.
 2. **Does the body arrive?** Ask for it by name. A load returns the instructions
    and the base directory. If the body is missing, the frontmatter delimiters are
    wrong — and if the harness can be handed a path instead, hand it the path.
-3. **Run the checklist.** `python <skill-dir>/scripts/check-skill.py <skill-dir>`
-   — the path is written in full because a shell resolves a relative one against
-   the working directory, not against the skill. It checks the name against its
-   folder, the description, the size, absolute paths, time-sensitive phrases,
-   files that should not be there, and references that do not resolve. Test the
-   checker itself with `python <skill-dir>/scripts/test-check-skill.py`.
+3. **Run the checklist.** The runner ships with *this* skill, not with the one you
+   wrote — do not copy it into the new folder. Invoke it by its own full path
+   against the folder you are checking:
+
+   ```bash
+   python <this-skill-dir>/scripts/check-skill.py <the-skill-you-wrote>
+   ```
+
+   It checks the name against its folder, the description, the size, absolute
+   paths, time-sensitive phrases, files that should not be there, and references
+   that do not resolve — in every markdown file, not only `SKILL.md`. Test the
+   checker itself with `python <this-skill-dir>/scripts/test-check-skill.py`.
+   The path is written in full because a shell resolves a relative one against
+   the working directory, not against either skill.
 4. **Does it actually work?** Run the task on a real input and compare against the
    success test in step 1 of the body. Then do it properly, with and without the
    skill, per [references/eval-protocol.md](references/eval-protocol.md). A skill

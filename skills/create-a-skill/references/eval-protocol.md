@@ -14,6 +14,12 @@ description on its own, before spending time on the body.
 
 ### Write 20 queries
 
+Twenty, not "about twenty": ten that should trigger and ten that should not. A
+first live run of this protocol produced ten queries, scored ten out of ten, and
+recorded a perfect result that meant nothing — a set you chose yourself and
+halved is not a measurement. Write the count into the record, and if you ran
+fewer, say so in those words rather than reporting a score.
+
 Save them as JSON, ten that should trigger and ten that should not:
 
 ```json
@@ -119,3 +125,41 @@ failure as claiming a build passes because the file looks right.
 
 State what you actually ran. "Tested on two tasks, both passed, the third was not
 tried" is a stronger claim than "works", because it can be checked.
+
+## Six traps this protocol walked into itself
+
+Found by running it live rather than reading it. Each one is a way the protocol
+fails quietly while appearing to succeed.
+
+**Assertions that nothing evaluates.** The `assertions` list in
+`eval_metadata.json` is worthless if a person or an agent reads the two outputs
+and decides. If a claim can be checked by a command, write the command, not the
+claim. "The report cites a line that exists" is a script; "the report is
+accurate" is a wish.
+
+**A verdict that flips and both halves defended.** A live pair produced `MATCH`
+in one iteration and `MISMATCH` in the next, on the same input, and the notes
+called both defensible. That is not a tie, it is an undecided method. When two
+runs disagree, the disagreement is the finding: fix the rule that allowed it, or
+record the input as one the skill cannot decide and say which.
+
+**The measuring done by the agent that is being measured.** A grader that reads
+its own output grades its own intent. Where a claim matters, hand the artefact to
+a fresh agent that did not write it, or to a script.
+
+**The record kept inside the thing it describes.** One run wrote its evaluation
+into `references/` inside the skill; the other wrote it outside. The protocol did
+not say which, and both readings are defensible, which means it should. Keep the
+evidence **outside** the skill folder: an agent loading the skill does not need
+your test transcripts, and they count against the size the skill is allowed.
+
+**A gate that can be passed by adding a line.** A linter that demands at least as
+many suggested edits as mismatches is satisfied by one extra bullet per mismatch,
+correct or not. Any gate you build, test against a deliberately bad artefact
+first and keep the failing run: a gate never seen to reject anything has not been
+shown to work.
+
+**The skill's own rules applied to someone else's skill.** A skill authored under
+this protocol shipped a README-like filename inside `scripts/` and the bundled
+checker caught it. Run the checker on what you produced before you run it on
+anything else.

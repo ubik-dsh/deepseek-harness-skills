@@ -21,11 +21,12 @@ this one, written so it can be **checked** rather than believed.
 
 | | |
 |---|---|
+| **Measured on a live harness, not argued** | Ten claims about how a harness registers a skill were each turned into a probe file and read back from a live DSH session's own catalogue. All ten confirmed. Two of them contradicted what this skill had been asserting, and it was rewritten. The run is published: [docs/EVALUATION.md](docs/EVALUATION.md). |
 | **Measured, and honest about the gaps** | `create-a-skill` was assembled by collecting every skill about authoring skills published in a repository with **5000+ stars** — twelve of them, from `anthropics/skills` (177k), `ComposioHQ/awesome-claude-skills` (75k), `sickn33/agentic-awesome-skills` (46k) and others — reading them, and keeping what they agreed on. Where a practice was rare but right, it is kept and named. |
 | **It ships a tool, not only text** | `scripts/check-skill.py` validates name against folder, description shape, size budgets, absolute paths, ageing phrases, stray human-facing files and unresolved references. Standard library only, so it runs anywhere Python does. |
 | **It says what it cannot prove** | The checker reports a judgement call as a warning and only fails on a fact. Writing it produced **three false positives in the skill it ships with** — one matched `scripts/superscripts` inside `subscripts/superscripts` — and the fix is in the code with a comment saying why the guard is load-bearing. |
 | **Portable by construction** | The body assumes no harness. Where a harness looks for `SKILL.md` is not part of the standard, so those facts live in a reference file covering DSH's seven roots and precedence ranks, plus the conventions of other tools. |
-| **Evaluation, not demonstration** | Running a task once and getting a good-looking result proves nothing. The bundled protocol runs **with and without** the skill in the same turn, keeps both outputs, and compares — which is the only way to know what a skill actually changed. |
+| **Evaluation, not demonstration** | Running a task once and getting a good-looking result proves nothing. The bundled protocol runs **with and without** the skill in the same turn, keeps both outputs, and compares — which is the only way to know what a skill actually changed. It has been run once, on one task, and what it changed is in [docs/EVALUATION.md](docs/EVALUATION.md), including the six traps it walked into. |
 
 The one thing this repository does **not** claim: that any of it is a new idea.
 The best parts were learned from other people's work, and the sources are named
