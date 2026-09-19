@@ -367,6 +367,37 @@ def main() -> int:
         expect("a quoted counter-example date is skipped", "will age badly" not in warnings, warnings[:90])
 
     print()
+    # ── a colon in a value, and a value carried onto the next line ────────────
+    #
+    # The fault that made two skills invisible: the file parsed, the name matched,
+    # every other check passed, and the skill was not in the catalogue at all.
+    # Found by a fresh agent with no context, which is the only reader who could.
+    def _frontmatter_case(document: str) -> bool:
+        """True when the checker accepts a document it is handed verbatim.
+
+        It cannot go through fixture(), which builds the frontmatter for you and so
+        cannot produce the faults under test.
+        """
+        folder = root / f"frontmatter-case-{len(PASSED) + len(FAILED)}"
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "SKILL.md").write_text(document, encoding="utf-8")
+        return not check_skill.check(folder).failures
+
+    expect(
+        "a colon inside a frontmatter value fails",
+        not _frontmatter_case(
+            "---\nname: case\n"
+            "description: A skill carrying a colon: like this one.\n---\n\n# Body\n"),
+        "DSH declines to register such a skill and reports nothing",
+    )
+    expect(
+        "a frontmatter value carried onto another line fails",
+        not _frontmatter_case(
+            "---\nname: case\ndescription: A value that carries on\n"
+            "  onto the next line.\n---\n\n# Body\n"),
+        "a continuation ends the mapping",
+    )
+
     print(f"{len(PASSED)} passed, {len(FAILED)} failed")
     for label in FAILED:
         print(f"  failed: {label}")

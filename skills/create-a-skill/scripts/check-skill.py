@@ -210,6 +210,79 @@ def locate_skill_file(path: Path, allow_flat: bool = True) -> tuple[Path | None,
     return None, False
 
 
+def frontmatter_value_faults(text: str) -> list[tuple[int, str]]:
+    """Colons and continuations inside frontmatter values.
+
+    Both faults have the same effect and neither is visible in an editor. A value
+    containing `: ` is read as a nested mapping by a YAML parser; a value that carries
+    on past the end of its line is read as the end of the mapping. DSH parses the
+    frontmatter, gets something that is not a plain mapping, and declines to register
+    the skill without saying anything.
+
+    The first version of this reported every nested key as a continuation, because a key
+    inside `metadata:` is indented too. Indentation is not the fault; an indented line
+    that is not a `key: value` is.
+    """
+    faults: list[tuple[int, str]] = []
+    lines = text.split("\n")
+    if not lines or lines[0].rstrip("\r") != "---":
+        return faults
+
+    closing = None
+    for index in range(1, len(lines)):
+        if lines[index].rstrip("\r") == "---":
+            closing = index
+            break
+    if closing is None:
+        return faults
+
+    key_re = re.compile(r"^(\s*)([A-Za-z_][A-Za-z0-9_-]*):(.*)$")
+    block_markers = ("|", ">", "|-", ">-", "|+", ">+")
+    in_block = False
+
+    for index in range(1, closing):
+        line = lines[index].rstrip("\r")
+        stripped = line.strip()
+        if stripped == "" or stripped.startswith("#"):
+            continue
+        indent = len(line) - len(line.lstrip(" \t"))
+
+        if in_block:
+            if indent > 0:
+                continue
+            in_block = False
+
+        match = key_re.match(line)
+        if match is None:
+            if indent > 0:
+                faults.append((
+                    index + 1,
+                    f"value continues onto another line - `{stripped[:38]}`. Keep every "
+                    "frontmatter value on one line; prose belongs in the body",
+                ))
+            else:
+                faults.append((index + 1, f"no colon - `{stripped[:38]}` is not a key"))
+            continue
+
+        value = match.group(3).strip()
+        if value in block_markers:
+            in_block = True
+            continue
+
+        masked = value
+        for begin, finish in reversed(quoted_ranges(value)):
+            masked = masked[:begin] + " " * (finish - begin) + masked[finish:]
+        if ": " in masked:
+            faults.append((
+                index + 1,
+                f"`{match.group(2)}` contains a colon inside its value. A YAML reader "
+                "takes it as a nested mapping and DSH then declines to register the "
+                "skill, reporting nothing. Use a dash",
+            ))
+
+    return faults
+
+
 def check(path: Path) -> Result:
     result = Result(path)
     skill_file, is_flat = locate_skill_file(path)
@@ -236,6 +309,18 @@ def check(path: Path) -> Result:
     if not front:
         result.fail("no YAML frontmatter delimited by --- at the top of the file")
         return result
+
+    # ── frontmatter values that a reader will not treat as values ─────────
+    # Found by a fresh agent, after every other check here had passed: a colon
+    # inside a value, and a value continued onto the next line. DSH reads the
+    # frontmatter with a YAML parser and then silently declines to register the
+    # skill when the mapping does not come back whole. The file parses, the name
+    # matches, and `skill <name>` answers "unknown or no longer available".
+    #
+    # This is a raw-text check on purpose. The parser is the thing being
+    # mistrusted, so asking it whether it understood the file answers nothing.
+    for line_number, complaint in frontmatter_value_faults(text):
+        result.fail(f"frontmatter line {line_number}: {complaint}")
 
     # ── name ──────────────────────────────────────────────────────────────
     # The standard requires the name to match its directory. DSH does not
