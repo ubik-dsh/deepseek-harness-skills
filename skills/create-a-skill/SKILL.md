@@ -150,6 +150,29 @@ Name the inputs the skill expects, and say what to do when one is missing. A
 skill that assumes a file, a credential or a network read it never mentions fails
 on first use and looks like the agent's fault.
 
+## When the test is outside the machine
+
+Some tasks have their success test in a place the agent cannot reach: a hand on a
+mouse, a cable in a socket, a person's judgement. The temptation is to write the
+skill anyway and make step 1 out of words — *"the user is comfortable with it"* —
+which produces a skill that can never be finished and never be failed.
+
+Do not look for a better adjective. **Build a small world with the same shape as
+the real one, and score it.** Not a mock of the hardware — a model of the decision
+the skill is about. Then the agent has a number, and a number repeats.
+
+Three things make such a world worth having, and each was measured on a real
+trainer built this way:
+
+- the agent sees a **picture**, never the coordinates, or it is reading an answer key;
+- there is a **reaction delay**, because the trainee acts on stale information —
+  without it the measured accuracy was 100% at every difficulty and nothing at all
+  was tested;
+- **difficulty increases**, so perception can be told apart from prediction.
+
+The pattern, the measured table, and the six wrong versions it took to get there:
+[references/simulating-a-test.md](references/simulating-a-test.md).
+
 ## Prove it before you finish
 
 1. **Does it load?** Write the file, then check the session's skill catalogue. A
