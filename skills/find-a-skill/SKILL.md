@@ -56,30 +56,30 @@ deliberately noisy: [references/untrusted-content.md](references/untrusted-conte
 
 ---
 
-## Step 0 — read the store before searching anything
+## Step 0 — if this harness keeps a store of finds, read it first
 
-There is a store of skills already found and judged: every entry carries its source, its
-description, what the hearing decided, the rating, and the date it entered. **It is read
-before any search**, and this is not an optimisation — it is the reason the store exists.
+**Skip this step entirely if there is no store.** Most harnesses have none, nothing below
+depends on one, and a scout that refuses to run without it is a scout that only works on
+the machine it was written on.
 
-```
-$DSH_HOME/skill-catalogue.json      the finds, as the panel shows them
-```
+Some harnesses keep a store of skills already found and judged — source, description, the
+hearing's verdict, the rating, and the date it entered. **In DSH that is
+`$DSH_HOME/skill-catalogue.json`, written by the `skill-scout` plugin.** Look for it. If
+it is there, read it before searching anything; if it is not, go straight to Step 1.
 
-Three rules:
+When it does exist, three rules:
 
-1. **Read it first, always.** Combing GitHub again for something already in the store
-   spends the whole budget to learn what was already known.
-2. **Nothing enters it without a verdict.** A row is written only after a hearing, so a
-   match in the store is a *judged* match — trust it as far as its rating's case count
-   warrants, and no further.
-3. **A match is not an answer.** The store says what was decided and when. If the entry
-   is old, or the repository has moved on, re-check before relying on it; the date is
-   there precisely so that stale entries are visible as stale rather than remembered as
-   fresh.
+1. **Read it first.** Combing GitHub again for something already in the store spends the
+   whole budget to learn what was already known.
+2. **Nothing enters it without a verdict**, so a match in it is a *judged* match — trust
+   it as far as its rating's case count warrants, and no further. A store that accepted
+   unjudged rows would be a list of rumours, and this one does not.
+3. **A match is not an answer.** The store says what was decided and when. If the entry is
+   old, or the repository has moved on, re-check before relying on it; the date is there
+   so that stale entries are visible as stale rather than remembered as fresh.
 
-Only when the store has nothing does the search go out — to the roots this harness
-resolves, and then to GitHub.
+Only when the store has nothing — or when there is no store — does the search go out: to
+the roots this harness resolves, and then to GitHub.
 
 ## Step 1 — Notice that this is the moment
 
