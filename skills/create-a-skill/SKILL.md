@@ -171,7 +171,12 @@ trainer built this way:
 - **difficulty increases**, so perception can be told apart from prediction.
 
 The pattern, the measured table, and the six wrong versions it took to get there:
-[references/simulating-a-test.md](references/simulating-a-test.md).
+[references/simulating-a-test.md](references/simulating-a-test.md). Three lessons
+from the adversarial version are there too, and two of them apply to any rule you
+write, not only to simulations: **put something against your rule that wins by
+exploiting it**, because the seam is where it clamps and a tester who follows the
+rules never finds it; and **measure what you can, not what you want to know**,
+which is the one mistake behind every broken learner in that file.
 
 ## Prove it before you finish
 

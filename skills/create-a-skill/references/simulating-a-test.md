@@ -107,3 +107,54 @@ calibration, no warm-up and no knowledge of the world.
 
 **None of the six was found by thinking.** Every one was found by running the thing
 and reading the number, which is the same lesson as everywhere else in this skill.
+
+## Three things the arena taught that the trainer could not
+
+The trainer checks one trainee against a world. The arena puts two agents against
+each other — one owns the click, one owns the target — and three lessons came out
+of it that a single trainee cannot produce.
+
+### Put something adversarial against your rule, or you will not see its seams
+
+The evader was given the last crosshair it saw and nothing else. It learned to sit
+near a wall. **That strategy is written nowhere in it.** It is a consequence of the
+rules: the clicker's aim is clamped to the field, so a target in a corner cannot be
+aimed past, and the evader found the exploit because it was scored for finding it.
+
+Every rule has a seam where it clamps, truncates or refuses, and something will
+live there. A tester who follows the rules never finds it; an opponent who is
+rewarded for breaking them finds it immediately. If you want to know where your
+specification is weak, do not review it — **put something against it that wins by
+exploiting it.**
+
+### A learner that forgets its past selves is twitching
+
+The first version of the rewrite chose a new shape at random each generation. It
+looked like evolution and was a random walk: an agent that changes shape and never
+remembers which shape worked cannot improve, only move. Adding a decaying score per
+shape — kept across generations, shown on screen — turned the rewrite into a
+decision, and made the reason for it visible: *mode read -> patient*.
+
+Self-modification needs a memory of the outcomes of past selves. Without it the
+output is motion.
+
+### Measure what you can, not what you want to know
+
+All six failures of the trainee were one mistake in six costumes: treating an
+observation as a measurement of the thing that mattered.
+
+| Wanted to know | Actually observed | Consequence |
+|---|---|---|
+| the target's speed | displacement between two frames, which includes the delay | correction four times too large |
+| how wrong the lead was | hit or miss | diverged, because a miss has many causes |
+| whether this was a teleport | how fast it moved | every frame of a moving target read as a jump |
+| what "usual" means for a static target | the first few frames | learned a respawn |
+
+Each fix was the same move: **stop reaching for the quantity you want and find one
+you can actually measure that closes the same gap.** The working controller measures
+the distance between where it aimed and where the target turned out to be — which
+needs no knowledge of speed or delay — and drives that to zero.
+
+This is the same discipline as *no completion claim without fresh evidence*, one
+level down. There it is about what you tell the user. Here it is about what your
+code is allowed to believe.
