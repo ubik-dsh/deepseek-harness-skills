@@ -233,6 +233,31 @@ def main() -> int:
         expect("a quoted path to a file that is not there is still reported",
                "missing.py" in failures, failures[:90] or "not reported")
 
+        # Suppressing prose mentions turned the checker blind to bracketed
+        # references, which is how a real one is often written.
+        path = fixture(root, "bracketed-missing", "\nSee <references/absent.md> for detail.\n")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a bracketed path to a file that is not there is reported",
+               "absent.md" in failures, failures[:90] or "not reported")
+
+        path = fixture(root, "encoded-link", "\nSee [the doc](references/my%20doc.md) first.\n")
+        (path / "references").mkdir(exist_ok=True)
+        (path / "references" / "my doc.md").write_text("content\n", encoding="utf-8")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a percent-encoded link target resolves against the real file",
+               "does not exist" not in failures, failures[:100])
+
+        path = fixture(root, "other-absolute-roots",
+                       "\n/opt/tool/bin, /srv/data and C:\\tools are all absolute.\n")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("/opt and /srv are recognised as absolute",
+               all(p in failures for p in ("/opt/", "/srv/")), failures[:110] or "none recognised")
+
+        path = fixture(root, "tilde-is-portable", "\nInstall to ~/.agents/skills for every project.\n")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a tilde path is not treated as machine-specific",
+               "absolute path" not in failures, failures[:100])
+
         path = fixture(root, "script-without-suffix", "\nRun `scripts/helper` to begin.\n")
         (path / "scripts").mkdir(exist_ok=True)
         (path / "scripts" / "helper.py").write_text("print('ok')\n", encoding="utf-8")

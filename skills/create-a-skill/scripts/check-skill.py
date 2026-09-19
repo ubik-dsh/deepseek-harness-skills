@@ -26,6 +26,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MAX_NAME = 64
@@ -75,7 +76,14 @@ PLACEHOLDER = re.compile(r"(<[^>]*>|\$\{?[A-Za-z_]|\{\{|%s|\{name\})")
 # reference paths: without it the `e:\` inside `file:\/\/documents` reads as an
 # absolute Windows path, and a JavaScript URI example is reported as a portability
 # defect. A drive letter starts a token or it is not a drive letter.
-ABSOLUTE_PATH = re.compile(r"(?<![A-Za-z0-9])(?:[A-Za-z]:\\|/home/|/Users/|/root/|/var/|/etc/)")
+# `~` is deliberately absent: it is portable shorthand for the user's home and
+# resolves on every machine, which is the opposite of the defect this looks for.
+# `C:\Users\admin` and `/home/ci` are the ones that only work where they were
+# written.
+ABSOLUTE_PATH = re.compile(
+    r"(?<![A-Za-z0-9])(?:[A-Za-z]:\\|/home/|/Users/|/root/|/var/|/etc/|/opt/|/srv/"
+    r"|\\\\[A-Za-z0-9._-]+\\)"
+)
 
 TIME_SENSITIVE = re.compile(
     r"\b(as of (q[1-4]|20\d\d)|in (january|february|march|april|may|june|july|"
@@ -90,12 +98,16 @@ UNEXPECTED_BINARY = re.compile(r"\.(pyc|pyo|exe|dll|so|dylib|class|jar|bin)$", r
 # `references/a/b/c.md`, or "As of Q4 2024" rots.
 NEGATION = re.compile(r"\b(never|avoid|don't|do not|not |instead|rots?|bad|wrong|anti-?pattern|counter-?example)\b", re.IGNORECASE)
 
-# A quoted span is where an example lives. The first version of this file kept a
-# line-level skip instead, which silently discarded real absolute paths on any
-# line that happened to contain the word "not". Suppression is now narrow in two
-# directions at once: the match must be inside backticks AND the line must read
-# as a counter-example. Anything else is reported.
-QUOTED = re.compile(r"`[^`]*`")
+# A quoted or bracketed path is where an example lives. Suppression is narrow in
+# two directions at once: the match must be inside backticks or angle brackets
+# AND the line must read as a counter-example. Anything else is reported.
+#
+# Bare prose is deliberately not collected as a reference. "Better scripts/tools
+# that produced better output?" is a sentence, and reading it as a claim about a
+# file made the checker cry wolf on somebody else's skill. Angle brackets are
+# included because `<references/absent.md>` is how a real reference is often
+# written, and leaving those out made the checker blind in the other direction.
+QUOTED = re.compile(r"`[^`]*`|<[^<>\s]*[/\\][^<>\s]*>")
 
 
 def quoted_ranges(line: str) -> list[tuple[int, int]]:
@@ -318,9 +330,10 @@ def check(path: Path) -> Result:
             for match in REFERENCE.finditer(line):
                 if example and inside(match.start(), ranges):
                     continue
-                # Only a quoted or linked path is a claim about a file. Prose
-                # that happens to contain `scripts/tools` - "Better scripts/tools
-                # that produced better output?" - is a sentence, not a reference.
+                # Only a quoted, bracketed or linked path is a claim about a
+                # file. Prose that happens to contain `scripts/tools` is a
+                # sentence, and treating it as a reference made the checker
+                # report a broken link in a skill that had none.
                 if inside(match.start(), ranges):
                     candidates.add(match.group(0).rstrip(".,;:)"))
             for match in MARKDOWN_LINK.finditer(line):
@@ -356,6 +369,13 @@ def resolves(base: Path, root: Path, candidate: str) -> bool:
             return True
         for suffix in (".py", ".sh", ".mjs", ".js", ".md", ".json", ".yaml", ".yml", ".txt"):
             if target.with_suffix(suffix).exists():
+                return True
+    # A markdown link target is URL-encoded; a file on disk is not. `my%20doc.md`
+    # in the text has to be matched against the `my doc.md` that exists.
+    decoded = unquote(candidate)
+    if decoded != candidate:
+        for target in (base / decoded, root / decoded):
+            if target.exists():
                 return True
     return False
 
