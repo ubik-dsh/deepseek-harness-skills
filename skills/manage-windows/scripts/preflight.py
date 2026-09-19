@@ -99,10 +99,59 @@ def is_elevated() -> bool:
         return False
 
 
+def pid_of(handle: int) -> int:
+    """The process that owns a window."""
+    pid = wintypes.DWORD()
+    user32.GetWindowThreadProcessId(handle, ctypes.byref(pid))
+    return int(pid.value)
+
+
+def check_point(spec: str | None, handle: int, box: Rect,
+                failures: list[str]) -> int | None:
+    """Fourth and fifth checks: the point is inside, and the window under it agrees."""
+    if not spec:
+        return None
+    try:
+        x_text, y_text = spec.split(",")
+        x, y = int(x_text), int(y_text)
+    except ValueError:
+        print(f"  --point must be X,Y, not {spec!r}", file=sys.stderr)
+        return 2
+    inside = box.left <= x < box.right and box.top <= y < box.bottom
+    print(f"  point     {x},{y}  inside the target: {inside}")
+    if not inside:
+        failures.append(f"the point {x},{y} is not inside the target window")
+    under = user32.WindowFromPoint(wintypes.POINT(x, y))
+    root = user32.GetAncestor(under, GA_ROOT) if under else 0
+    print(f"  under it  {root:#010x}  {window_title(root)[:48]!r}")
+    if root != handle:
+        failures.append(
+            f"the window at {x},{y} is {window_title(root)!r}, not the target")
+    return None
+
+
+def report(failures: list[str]) -> int:
+    print("")
+    if failures:
+        print(f"  FAIL — {len(failures)} check(s) did not pass:", file=sys.stderr)
+        for one in failures:
+            print(f"    - {one}", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("  Do not adjust and try again. Re-find the target by identity, re-measure "
+              "it, and re-check.", file=sys.stderr)
+        return 1
+    print("  PASS — the target is where the input will land.")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--title", help="a fragment of the target window's title")
     parser.add_argument("--point", help="the coordinate about to be pressed, as X,Y")
+    parser.add_argument("--pid", type=int,
+                        help="the process id the target must belong to; given, the window is matched by identity rather than by title")
+    parser.add_argument("--allow-title-only", action="store_true",
+                        help="proceed although the target was matched by title alone")
     parser.add_argument("--list", action="store_true", help="list visible top-level windows")
     args = parser.parse_args()
 
@@ -116,6 +165,37 @@ def main() -> int:
 
     failures: list[str] = []
 
+    if args.pid is not None:
+        owned = [pair for pair in find_windows(args.title or "") if pid_of(pair[0]) == args.pid]
+        print(f"  target: pid {args.pid} — {len(owned)} window(s) belong to it")
+        for handle, title in owned[:8]:
+            print(f"    {handle:#010x}  {title[:64]}")
+        if not owned:
+            print("", file=sys.stderr)
+            print(f"  FAIL  no window titled {args.title!r} belongs to pid {args.pid}.",
+                  file=sys.stderr)
+            print("        The process may have exited, or the window belongs to something "
+                  "else that happens to share the title.", file=sys.stderr)
+            return 2
+        handle, title = owned[0]
+        box = rect_of(handle)
+        foreground = user32.GetForegroundWindow()
+        print("")
+        print(f"  window    {handle:#010x}  {title!r}")
+        print(f"  pid       {args.pid}  (matched by identity, not by appearance)")
+        print(f"  rect      {box.left},{box.top} → {box.right},{box.bottom}  "
+              f"({box.right - box.left}x{box.bottom - box.top})")
+        print(f"  dpi       {dpi_of(handle)}")
+        print(f"  elevated  {is_elevated()}")
+        if foreground != handle:
+            failures.append(
+                f"the target is not the foreground window (foreground is "
+                f"{window_title(foreground)!r})")
+        point_result = check_point(args.point, handle, box, failures)
+        if point_result is not None:
+            return point_result
+        return report(failures)
+
     matches = find_windows(args.title)
     print(f"  target: {args.title!r} — {len(matches)} window(s) match")
     for handle, title in matches[:8]:
@@ -127,6 +207,12 @@ def main() -> int:
         print("        A window that does not exist cannot be focused, and a click sent "
               "anyway lands on whatever is.", file=sys.stderr)
         return 2
+
+    if not args.allow_title_only:
+        failures.append(
+            "the target was matched by title alone, which is how a window belonging to "
+            "something else gets chosen — pass --pid to match by identity, or "
+            "--allow-title-only to accept the risk deliberately")
 
     if len(matches) > 1:
         failures.append(

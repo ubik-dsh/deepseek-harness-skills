@@ -131,7 +131,25 @@ land.** Four checks, all cheap, all mechanical:
    second earlier;
 3. the pointer is inside the window's rectangle, after the move and before the press;
 4. the coordinates came from a measurement of **this** window, not from a screenshot of
-   another one or from a guess.
+   another one or from a guess;
+5. **the window is the one you created**, by process id or handle — not merely one whose
+   title matches.
+
+```bash
+python scripts/preflight.py --pid 1234 --title "Notepad" [--point X,Y]
+```
+
+**Pass `--pid`.** Matching a window by its title finds a window that *looks* like the target,
+and that is not the same thing. During the trial that produced this skill, a run aimed at a
+freshly opened Notepad matched `.gitverse-token - Notepad` — a document the user had open,
+holding a credential — because one window contained the word and one match is all a substring
+search needs. Every other check passed. Nothing was typed only because the send call was
+failing for an unrelated reason.
+
+So the fifth check is **identity, not appearance**: hold the process or the handle of the window
+you created, and verify the window still belongs to it. Then pass `--pid` and let the check
+enforce it. Without it the preflight refuses, because a title match is a guess that has been
+right often enough to be dangerous.
 
 ```bash
 python scripts/preflight.py --title "Notepad" [--point X,Y]
@@ -203,7 +221,9 @@ it. Check the current state rather than guessing at it:
 - **Typing that produces the wrong text** under a non-Latin layout, because virtual keys were
   scanned through the current layout.
 - **A stale coordinate** used after the layout moved.
-- **An elevated agent** that could have asked and did not.
+- **A window matched by title rather than by identity**, which is how a run aimed at a
+  fresh document reaches one the user had open. The send call failing for an unrelated
+  reason is the only thing that stopped it.
 
 ## What this skill does not cover
 
