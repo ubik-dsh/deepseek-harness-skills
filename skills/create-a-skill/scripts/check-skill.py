@@ -64,11 +64,11 @@ FORBIDDEN_ANYWHERE = re.compile(
     re.IGNORECASE,
 )
 
-# `(?<![A-Za-z0-9])` is load-bearing: without it "subscripts/superscripts"
-# matches `scripts/superscripts`, and the checker reports a broken link in a
-# skill that has none. A word boundary is the difference between a finding and
-# noise.
-REFERENCE = re.compile(r"(?<![A-Za-z0-9])(?:references|scripts|assets)/[A-Za-z0-9._/-]+")
+# No spaces in the class, deliberately. Allowing them made the pattern swallow
+# whole command lines - `scripts/accept_changes.py in.docx out.docx` was reported
+# as a missing file. A path containing a literal space is handled at resolution
+# time instead, by trying the whole quoted span as a fallback.
+REFERENCE = re.compile(r"(?<![A-Za-z0-9])(?:references|scripts|assets)/[A-Za-z0-9._%/-]+")
 MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)#\s]+)")
 PLACEHOLDER = re.compile(r"(<[^>]*>|\$\{?[A-Za-z_]|\{\{|%s|\{name\})")
 
@@ -76,12 +76,14 @@ PLACEHOLDER = re.compile(r"(<[^>]*>|\$\{?[A-Za-z_]|\{\{|%s|\{name\})")
 # reference paths: without it the `e:\` inside `file:\/\/documents` reads as an
 # absolute Windows path, and a JavaScript URI example is reported as a portability
 # defect. A drive letter starts a token or it is not a drive letter.
-# `~` is deliberately absent: it is portable shorthand for the user's home and
-# resolves on every machine, which is the opposite of the defect this looks for.
-# `C:\Users\admin` and `/home/ci` are the ones that only work where they were
-# written.
+# The rule catches paths that only resolve where they were written: a user's home
+# directory, a specific mount, a drive letter, a network share. Standard system
+# locations are deliberately absent - `/tmp`, `/usr` and `/bin` mean the same
+# thing on every Unix and flagging them produced noise in other people's skills.
+# `//server/share` is also absent because it is indistinguishable from the `//`
+# in `https://` and matched every URL in every document.
 ABSOLUTE_PATH = re.compile(
-    r"(?<![A-Za-z0-9])(?:[A-Za-z]:\\|/home/|/Users/|/root/|/var/|/etc/|/opt/|/srv/"
+    r"(?<![A-Za-z0-9])(?:[A-Za-z]:\\|/home/|/Users/|/root/|/mnt/|/srv/|/opt/"
     r"|\\\\[A-Za-z0-9._-]+\\)"
 )
 
@@ -316,9 +318,12 @@ def check(path: Path) -> Result:
         except OSError:
             continue
         candidates: set[str] = set()
+        spans: set[str] = set()
         for index, line in enumerate(body_text.splitlines(), 1):
             ranges = quoted_ranges(line)
             example = NEGATION.search(line) is not None
+            for start, end in ranges:
+                spans.add(line[start:end].strip("`<>").strip().rstrip(".,;:)"))
             for match in ABSOLUTE_PATH.finditer(line):
                 if example and inside(match.start(), ranges):
                     continue
@@ -350,6 +355,12 @@ def check(path: Path) -> Result:
             if resolves(base, path, candidate):
                 if candidate.count("/") > 1:
                     result.warn(f"{where}: `{candidate}` is nested more than one level deep")
+                continue
+            # The pattern stops at a space, so `references/my doc.md` arrives here
+            # as `references/my`. Before reporting it, try any quoted span on the
+            # page that begins with it: if the longer form exists, the path is
+            # real and only the splitting was wrong.
+            if any(span.startswith(candidate) and resolves(base, path, span) for span in spans):
                 continue
             result.fail(f"{where}: referenced file does not exist: `{candidate}`")
 

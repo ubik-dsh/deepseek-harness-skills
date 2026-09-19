@@ -258,6 +258,59 @@ def main() -> int:
         expect("a tilde path is not treated as machine-specific",
                "absolute path" not in failures, failures[:100])
 
+        path = fixture(root, "more-roots", "\nCheck /mnt/data, /opt/tool and /srv/share.\n")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("/mnt, /opt and /srv are recognised as machine-specific",
+               all(p in failures for p in ("/mnt/", "/opt/", "/srv/")), failures[:110] or "none recognised")
+
+        # Two over-corrections, both caught by running the checker over other
+        # people's skills: a `//` UNC pattern matched every https:// URL, and
+        # flagging /tmp and /usr produced noise on standard system paths.
+        path = fixture(root, "urls-are-not-paths", "\nSee https://example.com/docs and http://x.test/a for detail.\n")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a URL is not mistaken for a UNC path", "absolute path" not in failures, failures[:100])
+
+        path = fixture(root, "system-paths-are-portable", "\nWrite to /tmp/scratch and read /usr/share/doc.\n")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("standard system paths are not treated as machine-specific",
+               "absolute path" not in failures, failures[:100])
+
+        path = fixture(root, "command-line-is-not-a-path", "\nRun `scripts/accept.py in.docx out.docx` to convert.\n")
+        (path / "scripts").mkdir(exist_ok=True)
+        (path / "scripts" / "accept.py").write_text("print('ok')\n", encoding="utf-8")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a quoted command line does not become a bogus file name",
+               "in.docx" not in failures, failures[:110] or "swallowed the arguments")
+
+        print("length limits")
+        # The description cap was enforced but nothing proved it was enforced:
+        # raising it to a million still left the suite green.
+        long_description = "x" * 1025
+        path = fixture(root, "long-description", "", name="long-description")
+        (path / "SKILL.md").write_text(
+            f"---\nname: long-description\ndescription: {long_description}\n---\n\nBody.\n", encoding="utf-8")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a description over 1024 characters fails", "1024" in failures, failures[:100] or "not reported")
+
+        path = fixture(root, "long-name", "", name="a" * 65)
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a name over 64 characters fails", "64" in failures, failures[:100] or "not reported")
+
+        print("paths with a space or an encoding")
+        path = fixture(root, "space-in-backticks", "\nRead `references/my doc.md` first.\n")
+        (path / "references").mkdir(exist_ok=True)
+        (path / "references" / "my doc.md").write_text("content\n", encoding="utf-8")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a backticked path containing a literal space resolves",
+               "does not exist" not in failures, failures[:100])
+
+        path = fixture(root, "encoded-in-backticks", "\nRead `references/my%20doc.md` first.\n")
+        (path / "references").mkdir(exist_ok=True)
+        (path / "references" / "my doc.md").write_text("content\n", encoding="utf-8")
+        failures = " ".join(check_skill.check(path).failures)
+        expect("a backticked percent-encoded path resolves",
+               "does not exist" not in failures, failures[:100])
+
         path = fixture(root, "script-without-suffix", "\nRun `scripts/helper` to begin.\n")
         (path / "scripts").mkdir(exist_ok=True)
         (path / "scripts" / "helper.py").write_text("print('ok')\n", encoding="utf-8")
