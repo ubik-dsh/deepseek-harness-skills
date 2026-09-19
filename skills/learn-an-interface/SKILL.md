@@ -1,6 +1,6 @@
 ---
 name: learn-an-interface
-description: Drive a real graphical interface from an agent — a window, a ribbon, a dialog, a canvas — and learn its coordinates instead of hard-coding them. Covers when this is the wrong answer, the input calls that actually reach a modern application, how to measure a window so clicks land, a small bandit that finds the unknown detail and remembers it, and the measured traps that make a working automator report success while doing nothing. Ships a runnable learning loop. Use when a task needs a program driven and it has no API, no command-line tool, no scriptable interface and no readable file format; when clicks land on the wrong thing or nowhere; when a keyboard or screenshot tool appears to do nothing; when a GUI step must be repeatable without a human hand.
+description: Drive a real graphical interface from an agent — a window, a ribbon, a dialog, a canvas — reaching it through the accessibility tree where one exists and learning its coordinates where none does, instead of hard-coding them. Covers the order of preference (API, CLI, file format, library, UI Automation / AX / AT-SPI, macro, and only then pixels), the input calls that actually reach a modern application, how to measure a window so clicks land, a small bandit that finds the unknown detail and remembers it, and the measured traps that make a working automator report success while doing nothing. Ships a runnable learning loop. Use when a task needs a program driven and it has no API, no command-line tool, no scriptable interface and no readable file format; when choosing between UI Automation and screenshot-and-click; when clicks land on the wrong thing or nowhere; when a keyboard or screenshot tool appears to do nothing; when a GUI step must be repeatable without a human hand.
 license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text. The script in scripts/ needs Python 3.8+ with Pillow, and drives Windows; the method itself is platform-neutral and the traps are documented so they can be recognised elsewhere.
 metadata:
@@ -9,6 +9,7 @@ metadata:
   status: first formulation, to be sharpened by use
   measured_on: Windows 11, Paint (Microsoft Store build), two monitors at 2560x1440 and 1920x1440
   verified_against: DSH 0.1.5-rc.2
+  borrowed_from: youngjunning/windows-app-automation and affaan-m/ECC (UI Automation with AutomationId selectors), BanmaXM/operate-ui-by-screenshot (an interface ladder that starts at API), alchaincyf/huashu-mac-use (the macOS side) — found by a GitHub survey of 105 repositories shipping a SKILL.md for interface control, and kept only after a live trial on Paint confirmed the tree reaches the tools and the palette by name
   sibling: design-a-reward — the reward this skill feeds is a subject of its own
 ---
 
@@ -34,15 +35,42 @@ it always can — but "is there a supported way in?" Stop at the first yes:
 | a command-line tool? | use it |
 | is it a file format you can read and write? | do that |
 | a library for it? | use that |
+| **does it expose an automation tree — UI Automation, AX, AT-SPI?** | **use it** |
 | can the application script itself — macro, plugin, config, URL scheme? | use that |
 | **nothing, and the only way in is pixels and clicks** | continue |
 
-The order is about brittleness, not purity. An automator is coupled to things
+**The automation tree is the rung this skill was first written without, and a survey
+of what already exists on GitHub is what exposed the gap.** It goes above pixels
+because it is a documented, platform-versioned interface, and above macros because it
+is uniform across applications. Measured on Paint:
+
+```
+Pencil   automationId='PencilTool'   supports Toggle   Off -> On, no cursor
+Colors   Black, Gray, Dark red, Red, Orange, Yellow, Green, Turquoise, Indigo
+Panes    only ScrollViewer - the drawing surface is NOT in the tree
+```
+
+So a palette is **a list of named colours**, not a row of pixels — an earlier session
+measured that palette's pitch by scanning for it (24, not 28.6, after getting green
+where yellow was wanted) when the names were there all along. And a canvas is
+custom-drawn, so a stroke still needs coordinates. The boundary is clean: tools, menus,
+colours, values and list rows through the tree; **drawing and dragging through
+coordinates**.
+
+Credit: the practice comes from `youngjunning/windows-app-automation` and
+`affaan-m/ECC` (UI Automation with `AutomationId` selectors), `BanmaXM/operate-ui-by-screenshot`
+(a ladder that starts at API rather than at screenshots) and `alchaincyf/huashu-mac-use`
+for the macOS side. Full trial, code and caveats:
+[references/accessibility-first.md](references/accessibility-first.md).
+
+The order overall is about brittleness, not purity. An automator is coupled to things
 nobody promised to keep: the **version** (a ribbon gets rearranged and every
 coordinate silently means something else), the **theme and display scale**, the
 **keyboard layout**, the **monitor count**, and **whatever window is on top**.
 
-All five broke this work inside one afternoon. An API has none of them.
+All five broke this work inside one afternoon. An API has none of them, and an
+automation tree has almost none — it survives a move, a resize and a second monitor,
+which a coordinate does not.
 
 **Write the refusal into the skill you are building.** If the task genuinely needs
 this, say which alternatives were rejected and why. That sentence separates a
@@ -68,10 +96,17 @@ Then **run the test against the wrong thing once**, and watch it fail. A test th
 has never failed is not yet a test. If the reward needs grading rather than a yes
 or no, that is a subject of its own — see the sibling skill `design-a-reward`.
 
-## Step 3 — Find the window and measure it
+## Step 3 — Find the window, then ask the tree before measuring pixels
 
 Find it by title, and take the largest match: a tooltip or a hidden owner can carry
-the same words. Then **measure**, because the fastest way to lose an hour is to read
+the same words. Then, **before measuring anything**, enumerate the automation tree and
+see what the program publishes. That probe takes a minute and decides the whole
+approach — and on Paint it turned a measured palette into a list of named colours.
+
+Only measure pixels for what the tree does not reach: a canvas, a dragged path, a
+custom-drawn surface.
+
+And when you do measure, **measure**, because the fastest way to lose an hour is to read
 coordinates off a screenshot.
 
 A capture shown at 1086 wide from a window of 1936 is not the window. Every click

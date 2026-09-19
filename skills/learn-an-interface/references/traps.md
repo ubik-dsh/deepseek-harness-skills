@@ -184,7 +184,8 @@ Scan several rows, or scan a band, and compare.
 
 ## The habit underneath all of them
 
-Every trap here produced a **plausible wrong diagnosis**:
+Every trap here produced a **plausible wrong diagnosis** — including the decision to
+measure something that had a name.
 
 | the number said | the truth was |
 |---|---|
@@ -195,6 +196,12 @@ Every trap here produced a **plausible wrong diagnosis**:
 | "the application did not paint" | the capture was of the other monitor |
 | "the whole page is red" | a triangle of zero height |
 | "yellow is green" | the palette pitch was 24, not 28.6 |
+| the palette pitch had to be measured | **the palette is a list of named colours** — the names were in the automation tree the whole time |
+
+That last row is the one to sit with. Every other entry is a measurement done badly;
+that one is **a measurement that did not need doing at all**, and it cost more time
+than any of the others. Before measuring pixels, ask the program what it has:
+[accessibility-first.md](accessibility-first.md).
 
 So when a measurement says something surprising, the first hypothesis is not the
 program and not the logic. **It is the measurement.** Draw the points on a picture
