@@ -203,29 +203,47 @@ Both sides are paid, and **not for the same thing**:
 
 | | |
 |---|---|
-| **Chaser** | 2 points per point of armour stripped, 25 for the kill |
-| **Hider** | 1 point for every round it stays alive, 3 for every point of armour repaired |
+| **Shooter** | 1 point per hit on the hare, 2 for the kill, 0.5 per destroyed house |
+| **Hare** | nothing but time. A second alive is one point, so its score *is* how long it survived |
 
-The rope is the normalised difference, so it is a balance between two different
-currencies rather than a tally of one. This is the same lesson the earlier runs
-taught, applied deliberately from the start rather than rediscovered: **scoring
-both sides on the same event is what threw away the pressure strategy.**
+The shooter also fires **eight shots and then reloads for two seconds**, so a long
+crossing is a burst with a ceiling on it rather than a guaranteed kill, and the
+crossing itself is thirteen ticks — a third slower than the last version, and more
+than three times slower than where it started.
 
-Between matches, both agents are handed the statistics of the battle that just
-ended and allowed to **change shape**, not just nudge numbers. Tuning cannot fix a
-strategy whose shape is wrong, and the running score cannot say what went wrong —
-but the battle can:
+That per-tick shot is what makes the armour work at all. With one click per round
+the shooter needed four consecutive hits across four separate crossings, and a
+measured run produced **twenty-four armour hits and no kills in two hundred and
+fifty rounds**. Thirteen ticks of crossing is thirteen chances, which is what a
+slower target is supposed to mean.
 
-```
-hider battle  {rounds 41, hits 3, repairs 2, crossings 4, died 1}
-               -> preferred shape: leave-late   (it was caught in the open)
-chaser battle {rounds 41, useful 12, wasted 29, armour 3, kills 1}
-               -> preferred shape: siege        (most clicks hit nothing)
-```
+### Do they learn, or do they just try shapes and look?
 
-A hider whose statistics say it died crossing should cross less. A chaser whose
-clicks mostly landed on empty ground should stop shooting at empty ground. Neither
-is expressible as a number, which is the whole reason the radical rewrite exists.
+They just tried. The first version multiplied the **template** value by a random
+factor on every rewrite, so whatever had been tuned was thrown away each time and
+the numbers were re-rolled from scratch. Only the shape was learned, and only as a
+four-armed bandit on a decaying score.
+
+It is now a hill climb with one candidate at a time: each generation is a trial of
+the current parameters, its score is compared with the best seen, and the trial is
+kept or reverted — the step size grows when a change is accepted and shrinks when
+it is not. Proof, read out of the generated sources after fifty-four generations:
+
+| | generation 1 | generation 54 |
+|---|---|---|
+| shooter `commit` | 0.80 | **0.98** (held at ~1.0 for thirty generations) |
+| shooter `spread` | 0.15 | **0.00** |
+| hare `panic` | 0.20 | **0.00** (and stayed there) |
+| hare `corner` | 0.30 | **0.48** |
+
+Twenty of the shooter's changes were kept and thirty-three reverted; twenty-eight
+of the hare's were kept and twenty-five reverted. Values move, and stay moved —
+which is the difference between learning and a lottery.
+
+**What still is not learned:** the step sizes start hand-set at 0.18, the bandit
+explores a shape at random 20% of the time, and the radical rewrite's choice of
+shape between matches is a written rule ("if you died crossing, cross less"), not
+something the agent worked out. Those are the next three things to make adaptive.
 
 ## Requirements
 
