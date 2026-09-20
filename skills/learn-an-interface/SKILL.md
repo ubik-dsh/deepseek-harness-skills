@@ -130,6 +130,34 @@ and moved every colour two places to the right.
 
 More: [references/measuring-a-window.md](references/measuring-a-window.md).
 
+### Open a page in a new tab, never in the one that is in front
+
+**A navigation helper was written the obvious way — `Ctrl+L`, type the address, `Enter` — and `Ctrl+L`
+acts on the tab that happens to be active.** The active tab was the harness's own chat page in the
+same browser, so the address bar filled with a VK URL and **the conversation the operator was holding
+was replaced by a community page.** Nothing was lost, and it was still the agent destroying the
+operator's window in order to look at something.
+
+```
+Ctrl+T      a new tab, before anything is typed
+Ctrl+L      the address bar in it
+type, Enter
+```
+
+`Ctrl+T` costs one keystroke and cannot overwrite anything. **Reusing the active tab should be an
+explicit choice, not the path of least resistance.**
+
+**Why it is easy to get wrong:** the agent talks to the operator *through* a page in the very browser
+it is driving, so the most important tab in the session is also the one most likely to be in front and
+most likely to be mistaken for a scratch pad. From the inside it is just another tab that looks
+unused.
+
+**The general form: a window, a tab or a clipboard the agent did not open belongs to the operator, and
+using it in place is an action on their work rather than on the agent's.** The same sentence already
+covers the clipboard, and it now covers the active tab. **The failure is invisible from the agent's
+side** — the page loads, the task proceeds, and the only person who sees the damage is the one whose
+chat disappeared.
+
 ### An empty reading among a unanimous majority is a miss, not a datum
 
 **When thirteen of fourteen readings come back and the fourteenth does not, suspect the reading, not
