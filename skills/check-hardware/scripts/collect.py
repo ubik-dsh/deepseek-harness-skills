@@ -77,9 +77,27 @@ PROBES: list[tuple[str, str, str]] = [
      "Get-PhysicalDisk | ForEach-Object { $_ | Get-StorageReliabilityCounter | "
      "Select-Object DeviceId,Temperature,ReadErrorsTotal,WriteErrorsTotal,Wear,PowerOnHours } | "
      "ConvertTo-Json -Depth 4"),
-    ("errors", "hardware errors the machine wrote down",
+    # Promised by SKILL.md and absent from the first version, which the hearing caught at
+    # severity 9. powercfg writes a report file and changes nothing about the machine.
+    ("battery", "the battery's design and full-charge capacity, and its cycle count",
+     "$out = Join-Path $env:TEMP ('batteryreport-' + [guid]::NewGuid().ToString('N') + '.xml'); "
+     "powercfg /batteryreport /output $out /xml | Out-Null; "
+     "try { "
+     "$doc = [xml](Get-Content $out -Raw); "
+     "} finally { Remove-Item $out -Force -ErrorAction SilentlyContinue }; "
+     "$b = @($doc.BatteryReport.Batteries.Battery)[0]; "
+     "if ($null -eq $b) { "
+     "[pscustomobject]@{ present = $false } | ConvertTo-Json -Compress "
+     "} else { "
+     "[pscustomobject]@{ present = $true; Id = $b.Id; "
+     "DesignCapacity = $b.DesignCapacity; FullChargeCapacity = $b.FullChargeCapacity; "
+     "CycleCount = $b.CycleCount } | ConvertTo-Json -Compress }"),
+    ("errors", "hardware errors the machine wrote down, by the providers that carry them",
+     "$providers = 'Microsoft-Windows-WHEA-Logger','disk','volmgr','storahci','stornvme',"
+     "'Ntfs','Microsoft-Windows-Kernel-Power','Microsoft-Windows-Kernel-Boot'; "
      "Get-WinEvent -FilterHashtable @{LogName='System'; Level=1,2; "
-     "StartTime=(Get-Date).AddDays(-14)} -MaxEvents 40 -ErrorAction SilentlyContinue | "
+     "ProviderName=$providers; StartTime=(Get-Date).AddDays(-30)} -MaxEvents 60 "
+     "-ErrorAction SilentlyContinue | "
      "Select-Object TimeCreated,ProviderName,Id,LevelDisplayName,Message | ConvertTo-Json -Depth 4"),
 ]
 
@@ -137,7 +155,16 @@ def run(shell: str, script: str, timeout: int = 90) -> tuple[object | None, str]
             if kind == "refused":
                 return None, (f"REFUSED, not absent - the query needs rights this session "
                               f"does not have ({exception}): {message}")
-            return None, f"the query failed ({exception}): {message}"
+            # C2: a null or localised CategoryInfo falls to 'failed', and the first version
+            # then said only "the query failed" - losing the distinction the table exists to
+            # produce. A CIM failure on a hardware class is a rights problem far more often
+            # than anything else, so the fallback says which it probably is and how to tell.
+            if exception in ("CimException", "ManagementException"):
+                return None, (f"REFUSED-or-failed, most likely rights - a CIM query against "
+                              f"hardware refused or unavailable to this session ({exception}): "
+                              f"{message}. Re-run elevated to tell the two apart")
+            return None, (f"the query failed ({exception}), which is neither a value nor a "
+                          f"known refusal: {message}")
     except (json.JSONDecodeError, AttributeError, IndexError):
         pass
     try:
@@ -178,6 +205,7 @@ def main() -> int:
         "machine": {},
         "readings": {},
         "not_read": {},
+        "derived": {},
     }
 
     for name, what, script in probes:
@@ -196,6 +224,26 @@ def main() -> int:
             else:
                 count = len(value) if isinstance(value, list) else 1
                 print(f"  ok  {name:14} {count} record(s)")
+
+    # C1: SKILL.md states the subtraction as this skill's contribution. Leaving it to the
+    # reader made the sentence a promise the collector did not keep.
+    memory = report["readings"].get("memory", {}).get("value") or []
+    slots = report["readings"].get("memory-slots", {}).get("value") or []
+    if memory and slots:
+        total = slots[0].get("MemoryDevices")
+        used = len(memory)
+        if isinstance(total, int):
+            report["derived"] = {
+                "memory": {
+                    "slots_total": total,
+                    "slots_used": used,
+                    "slots_free": max(0, total - used),
+                    "note": "free slots is MemoryDevices minus the number of sticks; "
+                            "neither reading states it",
+                },
+            }
+            print(f"  derived  memory: {used} stick(s) in {total} slot(s), "
+                  f"{max(0, total - used)} free")
 
     print()
     read = len(report["readings"])

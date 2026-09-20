@@ -50,9 +50,15 @@ python scripts/collect.py --only disk,memory
 ```
 
 It gathers: the machine and its firmware, the processor, memory **sizes and slots**, every
-physical disk with its bus type and health field, SMART attributes where the drive exposes
-them, volumes and free space, the battery's two capacities, thermal zones, GPU adapters and
-driver versions, and the hardware errors in the event log.
+physical disk with its bus type and health field, storage reliability counters, volumes and
+free space, the battery's design and full-charge capacity with its cycle count, thermal zones,
+GPU adapters and driver versions, and the hardware errors in the event log **from the providers
+that carry them** — WHEA, disk, volmgr, the NVMe and AHCI drivers, NTFS and Kernel-Power.
+
+It also **derives what neither reading states**: `derived.memory.slots_free` is
+`MemoryDevices` minus the number of sticks. That subtraction is the reason to read both, and
+leaving it to the reader made the sentence here a promise the collector did not keep — the
+defect the first hearing found, at severity 9.
 
 `references/readings.md` holds the individual commands and what each one can and cannot tell
 you. Read it before trusting a single number, because most of them have a limit that is not
