@@ -171,6 +171,40 @@ navigations:
 and `settings/extras` as a page of its own — which is why the map could not be guessed and had to be
 read.
 
+### Адреса — `?act=addresses`
+
+```
+Адреса и время работы
+  Адреса:  Выключены
+           Добавьте адреса и время работы вашей организации.
+           Данные будут отображены в блоке информации в вашем сообществе.
+[ Сохранить ]
+```
+
+An address and opening hours for the organisation, shown in the community's information block once
+there is one. `groups.getAddresses` answers **error 27** — the method exists and wants a user token —
+so with a community token this page has no API at all.
+
+### A loading error is transient, and it was nearly written down as a property
+
+**The deep links work, including for `?act=` pages.** Both shapes navigate directly; the map above is
+usable as a map.
+
+It was almost not recorded that way. The **first** direct navigation to `?act=addresses` returned
+`Ошибка загрузки` / *"Попробуйте обновить страницу"* with a reload button, and clicking the sidebar
+row loaded the page immediately — which looked exactly like a finding: *"the app's own navigation
+works where a deep link does not."* A second direct navigation to the same URL loaded it normally.
+**The failure was transient.**
+
+**This is the majority rule earning its keep inside the hour**, and in its single-reading form: a
+reading that is odd against everything around it is a miss until it is repeated. Here there was one
+failure among otherwise-working navigations, the page's own error text said *try refreshing*, and
+**five minutes of re-measuring replaced a wrong sentence with a right one.**
+
+VK's SPA does fail to load a section now and then and offers a reload. **Retry once before
+concluding anything about a URL**, and prefer the app's own navigation when a click is available
+anyway — not because deep links are unreliable, but because a retry costs less than a wrong rule.
+
 ### The two rules this map cost, and they are both about trusting one pass
 
 **The row is measured, not counted.** The panel's rows are about **38 px apart** and the first pass
