@@ -193,6 +193,17 @@ GATES = [
 # and not taking it is a decision rather than an omission.
 ROUTES = [
     {
+        "when": ["vk", "вконтакте", "вк", "стен*", "сообществ*", "паблик*", "wall.post",
+                 "vk.com", "vk.ru"],
+        "tool": "manage-vk",
+        "strength": "REQUIRED before anything is published, and its preflight before the "
+                    "first write",
+        "because": "VK answers HTTP 200 with the failure in the body, so a client that "
+                   "reads the status code reports a refused post as a delivered one - and "
+                   "the token's authority has to be the community's, never an account "
+                   "session's.",
+    },
+    {
         "when": ["windows*", "powershell*", "registry", "registries", "driver*", "service*",
                  "setting*", "group policy", "виндовс*", "реестр*", "драйвер*", "служб*"],
         "tool": "manage-windows",

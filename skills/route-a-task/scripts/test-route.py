@@ -164,6 +164,13 @@ ROUTE_CASES: list[tuple[str, list[str], list[str], str]] = [
     ("design the reward signal for the bandit",
      ["design-a-reward"], [],
      "and the reward route must survive, on the word 'reward'."),
+    ("post the weekly digest to our vk community",
+     ["manage-vk"], [],
+     "the newest tool in the family needs an entry point, or it is the same defect "
+     "route-a-task was written to fix."),
+    ("опубликовать пост в сообществе вконтакте",
+     ["manage-vk"], [],
+     "and the Russian phrasing must reach it too, because that is how it will be asked."),
 ]
 
 
