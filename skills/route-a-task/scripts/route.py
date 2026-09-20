@@ -227,6 +227,12 @@ def render(report: dict, only_gates: bool = False) -> str:
             lines.append(f"       because {one['because']}")
 
     lines.append("")
+    if not gates and not routes:
+        # Written plainly, because the empty case is the one most likely to be read as
+        # approval. Nothing was checked, so nothing was cleared.
+        lines.append("  NOT COVERED is not CLEAR. No gate fired, which says something about")
+        lines.append("  the regulation and nothing about the work.")
+        return "\n".join(lines)
     lines.append("  A gate is not a preference. The moment it becomes optional in practice,")
     lines.append("  every rule in this family is advice again.")
     return "\n".join(lines)
@@ -279,6 +285,22 @@ def main() -> int:
             print("  This is the whole point of running the gates: the gap is found here,")
             print("  before the work is redone, and not after.")
             return 1
+        # "No gate fired" and "the gates that fired all passed" are different sentences,
+        # and printing the second when the first is true turns "not examined" into
+        # "checked and clear". The logarithm agent got exactly that, on a task the
+        # regulation does not cover, in the confident register of real coverage.
+        if not report["gates"]:
+            print("  NO GATE FIRED. This is not a pass - it is a statement about the")
+            print("  regulation, not about the work: nothing here was checked.")
+            print("")
+            print("  The trigger tables cover security and process - download, install,")
+            print("  reboot, publish, adopt. A task outside that vocabulary matches")
+            print("  nothing, and \"verify the result independently\" matches nothing")
+            print("  either. The router matches words, not intent.")
+            print("")
+            print("  So: the regulation does not cover this task. Say so, carry the frame")
+            print("  across where the commands do not, and record what you did.")
+            return 3
         print("  every gate that fired has a record. Nothing was forgotten.")
         return 0
 

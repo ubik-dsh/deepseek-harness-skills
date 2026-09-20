@@ -243,6 +243,26 @@ record     what you did, so the next agent does not redo it
 Windows skill whose commands were useless to it. **That is the argument for a gate handing over
 the referral as well as the step**, and it is why the router now prints both.
 
+## What this regulation is, and what it is not
+
+**It is a safety and process ontology.** Its triggers are about content arriving from outside,
+machines being changed, work being published and tools being chosen. That is a real and useful
+set, and it is not everything.
+
+**It has no row for correctness.** A task whose difficulty is that an answer might quietly be
+wrong — a numerical result, a proof, a measurement, a classification — matches nothing here.
+The third agent to be routed by this regulation had exactly that task, and the honest verdict
+it returned was that **neither design served it**, because neither covered it.
+
+**And the router matches vocabulary, not intent.** "Verify the result independently" matched
+nothing; adding the word "install" to the same sentence fired G1. That is the price of
+keyword triggers and it should be known before the output is trusted.
+
+**So when nothing fires, that is a statement about this document, not about the work.** The
+router now says so in those words and exits 3, distinct from 0 — because "nothing applied" and
+"everything that applied passed" are different sentences, and printing the second when the
+first is true turns *not examined* into *checked and clear*.
+
 ## When nothing applies
 
 **Say so, and do the work.** A regulation that fires on everything is one nobody reads, and a
