@@ -206,9 +206,96 @@ public class ScreenWatch : Form {
         }
         if (limitSeconds > 0 && (DateTime.UtcNow - start).TotalSeconds >= limitSeconds) {
             timer.Stop();
+            mouseLog.Close();
+            MouseHook.Stop();
             log.Close();
             Application.Exit();
         }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// The mouse hook, inside the recorder so that pictures and events share ONE clock.
+//
+// cursor.csv says where the pointer was five times a second, which is right for pictures and wrong
+// for input: a drag is three to five samples and a click can fall entirely between two of them. This
+// gets EVERY press, release and wheel notch with its own timestamp.
+//
+// A LOW-LEVEL HOOK NEEDS A MESSAGE LOOP ON THE THREAD THAT INSTALLED IT. This recorder already runs
+// Application.Run, so installing here is free - but the standalone version was written first with a
+// `while` loop and Start-Sleep, which is not a message loop, and it recorded NOTHING while reporting
+// success. SetWindowsHookEx delivers callbacks by posting to the installing thread; without a pump the
+// procedure is never called and there is no error to notice.
+public class MouseHook {
+    public const int WH_MOUSE_LL = 14;
+    const int WM_MOUSEMOVE = 0x0200, WM_LBUTTONDOWN = 0x0201, WM_LBUTTONUP = 0x0202;
+    const int WM_RBUTTONDOWN = 0x0204, WM_RBUTTONUP = 0x0205;
+    const int WM_MBUTTONDOWN = 0x0207, WM_MBUTTONUP = 0x0208;
+    const int WM_MOUSEWHEEL = 0x020A, WM_XBUTTONDOWN = 0x020B, WM_XBUTTONUP = 0x020C;
+    const int WM_MOUSEHWHEEL = 0x020E;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MSLLHOOKSTRUCT { public int ptX, ptY; public uint mouseData, flags, time; public IntPtr extra; }
+
+    public delegate IntPtr LowLevelProc(int nCode, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll", SetLastError = true)]
+    static extern IntPtr SetWindowsHookEx(int idHook, LowLevelProc proc, IntPtr hMod, uint threadId);
+    [DllImport("user32.dll", SetLastError = true)] static extern bool UnhookWindowsHookEx(IntPtr hook);
+    [DllImport("user32.dll")] static extern IntPtr CallNextHookEx(IntPtr hook, int nCode, IntPtr wParam, IntPtr lParam);
+    [DllImport("kernel32.dll")] static extern IntPtr GetModuleHandle(string name);
+    [DllImport("user32.dll")] public static extern int GetSystemMetrics(int index);
+
+    static IntPtr hook = IntPtr.Zero;
+    static LowLevelProc proc;
+    static readonly object gate = new object();
+    static List<string> pending = new List<string>();
+    static DateTime origin = DateTime.MinValue;
+
+    public static void SetOrigin(DateTime when) { origin = when; }
+
+    public static bool Start() {
+        proc = new LowLevelProc(OnEvent);
+        hook = SetWindowsHookEx(WH_MOUSE_LL, proc, GetModuleHandle(null), 0);
+        return hook != IntPtr.Zero;
+    }
+    public static void Stop() { if (hook != IntPtr.Zero) { UnhookWindowsHookEx(hook); hook = IntPtr.Zero; } }
+
+    static string Name(int message) {
+        if (message == WM_LBUTTONDOWN) return "L-down";
+        if (message == WM_LBUTTONUP)   return "L-up";
+        if (message == WM_RBUTTONDOWN) return "R-down";
+        if (message == WM_RBUTTONUP)   return "R-up";
+        if (message == WM_MBUTTONDOWN) return "M-down";
+        if (message == WM_MBUTTONUP)   return "M-up";
+        if (message == WM_XBUTTONDOWN) return "X-down";
+        if (message == WM_XBUTTONUP)   return "X-up";
+        if (message == WM_MOUSEWHEEL)  return "wheel";
+        if (message == WM_MOUSEHWHEEL) return "hwheel";
+        return "0x" + message.ToString("X4");
+    }
+
+    static IntPtr OnEvent(int nCode, IntPtr wParam, IntPtr lParam) {
+        if (nCode >= 0) {
+            MSLLHOOKSTRUCT d = (MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT));
+            int message = (int)wParam;
+            if (message != WM_MOUSEMOVE) {
+                string detail = "";
+                if (message == WM_XBUTTONDOWN || message == WM_XBUTTONUP) {
+                    int which = (int)((d.mouseData >> 16) & 0xFFFF);
+                    detail = (which == 1) ? "X1(back)" : (which == 2) ? "X2(forward)" : ("X" + which);
+                } else if (message == WM_MOUSEWHEEL || message == WM_MOUSEHWHEEL) {
+                    short delta = (short)((d.mouseData >> 16) & 0xFFFF);
+                    detail = (delta > 0 ? "+" : "") + (delta / 120).ToString();
+                }
+                int ms = (origin == DateTime.MinValue) ? 0 : (int)(DateTime.UtcNow - origin).TotalMilliseconds;
+                lock (gate) { pending.Add(ms + "," + Name(message) + "," + d.ptX + "," + d.ptY + "," + detail); }
+            }
+        }
+        return CallNextHookEx(hook, nCode, wParam, lParam);
+    }
+
+    public static string[] Take() {
+        lock (gate) { string[] taken = pending.ToArray(); pending.Clear(); return taken; }
     }
 }
 '@
