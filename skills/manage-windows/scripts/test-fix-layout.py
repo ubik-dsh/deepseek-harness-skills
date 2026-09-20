@@ -12,6 +12,10 @@ import importlib.util
 import sys
 from pathlib import Path
 
+# A test that imports a sibling must not leave a __pycache__ behind. The first run of this file wrote
+# one, and the bundle checker - correctly - warned that the skill contained a compiled file nobody can
+# read. The repository ignores it, so it was never committed; the working tree was still littered.
+sys.dont_write_bytecode = True
 sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
 
 spec = importlib.util.spec_from_file_location("fl", Path(__file__).parent / "fix-layout.py")
