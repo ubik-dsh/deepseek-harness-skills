@@ -130,6 +130,32 @@ and moved every colour two places to the right.
 
 More: [references/measuring-a-window.md](references/measuring-a-window.md).
 
+### An empty reading among a unanimous majority is a miss, not a datum
+
+**When thirteen of fourteen readings come back and the fourteenth does not, suspect the reading, not
+the world.** A list whose every row yields a value does not have one row that has no value; it has one
+row the pointer missed.
+
+Measured the hard way. Fourteen sidebar rows were mapped by hovering each one and reading the
+browser's status bar. **Two came back odd** — one empty, one duplicating the row above — and **both
+were written into the skill as findings** before anyone checked them. The rows were 38 px apart, the
+pointer was up to 22 px out, and the two findings were a gap between rows and the row above it. The
+panel had fourteen distinct addresses all along.
+
+**The shape of the error is what makes it dangerous.** An exception is exactly what a reader
+remembers, so a false exception does more damage than a missing reading — and it is
+indistinguishable from a true one until somebody measures again. The file cannot reveal it; only an
+outside reader can, and in this case the operator did.
+
+So the rule is not "be careful": **an anomaly against a unanimous majority is a measurement failure
+until it is re-measured, and re-measuring is not optional.** The clearest form of it came from that
+operator, and it is worth keeping in his words:
+
+> *if nine out of ten have it, the tenth is probably "not found" rather than "not there".*
+
+**A silent empty result is the failure mode to design against**, because it looks like an answer. An
+error would have been caught; a blank is read as *"the row is not a link"* and written down.
+
 
 A worked run of the whole method on a second program, where the answer turned out to be
 **"there is nothing to learn"**, is in

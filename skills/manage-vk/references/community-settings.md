@@ -186,6 +186,14 @@ remembers — and an exception produced by a bad measurement is indistinguishabl
 until someone measures again. The operator caught this one by saying the row exists; nothing in the
 file would have.
 
+**And the sharper form of the same rule, which is checkable rather than a matter of judgement: an
+empty or odd reading against a unanimous majority is a miss, not a datum.** Thirteen rows gave
+addresses and the fourteenth gave none — a panel whose every row is a link does not have one row that
+is not a link, it has one row the pointer missed. *If nine out of ten have it, the tenth is probably
+"not found" rather than "not there".* **A blank is the dangerous failure mode precisely because it
+looks like an answer** — an error would have been caught, a blank was read as a fact and written
+down.
+
 The measured positions, for the next reader, with the page scrolled as it was here:
 
 ```
