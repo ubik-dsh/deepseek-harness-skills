@@ -36,6 +36,7 @@ Add-Type -AssemblyName System.Windows.Forms
 # a missing flag.
 Add-Type -ReferencedAssemblies System.Drawing, System.Windows.Forms -TypeDefinition @'
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -59,6 +60,7 @@ public class ScreenWatch : Form {
 
     System.Windows.Forms.Timer timer;
     StreamWriter log;
+    StreamWriter mouseLog;
     string outDir;
     int cropW, cropH, fps, keep, frames;
     bool fullScreen;
@@ -82,7 +84,18 @@ public class ScreenWatch : Form {
         Directory.CreateDirectory(outDir);
         log = new StreamWriter(Path.Combine(outDir, "cursor.csv"));
         log.WriteLine("frame,ms,x,y,buttons");
+        mouseLog = new StreamWriter(Path.Combine(outDir, "mouse.csv"));
+        mouseLog.WriteLine("ms,event,x,y,injected,detail");
         start = DateTime.UtcNow;
+
+        // The hook is installed HERE, in the constructor, and Application.Run below is the message
+        // loop it needs. A low-level hook delivered by posting to the installing thread does nothing
+        // at all without a pump - the first standalone version installed it and sat in a while loop,
+        // recording nothing and reporting success.
+        MouseHook.SetOrigin(start);
+        if (!MouseHook.Start()) {
+            mouseLog.WriteLine("0,HOOK-FAILED,0,0,the mouse hook was not installed");
+        }
 
         timer = new System.Windows.Forms.Timer();
         timer.Interval = Math.Max(50, 1000 / fps);
@@ -198,6 +211,13 @@ public class ScreenWatch : Form {
         log.WriteLine(frames + "," + ((int)(DateTime.UtcNow - start).TotalMilliseconds) + ","
                       + p.X + "," + p.Y + "," + buttons);
         log.Flush();
+
+        // Every mouse event since the last frame, in order. This is what a drag looks like: press,
+        // many moves, release - which the five-a-second cursor line cannot show.
+        foreach (string one in MouseHook.Take()) {
+            mouseLog.WriteLine(one);
+        }
+        mouseLog.Flush();
         Invalidate();
 
         if (keep > 0 && frames > keep) {
@@ -244,6 +264,9 @@ public class MouseHook {
     [DllImport("user32.dll")] static extern IntPtr CallNextHookEx(IntPtr hook, int nCode, IntPtr wParam, IntPtr lParam);
     [DllImport("kernel32.dll")] static extern IntPtr GetModuleHandle(string name);
     [DllImport("user32.dll")] public static extern int GetSystemMetrics(int index);
+    // Needed here as well as in ScreenWatch: a nested class does not inherit the enclosing class's
+    // DllImports, and the compiler says so only as "the name does not exist in the current context".
+    [DllImport("user32.dll")] static extern short GetAsyncKeyState(int vKey);
 
     static IntPtr hook = IntPtr.Zero;
     static LowLevelProc proc;
@@ -261,6 +284,7 @@ public class MouseHook {
     public static void Stop() { if (hook != IntPtr.Zero) { UnhookWindowsHookEx(hook); hook = IntPtr.Zero; } }
 
     static string Name(int message) {
+        if (message == WM_MOUSEMOVE)   return "move";
         if (message == WM_LBUTTONDOWN) return "L-down";
         if (message == WM_LBUTTONUP)   return "L-up";
         if (message == WM_RBUTTONDOWN) return "R-down";
@@ -278,7 +302,18 @@ public class MouseHook {
         if (nCode >= 0) {
             MSLLHOOKSTRUCT d = (MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT));
             int message = (int)wParam;
-            if (message != WM_MOUSEMOVE) {
+
+            // MOVES ARE LOGGED ONLY WHILE A BUTTON IS DOWN. A low-level hook sees hundreds of moves a
+            // second, and logging all of them buries the events that matter in a file nobody will
+            // read. A move with the button held IS the drag - it is the path between press and
+            // release, and it is the one thing the five-a-second cursor line cannot show.
+            bool holding = (GetAsyncKeyState(0x01) & 0x8000) != 0
+                        || (GetAsyncKeyState(0x02) & 0x8000) != 0
+                        || (GetAsyncKeyState(0x04) & 0x8000) != 0
+                        || (GetAsyncKeyState(0x05) & 0x8000) != 0
+                        || (GetAsyncKeyState(0x06) & 0x8000) != 0;
+
+            if (message != WM_MOUSEMOVE || holding) {
                 string detail = "";
                 if (message == WM_XBUTTONDOWN || message == WM_XBUTTONUP) {
                     int which = (int)((d.mouseData >> 16) & 0xFFFF);
@@ -288,7 +323,13 @@ public class MouseHook {
                     detail = (delta > 0 ? "+" : "") + (delta / 120).ToString();
                 }
                 int ms = (origin == DateTime.MinValue) ? 0 : (int)(DateTime.UtcNow - origin).TotalMilliseconds;
-                lock (gate) { pending.Add(ms + "," + Name(message) + "," + d.ptX + "," + d.ptY + "," + detail); }
+                // INJECTED OR REAL. A global hook sees the operator's hand and the agent's
+                // SendInput alike, and in one file they are indistinguishable - which matters the
+                // moment both are moving: a recorded drag looked like it was oscillating because
+                // two hands were on the same log. LLMHF_INJECTED is the system saying "this event
+                // was synthesised", so the column exists to keep the two apart.
+                int injected = (d.flags & 0x00000001) != 0 ? 1 : 0;
+                lock (gate) { pending.Add(ms + "," + Name(message) + "," + d.ptX + "," + d.ptY + "," + injected + "," + detail); }
             }
         }
         return CallNextHookEx(hook, nCode, wParam, lParam);

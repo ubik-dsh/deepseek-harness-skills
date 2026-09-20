@@ -2,6 +2,83 @@
 
 Moved out of SKILL.md when it passed the family's 500-line limit — which is the rule working on this skill rather than on somebody else's.
 
+## The recorder writes three things, and the third is the one that shows a drag
+
+`scripts/screenwatch.ps1` produces **frames**, `cursor.csv` and `mouse.csv`, all on one clock:
+
+```
+cursor.csv   frame,ms,x,y,buttons          five a second, with the button state
+mouse.csv    ms,event,x,y,injected,detail  every event the system delivers
+```
+
+**`mouse.csv` comes from a low-level hook (`WH_MOUSE_LL`), not from polling**, because five samples a
+second cannot show a drag: it is three to five samples and a click can fall entirely between two of
+them. Measured on a real drag against VK's reorder dialog:
+
+```
+3662,L-down,700,399,1,
+3910,move,733,424,1,          twelve steps, a straight line
+...
+4345,move,1099,699,1,
+4611,L-up,1099,699,1,         held 949 ms across 399 px
+```
+
+**Moves are logged only while a button is down.** A low-level hook sees hundreds of moves a second and
+logging them all buries the events that matter; a move with the button held *is* the drag.
+
+**A hook needs a message loop on the thread that installed it.** The first standalone version installed
+it and sat in a `while` loop with `Start-Sleep` — which is not a pump — so it recorded **nothing**,
+reported success and raised no error. In the recorder it works because `Application.Run` is already
+there.
+
+## `injected` — because a global hook sees the operator's hand too
+
+**An agent driving a mouse and an operator using one produce the same events, and a global hook catches
+both.** A recorded drag looked like it was oscillating between two paths: it was two hands in one log,
+and nothing in the file said which was which.
+
+`MSLLHOOKSTRUCT.flags` carries **`LLMHF_INJECTED`**, the system's own statement that an event was
+synthesised. The column is that bit, and it is what keeps the agent's input out of the operator's
+demonstration and the operator's out of the agent's test. **Without it, a recording of the agent's own
+drag cannot be told from a recording of somebody else's.**
+
+## `scripts/drag.ps1` — a drag a browser actually accepts
+
+```
+powershell -File scripts/drag.ps1 -FromX 700 -FromY 400 -ToX 1100 -ToY 700 -Steps 20 [-NoRelease]
+```
+
+Four things it does that a naive drag does not, each from a measured failure:
+
+- **`SendInput` only.** A drag through the legacy `mouse_event` changed exactly zero pixels.
+- **`ABSOLUTE | VIRTUALDESK`, with a move event per step.** Plain `SetCursorPos` is right about monitors
+  and wrong about drags: no move events, so press and release land in one place.
+- **Intermediates, not a jump.** A browser decides a drag has begun from movement past its threshold,
+  and one 400-px jump is read as a click that teleported.
+- **`-NoRelease` holds the button down**, which is the only way to look at step 5 of the logic — *check
+  the target SHOWS it will accept.* Against VK's menu dialog, holding showed the row greyed and lifted
+  with its label drawn twice: a ghost and the dragged copy.
+
+**And release the button whatever happens.** A run that stops while holding leaves the operator's mouse
+pressed; the first attempt here did exactly that and needed a separate call to put it up.
+
+## What a working drag looks like, end to end
+
+Against VK's `Порядок в меню`, 2026-09-20, on a menu ordered `вукер`, `псваиртва`:
+
+```
+1  find the source by name          вукер, the first row
+2  find the target                  the second row's position
+3  press its handle                 (1099, 735)
+4  move in steps                    twenty, with the button down
+5  CHECK IT SHOWS IT WILL ACCEPT    grey lifted row, label drawn twice   <- looked at, while holding
+6  release
+7  verify                           the page reads псваиртва, вукер - and it persisted after Сохранить
+```
+
+**Step 5 is what makes it verified rather than hoped for; step 7 is what makes it a result rather than a
+gesture.**
+
 ### Record the LOGIC of an interaction, not the coordinates of one
 
 **A calibration log is a record of instances. A skill needs the rule.** The operator made this
