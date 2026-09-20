@@ -38,6 +38,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
 
 API = "https://api.vk.com/method/"
 VERSION = "5.199"
@@ -128,6 +129,42 @@ def fingerprint(token: str) -> str:
     return f"{len(token)} chars, starting {token[:4]}..."
 
 
+def inside_a_repository(path: Path) -> Path | None:
+    """The repository this file sits in, if it sits in one.
+
+    A credential inside a working tree is one `git add -A` away from being published. The
+    check costs a few `exists()` calls and it is a refusal rather than a warning, because a
+    warning here is a warning that gets read after the push.
+    """
+    for folder in [path.parent, *path.parent.parents]:
+        if (folder / ".git").exists():
+            return folder
+    return None
+
+
+def read_env_file(path: Path) -> dict[str, str]:
+    """KEY=VALUE lines, and only the two names this tool has any use for.
+
+    A quoted value is unwrapped, because a key pasted from a browser occasionally arrives
+    with quotes around it and a token with a literal quote on each end fails with an error
+    that says nothing about quotes.
+    """
+    wanted = ("VK_COMMUNITY_TOKEN", "VK_GROUP_ID")
+    values: dict[str, str] = {}
+    for number, line in enumerate(
+            path.read_text(encoding="utf-8-sig", errors="replace").splitlines(), 1):
+        text = line.strip()
+        if text == "" or text.startswith("#"):
+            continue
+        if "=" not in text:
+            raise ValueError(f"line {number} is not KEY=VALUE")
+        key, _, value = text.partition("=")
+        key = key.strip()
+        if key in wanted:
+            values[key] = value.strip().strip('"').strip("'")
+    return values
+
+
 def main() -> int:
     # A cp1251 console cannot encode a mixed-script message, and a crash while reporting a
     # finding is the finding thrown away. The scanner in find-a-skill learned this first.
@@ -148,15 +185,50 @@ def main() -> int:
                         help="the one write - a future-dated post, read back and deleted")
     parser.add_argument("--confirmed", action="store_true",
                         help="the user has explicitly confirmed the --prove-write action")
+    parser.add_argument("--env-file", type=Path, default=None,
+                        help="read VK_COMMUNITY_TOKEN and VK_GROUP_ID from this file. Only "
+                             "the path is passed - the value never reaches a command line, "
+                             "a process list or a shell history")
     args = parser.parse_args()
 
     token = os.environ.get("VK_COMMUNITY_TOKEN", "").strip()
+    group_hint = os.environ.get("VK_GROUP_ID", "").strip()
+
+    if args.env_file is not None:
+        # The environment variable is the better home for a secret, and it is unusable here:
+        # measured on this machine, `setx` writes HKCU\Environment and a process spawned by
+        # the already-running harness never sees it, because the harness's own environment
+        # block was fixed when it started. So the file exists, and only its path travels.
+        if not args.env_file.exists():
+            say(f"  no such env file: {args.env_file}")
+            return 2
+        repository = inside_a_repository(args.env_file)
+        if repository is not None:
+            say(f"  refusing: {args.env_file} is inside a repository - {repository}")
+            say("  A credential in a working tree is one `git add -A` from being published.")
+            say("  Move it outside every repository and run again.")
+            return 2
+        try:
+            loaded = read_env_file(args.env_file)
+        except (OSError, ValueError) as trouble:
+            say(f"  cannot read {args.env_file} - {trouble}")
+            return 2
+        token = loaded.get("VK_COMMUNITY_TOKEN", "").strip() or token
+        group_hint = loaded.get("VK_GROUP_ID", "").strip() or group_hint
+        say(f"  env file   {args.env_file}  "
+            f"({'no token in it yet' if not token else 'a token is present'})")
     if not token:
+        if args.env_file is not None:
+            say("")
+            say(f"  the file {args.env_file} has no VK_COMMUNITY_TOKEN yet.")
+            say("  Open it, put the key after the = on that line, and save.")
+            say("  Do not paste the key here, do not pass it as an argument, no quotes.")
+            return 2
         say("  no token in the environment.")
         say("")
-        say("  Set VK_COMMUNITY_TOKEN as a USER environment variable - never paste it into")
-        say("  a chat, never pass it as an argument, never write it into a file this tool")
-        say("  created. A credential in a transcript is in a log, a backup, and whatever")
+        say("  Either set VK_COMMUNITY_TOKEN as a USER environment variable, or point at a")
+        say("  file with --env-file. Never paste it into a chat, never pass it as an")
+        say("  argument. A credential in a transcript is in a log, a backup, and whatever")
         say("  the transcript syncs to.")
         say("")
         say("  The key is made in VK at the community's Управление - Настройки -")
@@ -168,7 +240,7 @@ def main() -> int:
     # ---- who is this token, and what may it do -------------------------------------
     try:
         who = call("groups.getById", token,
-                   group_id=os.environ.get("VK_GROUP_ID") or None)
+                   group_id=group_hint or None)
     except VkError as trouble:
         code = trouble.code
         meaning = MEANING.get(code)

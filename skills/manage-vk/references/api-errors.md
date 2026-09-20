@@ -31,14 +31,27 @@ was meant.
 
 | code | meaning | measured? | what to do |
 |---|---|---|---|
-| 15 | `Access denied: token required` | **measured** | the token is absent or empty — set `VK_COMMUNITY_TOKEN` |
+| 15 | `Access denied: token required` | **measured** | **no token was sent at all.** Set it and try again |
+| 5 | `User authorization failed: invalid access_token (4)` | **measured** | **a token was sent and VK refused it.** Check it is the **community** key and that the API section is enabled for the group. *Some sources attribute this to IP binding on tokens from the implicit flow; that was not verified here and is not relied on* |
 | 6 | too many requests per second | received | retryable. Wait longer and send fewer. Never retry in a tight loop |
 | 9 | too many requests per day | received | not retryable today. The quota is gone until it resets |
-| 5 | `User authorization failed` | received | the token was refused. Check it is the **community** key and that the API section is enabled for the group. *Some sources attribute this to IP binding on tokens obtained through the implicit flow; that was not verified here and is not relied on* |
 | 14 | captcha required | received | interactive. A community token normally avoids it; a user token hammering the API does not |
 | 27 | `group authorization failed` | received | usually a missing scope, or the group key was revoked or regenerated |
 | 100 | one of the parameters is wrong | received | read `error_msg` — it names the parameter. Usually `owner_id` with the wrong sign |
 | 214 | the wall is not writable | received | the wall is disabled, or this token may not post to it |
+
+**15 and 5 are different faults and this is worth having measured.** Both were produced here
+on the same day, against the live API, and the difference is not in the message but in the
+cause:
+
+```
+no token sent          -> error_code 15  "Access denied: token required"
+a token sent, invalid  -> error_code  5  "User authorization failed: invalid access_token (4)"
+```
+
+Reading a 5 as "I need a token" sends the reader to look for a token that is already there.
+Reading a 15 as "the token is wrong" sends them to regenerate a key that was never the
+problem. **The first question after either is which of the two it is.**
 
 **Codes that are worth retrying: 6, and a transport failure.** Everything else is either a
 fact about the token or a fact about the request, and asking again produces the same answer

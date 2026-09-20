@@ -75,6 +75,24 @@ Rules, and they are not stylistic:
 - **The community token is the whole of the authority.** It is scopeable, it is revocable
   without touching the person's account, and its failures are the community's failures.
 
+**When the environment variable is not reachable, use `--env-file` and pass the path only.**
+
+```bash
+python scripts/preflight.py --env-file "$DSH_HOME/vk.env"
+```
+
+Measured, and it is why this flag exists: `setx` writes the variable to
+`HKCU\Environment`, and **a process spawned by an already-running harness never sees it**,
+because that harness's own environment block was fixed when it started. Only the path of
+the file travels, so the value still never reaches a command line, a process list or a
+transcript. The script prints a fingerprint — a length and the first four characters — and
+never the value.
+
+**The file must not be inside a repository.** `preflight.py` refuses one that is, because a
+credential in a working tree is one `git add -A` from being published, and a warning about
+that is a warning that gets read after the push. `$DSH_HOME` is outside every repository,
+which is why the file belongs there.
+
 **Where the key comes from**, for the human, in VK's own interface: the community →
 **Управление** → **Настройки** → **Работа с API** → **Создать ключ**, with the scopes
 `wall` and `photos` (add `docs` only if documents are to be attached). The same screen
