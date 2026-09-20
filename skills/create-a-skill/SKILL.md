@@ -134,7 +134,31 @@ Then measure it instead of guessing: [references/eval-protocol.md](references/ev
 has the trigger-eval method, which is the only way to tell a good description from
 a plausible one.
 
-## Write for the agent, not for a reader
+## The family as a graph, and what a sign is worth
+
+**`scripts/graph-skills.py <repo>` walks the whole family and writes `_graph/`** — an index, a page per
+skill, and a machine form. Open the repository as an Obsidian vault and the graph pane works with no
+plugin, because nothing is copied: the pages link at the real files.
+
+**Every edge carries how it was established, and none of the marks is hand-written — each is computed
+from the shape of the text.** A reader can tell a surveyed road from a guess without trusting memory.
+
+| mark | on a map | in the files |
+|---|---|---|
+| `EXTRACTED` | the road is signposted | a written link whose target resolves |
+| `INFERRED` | the place is named, no road drawn | the name appears in the text with no link |
+| `AMBIGUOUS` | one sign, two places | a bare name matching more than one file |
+| `DANGLING` | a sign pointing at nothing | a link whose target is not there |
+| `ORPHAN` | a road with no sign to it | neither linked nor named anywhere |
+
+**Named-but-not-linked and named-nowhere are different problems** and the report separates them.
+
+**The tool's first three versions reported confident nonsense, and the fixes are in
+[references/the-family-graph.md](references/the-family-graph.md)** — worth reading before trusting any
+count it prints. **Each bug was caught by checking one number against another tool**, which is the
+reason to keep two tools that overlap.
+
+
 
 **A skill is not documentation. It is a program whose interpreter is a model**, and the only question
 that decides its form is whether the agent loading it does the job better. **The human is an observer in
