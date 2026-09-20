@@ -210,23 +210,54 @@ def locate_skill_file(path: Path, allow_flat: bool = True) -> tuple[Path | None,
     return None, False
 
 
-def frontmatter_value_faults(text: str) -> list[tuple[int, str]]:
-    """Colons and continuations inside frontmatter values.
+def _yaml_reader():
+    """The YAML reader, if this machine has one.
 
-    Both faults have the same effect and neither is visible in an editor. A value
-    containing `: ` is read as a nested mapping by a YAML parser; a value that carries
-    on past the end of its line is read as the end of the mapping. DSH parses the
-    frontmatter, gets something that is not a plain mapping, and declines to register
-    the skill without saying anything.
+    The question these rules answer is "does the frontmatter come back as a plain
+    mapping", and the only authority on that is a parser. This checker used to refuse to
+    ask one, on the reasoning that the parser is the thing being mistrusted — which is
+    backwards, and produced two rules that were wrong in opposite directions: it rejected
+    a double-quoted value containing a colon, and it rejected a plain value wrapped onto
+    the next line, both of which YAML reads perfectly.
 
-    The first version of this reported every nested key as a continuation, because a key
-    inside `metadata:` is indented too. Indentation is not the fault; an indented line
-    that is not a `key: value` is.
+    Measured against the `yaml` package DSH itself bundles, over 18 constructs, PyYAML
+    agreed with it on **every one** — wrapping, folded scalars, `allowed-tools:` and
+    `tags:` sequences, nested `metadata:`, quoted and unquoted colons, an unterminated
+    quote, and the compact-mapping error that actually blocks registration. So where a
+    parser exists it is the answer, and the text rules below are the fallback for a
+    machine without one.
     """
-    faults: list[tuple[int, str]] = []
+    try:
+        import yaml
+        return yaml.safe_load
+    except ImportError:
+        return None
+
+
+def frontmatter_value_faults(text: str) -> tuple[list[tuple[int, str]], bool]:
+    """What a YAML reader will object to in the frontmatter, and whether one was asked.
+
+    Returns `(faults, parsed)`. When `parsed` is False the reader was missing and the
+    faults come from text rules, which know only the constructs someone already met — so
+    a clean result there is weaker than a clean result from a parse, and the caller says
+    so rather than letting the two read alike.
+
+    The real fault, measured and identical in both of its shapes, is **a nested mapping in
+    a compact position**: a colon in an unquoted value (`description: a thing: b`), or an
+    indented `key: value` under a value that already has one. A wrapped plain scalar is
+    not a fault, and neither is an indented `- item`. DSH parses the frontmatter and
+    silently declines to register a skill whose parse fails, so the file is invisible and
+    nothing is reported.
+
+    History, because both versions were wrong in ways worth not repeating: the first
+    reported every nested key as a continuation, since keys under `metadata:` are indented
+    too. The second fixed that and then reported the continuation of a plain scalar and
+    every YAML list as faults — a checker that tells an author to mangle a correct file is
+    worse than one that misses a broken one, because the author believes it.
+    """
     lines = text.split("\n")
     if not lines or lines[0].rstrip("\r") != "---":
-        return faults
+        return [], True
 
     closing = None
     for index in range(1, len(lines)):
@@ -234,11 +265,36 @@ def frontmatter_value_faults(text: str) -> list[tuple[int, str]]:
             closing = index
             break
     if closing is None:
-        return faults
+        return [], True
 
+    block = "\n".join(line.rstrip("\r") for line in lines[1:closing])
+
+    reader = _yaml_reader()
+    if reader is not None:
+        try:
+            reader(block)
+        except Exception as trouble:                    # noqa: BLE001 - any parse failure
+            mark = getattr(trouble, "problem_mark", None)
+            problem = getattr(trouble, "problem", None) or str(trouble).splitlines()[0]
+            where = mark.line + 2 if mark is not None else 1
+            return ([(
+                where,
+                f"a YAML reader rejects this frontmatter - {problem}. DSH parses the "
+                "frontmatter and declines to register a skill it cannot read, reporting "
+                "nothing, so this file is invisible until it is fixed. The usual cause is "
+                "a colon in an unquoted value: wrap the whole value in quotes, or use a "
+                "dash",
+            )], True)
+        return [], True
+
+    faults: list[tuple[int, str]] = []
     key_re = re.compile(r"^(\s*)([A-Za-z_][A-Za-z0-9_-]*):(.*)$")
     block_markers = ("|", ">", "|-", ">-", "|+", ">+")
     in_block = False
+    # True while the key just read is a top-level key that already carries a scalar. An
+    # indented key under one of those is the compact-mapping error; an indented key under
+    # a key with no value (`metadata:`) is an ordinary nested mapping.
+    scalar_open = False
 
     for index in range(1, closing):
         line = lines[index].rstrip("\r")
@@ -255,18 +311,47 @@ def frontmatter_value_faults(text: str) -> list[tuple[int, str]]:
         match = key_re.match(line)
         if match is None:
             if indent > 0:
-                faults.append((
-                    index + 1,
-                    f"value continues onto another line - `{stripped[:38]}`. Keep every "
-                    "frontmatter value on one line; prose belongs in the body",
-                ))
+                # An indented line that is not `key: value` is either a sequence item, a
+                # wrapped plain scalar, or prose. YAML folds all three, so none is a
+                # fault — unless it carries a colon, which opens the compact mapping
+                # again. Measured: `description: x` followed by `  more: prose` errors,
+                # followed by `  more prose` does not.
+                if not stripped.startswith("-") and ": " in line:
+                    faults.append((
+                        index + 1,
+                        f"`{stripped[:38]}` continues a value and carries a colon, which "
+                        "a YAML reader takes as a nested mapping. Keep every frontmatter "
+                        "value on one line; prose belongs in the body",
+                    ))
             else:
                 faults.append((index + 1, f"no colon - `{stripped[:38]}` is not a key"))
             continue
 
         value = match.group(3).strip()
+        if indent > 0 and scalar_open:
+            # The other shape of the same fault, and the reason this rule exists at all.
+            # `metadata:` with keys under it is fine, because that key has no value;
+            # `description: something` with a key under it is a compact mapping and the
+            # reader refuses the whole document. Measured both ways.
+            faults.append((
+                index + 1,
+                f"`{match.group(2)}` is indented under a value that already has one, "
+                "which a YAML reader takes as a nested mapping. Keep every frontmatter "
+                "value on one line; prose belongs in the body",
+            ))
+            scalar_open = False
+            continue
+
         if value in block_markers:
             in_block = True
+            scalar_open = False
+            continue
+
+        # A quoted scalar is a string whatever is inside it. Checked before the masking
+        # below, because the masking knows about backticks and angle brackets and knows
+        # nothing about the quotes that decide this question.
+        if is_quoted_scalar(value):
+            scalar_open = indent == 0
             continue
 
         masked = value
@@ -275,12 +360,14 @@ def frontmatter_value_faults(text: str) -> list[tuple[int, str]]:
         if ": " in masked:
             faults.append((
                 index + 1,
-                f"`{match.group(2)}` contains a colon inside its value. A YAML reader "
-                "takes it as a nested mapping and DSH then declines to register the "
-                "skill, reporting nothing. Use a dash",
+                f"`{match.group(2)}` contains a colon in an unquoted value. A YAML "
+                "reader takes it as a nested mapping and DSH then declines to register "
+                "the skill, reporting nothing. Wrap the whole value in quotes, or use a "
+                "dash",
             ))
+        scalar_open = indent == 0 and value != ""
 
-    return faults
+    return faults, False
 
 
 def check(path: Path) -> Result:
@@ -311,15 +398,24 @@ def check(path: Path) -> Result:
         return result
 
     # ── frontmatter values that a reader will not treat as values ─────────
-    # Found by a fresh agent, after every other check here had passed: a colon
-    # inside a value, and a value continued onto the next line. DSH reads the
-    # frontmatter with a YAML parser and then silently declines to register the
-    # skill when the mapping does not come back whole. The file parses, the name
-    # matches, and `skill <name>` answers "unknown or no longer available".
+    # Found by a fresh agent, after every other check here had passed: a colon inside a
+    # value. DSH reads the frontmatter with a YAML parser and silently declines to
+    # register a skill whose mapping does not come back whole. The file looks fine, the
+    # name matches, and `skill <name>` answers "unknown or no longer available".
     #
-    # This is a raw-text check on purpose. The parser is the thing being
-    # mistrusted, so asking it whether it understood the file answers nothing.
-    for line_number, complaint in frontmatter_value_faults(text):
+    # The parser is asked first now, and this comment used to argue the opposite — that
+    # asking the parser whether it understood the file answers nothing, because the parser
+    # is what is being mistrusted. That reasoning is backwards and it cost two rules that
+    # rejected valid YAML: a quoted value containing a colon, and a plain value wrapped
+    # onto the next line. A parser is not a suspect here; it is the only witness.
+    faults, parsed = frontmatter_value_faults(text)
+    if not parsed:
+        result.note(
+            "the YAML reader is not installed here, so the frontmatter was checked with "
+            "text rules instead of by parsing it. A clean result is weaker than a parse: "
+            "the rules know only the constructs someone has already met"
+        )
+    for line_number, complaint in faults:
         result.fail(f"frontmatter line {line_number}: {complaint}")
 
     # ── name ──────────────────────────────────────────────────────────────

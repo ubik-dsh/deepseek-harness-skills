@@ -367,35 +367,76 @@ def main() -> int:
         expect("a quoted counter-example date is skipped", "will age badly" not in warnings, warnings[:90])
 
     print()
-    # ── a colon in a value, and a value carried onto the next line ────────────
+    # ── what a YAML reader does with the frontmatter ──────────────────────────
     #
     # The fault that made two skills invisible: the file parsed, the name matched,
-    # every other check passed, and the skill was not in the catalogue at all.
-    # Found by a fresh agent with no context, which is the only reader who could.
-    def _frontmatter_case(document: str) -> bool:
-        """True when the checker accepts a document it is handed verbatim.
+    # every other check passed, and the skill was not in the catalogue at all. Found by a
+    # fresh agent with no context, which is the only reader who could.
+    #
+    # Every case below was measured against the `yaml` package DSH itself bundles, and
+    # PyYAML agreed with it on all 18 constructs tried. Two versions of this rule were
+    # wrong before that: the first reported every nested key as a continuation, and the
+    # second rejected a wrapped plain scalar and every YAML list — valid files, with a
+    # message telling the author to mangle them.
+    def _frontmatter_faults(document: str) -> list[str]:
+        """Only the frontmatter complaints about a document handed verbatim.
 
-        It cannot go through fixture(), which builds the frontmatter for you and so
-        cannot produce the faults under test.
+        It cannot go through fixture(), which builds the frontmatter for you and so cannot
+        produce the faults under test. And it must not ask whether the whole file passes: a
+        fixture carrying only `name` and `description` trips every other check in the file,
+        so "no failures at all" would be testing those and not the frontmatter. Two
+        earlier versions of these cases made exactly that mistake, and one of them
+        asserted on the wording of a message the checker was about to change.
         """
         folder = root / f"frontmatter-case-{len(PASSED) + len(FAILED)}"
         folder.mkdir(parents=True, exist_ok=True)
         (folder / "SKILL.md").write_text(document, encoding="utf-8")
-        return not check_skill.check(folder).failures
+        return [f for f in check_skill.check(folder).failures if "frontmatter line" in f]
+
+    def _document(description_line: str) -> str:
+        return f"---\nname: case\n{description_line}\n---\n\n# Body\n"
+
+    for label, line in [
+        ("a plain value wrapped onto the next line",
+         "description: A value that carries on\n  onto the next line."),
+        ("an allowed-tools sequence", "description: x\nallowed-tools:\n  - Read\n  - Write"),
+        ("a tags sequence", "description: x\ntags:\n  - vk\n  - cdp"),
+        ("nested metadata keys", "description: x\nmetadata:\n  version: 1.0.0\n  status: draft"),
+        ("a nested list under a nested key",
+         "description: x\nmetadata:\n  hermes:\n    tags: [VK, video]"),
+        ("a colon in a double-quoted value", 'description: "A colon: like this one."'),
+        ("a colon in a single-quoted value", "description: 'A colon: like this one.'"),
+        ("a trailing comment after a quoted value",
+         'description: "A colon: here"  # the pitch'),
+        ("a bare colon with no space, unquoted",
+         "description: See https://example.com/a:b for the rest."),
+        ("an indented dash after a value", "description: x\n  - item"),
+    ]:
+        expect(
+            f"{label} is accepted",
+            not _frontmatter_faults(_document(line)),
+            "a parser reads it, and a parser is the only authority on that",
+        )
+
+    for label, line in [
+        ("an unquoted colon in a value",
+         "description: A skill carrying a colon: like this one."),
+        ("an indented key under a value that already has one",
+         "description: x\n  version: 1.0.0"),
+        ("a continued line carrying a colon", "description: x\n  more: prose"),
+        ("an unterminated quote", 'description: "A skill carrying a colon: like this'),
+    ]:
+        expect(
+            f"{label} is rejected",
+            bool(_frontmatter_faults(_document(line))),
+            "the reader refuses the document, and DSH then registers nothing",
+        )
 
     expect(
-        "a colon inside a frontmatter value fails",
-        not _frontmatter_case(
-            "---\nname: case\n"
-            "description: A skill carrying a colon: like this one.\n---\n\n# Body\n"),
-        "DSH declines to register such a skill and reports nothing",
-    )
-    expect(
-        "a frontmatter value carried onto another line fails",
-        not _frontmatter_case(
-            "---\nname: case\ndescription: A value that carries on\n"
-            "  onto the next line.\n---\n\n# Body\n"),
-        "a continuation ends the mapping",
+        "a line at the top level that is not a key is rejected",
+        bool(_frontmatter_faults(
+            "---\nname: case\ndescription: x\njust prose\n---\n\n# Body\n")),
+        "the mapping ends and the rest is not frontmatter",
     )
 
     print(f"{len(PASSED)} passed, {len(FAILED)} failed")
