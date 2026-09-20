@@ -180,6 +180,33 @@ been written to them. **The demonstration itself was the handful of pauses under
 being driven.** Opening that frame confirms it in one look; skipping it saves one. **The coordinates
 are cheaper than the pictures, and they are already in the file.**
 
+### `Порядок в меню` — the menu's reorder dialog
+
+**`Меню` (`settings/menu`) has its own order dialog, and it is a drag list.** Recorded from a
+demonstration on 2026-09-20:
+
+```
+Порядок в меню
+  Перетаскивайте пункты, чтобы изменить их порядок в меню
+  ≡ [ thumbnail ]  <item name>
+  ≡ [ thumbnail ]  <item name>
+  [ Сохранить ]
+```
+
+Each row carries a **drag handle**, a **thumbnail** and the item's own name, which is user data and
+not a label from VK. **The row being held is drawn with a grey background**, which is the only
+evidence in a screenshot that a drag is in progress — position alone does not show it, and neither
+does a cursor log without button state.
+
+**`Порядок разделов` on the community page and `Порядок в меню` here are two different drag lists**
+with the same interaction and different subjects. Neither saves until `Сохранить`, so a wrong drag is
+recoverable up to that point and not after.
+
+The page itself carries `Показывать блоки в сообществе` as a toggle and `Добавить элемент меню` as
+the way to add a row. **`groups.getMenu` does not exist** — `err 3` — and `groups.addLink`,
+`groups.editLink` and `groups.deleteLink` all want a user token, so with a community token this page
+has no API in any direction.
+
 ## The whole panel's URL map, read without a single click
 
 **The browser's status bar shows a link's target while the pointer is over it, so every row's URL

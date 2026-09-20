@@ -275,10 +275,15 @@ What it gives you, and why each part is there:
   demonstration shows everything except the thing being demonstrated. It is drawn with
   `DrawIconEx` and then ringed in black, white and magenta, because a real cursor is white on
   white about half the time.
-- **`cursor.csv`** — frame, milliseconds, x, y. **This is the part that makes a demonstration
-  learnable.** Twenty-five pictures are *watched*; twenty-five coordinates are *read*, and the
-  interesting moments fall out of the numbers — where the pointer paused, and where it moved
+- **`cursor.csv`** — frame, milliseconds, x, y, **buttons**. **This is the part that makes a
+  demonstration learnable.** Twenty-five pictures are *watched*; twenty-five coordinates are *read*,
+  and the interesting moments fall out of the numbers — where the pointer paused, and where it moved
   faster than a hand can point at anything.
+  **The button column was added after a demonstration it could not answer.** An operator performed a
+  drag-and-drop reorder — grab, move, release — and the trajectory showed nothing but jumps of two to
+  five hundred pixels. At five frames a second **a drag is three to five samples**, and position alone
+  cannot tell a drag from the pointer being waved across the screen. The question the recording was
+  made to answer was unanswerable from the recording. **A log of where is not a log of what.**
 - **a red border and a stamp on every frame**, so a frame from a recording can never be mistaken
   for an ordinary screenshot. That matters when the frames are the evidence.
 

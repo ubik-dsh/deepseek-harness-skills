@@ -49,6 +49,7 @@ public class ScreenWatch : Form {
         public int cbSize; public int flags; public IntPtr hCursor; public POINT ptScreenPos; }
 
     [DllImport("user32.dll")] static extern bool GetCursorPos(out POINT p);
+    [DllImport("user32.dll")] static extern short GetAsyncKeyState(int vKey);
     [DllImport("user32.dll")] static extern bool GetCursorInfo(ref CURSORINFO pci);
     [DllImport("user32.dll")] static extern bool DrawIconEx(IntPtr hdc, int x, int y, IntPtr hIcon,
         int cx, int cy, int istep, IntPtr hbr, int flags);
@@ -80,7 +81,7 @@ public class ScreenWatch : Form {
 
         Directory.CreateDirectory(outDir);
         log = new StreamWriter(Path.Combine(outDir, "cursor.csv"));
-        log.WriteLine("frame,ms,x,y");
+        log.WriteLine("frame,ms,x,y,buttons");
         start = DateTime.UtcNow;
 
         timer = new System.Windows.Forms.Timer();
@@ -181,8 +182,21 @@ public class ScreenWatch : Form {
             bmp.Save(Path.Combine(outDir, string.Format("frame_{0:D6}.png", frames)), ImageFormat.Png);
         }
 
+        // The BUTTON STATE, not just the position. A drag is a press, a movement and a release, and a
+        // log of positions alone cannot tell it from the pointer being waved across the screen - which
+        // is exactly what happened: an operator demonstrated a drag-and-drop reorder, and the
+        // trajectory showed nothing but jumps, because at five frames a second a drag is three to five
+        // samples and nothing in the file said the button was down. The question the demonstration was
+        // recorded to answer could not be answered from the recording.
+        //
+        // bit 0 is the left button. GetAsyncKeyState reads the state without disturbing it, and the
+        // high bit being set means the key is down now.
+        int buttons = 0;
+        if ((GetAsyncKeyState(0x01) & 0x8000) != 0) buttons |= 1;
+        if ((GetAsyncKeyState(0x02) & 0x8000) != 0) buttons |= 2;
+
         log.WriteLine(frames + "," + ((int)(DateTime.UtcNow - start).TotalMilliseconds) + ","
-                      + p.X + "," + p.Y);
+                      + p.X + "," + p.Y + "," + buttons);
         log.Flush();
         Invalidate();
 
