@@ -53,6 +53,29 @@ two such contradictions by eye in one day, which is two more than it should need
 mention of a unique name anywhere in a file — so a high number there is expected and is not by itself a
 problem. The lists worth acting on are the short ones.
 
+## «Покажи схему» — это команда рисовать
+
+**Когда оператор просит показать структуру, схему или связи — запускается рендерер, а не пишется
+описание словами. Схема словами — не схема.** Это записано и в `AGENTS.md` рабочей папки, чтобы
+правило нашёл любой агент, а не только тот, кто открыл этот справочник.
+
+```powershell
+python scripts/graph-skills.py .        # данные и находки
+python scripts/draw-the-family.py .     # картинка, рядом с ними
+```
+
+**Затем открыть `_graph/family.drawio` в draw.io** — двойным щелчком, потому что приложение
+установлено. Абсолютный путь к нему здесь не пишется: он машинно-зависимый, и проверяльщик скиллов
+справедливо отказывает файлу с абсолютным путём внутри.
+
+**Русские подписи лежат в `scripts/family-glossary.json`** — отдельным файлом, потому что описание
+файла это знание о семье, а не часть рисовальщика. **Файл правят руками**; нет записи — на схеме
+останется только путь.
+
+**Легенда нарисована в самой схеме**, а не описана рядом: читатель не должен узнавать, что значит
+цвет, из другого документа. Цвет говорит, **что это за файл**; обводка — **нашли его или нет**;
+стрелка — **как связь доказана**.
+
 ## Opening it
 
 The output is markdown with relative links, so **opening the repository as an Obsidian vault makes the

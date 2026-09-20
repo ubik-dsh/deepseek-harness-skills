@@ -50,7 +50,7 @@ EDGE = {
     "DANGLING":  ("#B85450", "0", 2),
 }
 
-WIDTH, HEIGHT, GAP_X, GAP_Y = 240, 40, 300, 56
+WIDTH, HEIGHT, GAP_X, GAP_Y = 330, 62, 380, 84
 
 
 def esc(text: str) -> str:
@@ -72,6 +72,11 @@ def main() -> int:
     nodes = {n["path"]: n for n in data["nodes"]}
     invisible = set(data.get("invisible", []))
     weak = set(data.get("reachable_only_by_name", []))
+
+    # Русские подписи из словаря рядом со скриптом. Он лежит отдельно и правится руками: описание
+    # файла — знание о семье, а не часть рисовальщика, и держать его в коде значит хоронить.
+    glossary_path = Path(__file__).resolve().parent / "family-glossary.json"
+    glossary = json.loads(glossary_path.read_text(encoding="utf-8")) if glossary_path.exists() else {}
 
     # One column per kind, so the picture reads left to right: what a skill is, what it explains, what
     # it runs.
@@ -104,13 +109,23 @@ def main() -> int:
         fill, stroke = THEME.get(node["kind"], THEME["file"])
         if rel in invisible:
             stroke = "#B85450"                      # a road with no sign to it
-        suffix = ""
+        short = rel.split("skills/", 1)[-1]
+        # Русское описание сверху, путь мелким шрифтом под ним: читателю нужен смысл, а путь нужен,
+        # чтобы файл можно было найти.
+        russian = glossary.get(rel, "")
+        # HTML собирается НАСТОЯЩИМИ скобками и экранируется ровно один раз, в vertex(). Первая
+        # версия писала &lt;b&gt; здесь и потом экранировала ещё раз - draw.io получил &amp;lt;b&amp;gt;
+        # и нарисовал разметку текстом. Двойное экранирование не падает, оно просто портит вид.
+        if russian:
+            label = (f'<b>{russian}</b><br>'
+                     f'<font color="#666666" style="font-size:10px">{short}</font>')
+        else:
+            label = f'<b>{short}</b>'
         if rel in invisible:
-            suffix = "  ⚠ no signposts"
+            label += '<br><font color="#B85450">⚠ нигде не назван</font>'
         elif rel in weak:
-            suffix = "  · named only"
-        label = rel.split("skills/", 1)[-1] + suffix
-        vertex(ids[rel], label, x, y, fill, stroke)
+            label += '<br><font color="#D79B00">· назван, но не связан</font>'
+        vertex(ids[rel], label, x, y, fill, stroke, height=HEIGHT + (22 if russian else 0))
 
     # Every edge, coloured by how it was established. Only the declared ones by default: a picture is
     # for reading, and four hundred inferred mentions between sixty-eight boxes is a hairball. The JSON
@@ -128,18 +143,31 @@ def main() -> int:
                      f'source="{esc(source)}" target="{esc(target)}">'
                      f'<mxGeometry relative="1" as="geometry" /></mxCell>')
 
-    # A legend, drawn as four small vertices rather than described in prose - a reader should not have
-    # to be told what the colours mean in a separate document.
-    legend = [("EXTRACTED - the road is signposted", EDGE["EXTRACTED"]),
-              ("INFERRED - named, no road drawn", EDGE["INFERRED"]),
-              ("AMBIGUOUS - one sign, two places", EDGE["AMBIGUOUS"]),
-              ("DANGLING - a sign pointing at nothing", EDGE["DANGLING"])]
-    for row, (text, (colour, dashed, width)) in enumerate(legend):
-        style = (f"text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor={colour};"
-                 f"strokeColor=none;fillColor=none;")
+    # ЛЕГЕНДА, нарисованная в самой схеме. Читатель не должен узнавать, что значат цвета, из другого
+    # файла - схема без легенды это картинка, а не карта. Рисуется списком текстовых ячеек.
+    legend_title = ["ЧТО ЗНАЧИТ ЦВЕТ РАМКИ",
+                    "синяя — скилл", "жёлтая — справочник", "зелёная — скрипт",
+                    "фиолетовая — вложение", "серая — прочий файл",
+                    "",
+                    "ЧТО ЗНАЧИТ ОБВОДКА",
+                    "тонкая — обычная", "красная толстая — файл НИГДЕ не назван",
+                    "",
+                    "ЧТО ЗНАЧИТ СТРЕЛКА",
+                    "сплошная зелёная — EXTRACTED: ссылка написана  (щит стоит)",
+                    "пунктир янтарный — INFERRED: имя есть, ссылки нет  (место названо, дороги нет)",
+                    "точками фиолетовая — AMBIGUOUS: имя подходит к двум файлам  (щит на два места)",
+                    "сплошная красная — DANGLING: ссылка в никуда  (щит в пустоту)",
+                    "",
+                    "ЧТО ЗДЕСЬ ВООБЩЕ",
+                    "Схема связей внутри семьи навыков: 9 скиллов, их справочники и скрипты.",
+                    "Стрелка означает «этот файл ссылается на тот»."]
+    for row, text in enumerate(legend_title):
+        bold = "1" if text.isupper() or text.startswith("ЧТО") else "0"
+        style = ("text;html=1;align=left;verticalAlign=middle;fontSize=12;"
+                 f"fontStyle={bold};strokeColor=none;fillColor=none;")
         cells.append(f'<mxCell id="legend{row}" value="{esc(text)}" style="{style}" '
-                     f'vertex="1" parent="1"><mxGeometry x="60" y="{1400 + row * 26}" '
-                     f'width="440" height="24" as="geometry" /></mxCell>')
+                     f'vertex="1" parent="1"><mxGeometry x="60" y="{3450 + row * 24}" '
+                     f'width="700" height="22" as="geometry" /></mxCell>')
 
     # The vendor's rules, followed exactly: two structural cells, no XML comments, unique ids, one
     # type flag per cell.
@@ -150,7 +178,7 @@ def main() -> int:
     # bar showing the right filename. The wrapped form renders. EVIDENCE BEATS DOCUMENTATION, and the
     # cost of the wrapper is one line.
     model = ('<mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" '
-             'arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1500" '
+             'arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="3400" '
              'math="0" shadow="0">'
              '<root><mxCell id="0" /><mxCell id="1" parent="0" />'
              + "".join(cells) +
@@ -176,7 +204,8 @@ def main() -> int:
         if edge["mark"] != "DANGLING" and edge.get("to", "").split("|")[0] not in ids:
             problems.append(f"edge target missing: {edge.get('to')}")
 
-    print(f"  nodes {len(nodes)}   edges {len(data['edges'])}   legend {len(legend)}")
+    print(f"  nodes {len(nodes)}   edges {len(drawn)} drawn of {len(data['edges'])}   "
+          f"legend {len(legend_title)} lines")
     print(f"  wrote {out.relative_to(repo)}  ({len(model):,} bytes)")
     print("  open it in draw.io, or:")
     print(f"    \"C:\\Program Files\\draw.io\\draw.io.exe\" \"{out}\"")
