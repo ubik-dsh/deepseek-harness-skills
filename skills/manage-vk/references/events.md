@@ -88,9 +88,24 @@ choice is not a preference.
 ## The lesson about screenshots
 
 This file exists partly because a screenshot of the event list was read by eye and disagreed with
-VK on 37 of 48 flags — and there was no way to tell whether the reading was wrong or the setting
-had not been saved yet.
+VK on 37 of 48 flags, and the disagreement was written down as *"either the reading is wrong or
+the setting had not been saved"* — leaving the reader to wonder which.
 
-**A screenshot is a claim about a setting. `groups.getLongPollSettings` is the setting.** Read it
-back from the API before acting on what a picture appears to show, and save the picture for
-explaining rather than for deciding.
+**It was the reading, and that was established by looking properly.** The screen was captured
+directly at native resolution and cropped into 1650-pixel slices, and at that size every
+checkbox in the visible region is ticked — which is exactly what `groups.getLongPollSettings`
+had said all along. The page and the API agree. The 37 disagreements were an artefact of a
+277-pixel-wide image, and the honest move was available the whole time: **the API had already
+answered, and it should have been believed instead of doubted.**
+
+Two lessons, and the second is the one worth keeping:
+
+- **A screenshot is a claim about a setting. `groups.getLongPollSettings` is the setting.**
+- **When a cheap authoritative measurement exists, do not report a doubt about a person's
+  configuration before checking it.** "Either I misread or you did not save" is a real
+  possibility and a bad thing to publish, because one of the two readings accuses the reader of
+  a mistake the tool can rule out in one call.
+
+The labels on the live page ("Действие с сообщением") also differ from the earlier screenshot's
+("Удаление сообщения"), so the first image was a different version of the page entirely — which
+is worth knowing before treating any screenshot as a record of anything.
