@@ -137,24 +137,13 @@ a plausible one.
 ## The family as a graph, and what a sign is worth
 
 **`scripts/graph-skills.py <repo>` writes `_graph/`** — an index, a page per skill, a machine form. Open
-the repository as an Obsidian vault and the graph pane works with no plugin, because nothing is copied:
-the pages link at the real files.
+the repository as an Obsidian vault and the graph pane works, because nothing is copied: the pages link
+at the real files.
 
 **Every edge carries how it was established, and no mark is hand-written — each is computed from the
-shape of the text**, so a reader can tell a surveyed road from a guess without trusting memory.
-
-| mark | on a map | in the files |
-|---|---|---|
-| `EXTRACTED` | the road is signposted | a written link whose target resolves |
-| `INFERRED` | the place is named, no road drawn | the name appears in the text with no link |
-| `AMBIGUOUS` | one sign, two places | a bare name matching more than one file |
-| `DANGLING` | a sign pointing at nothing | a link whose target is not there |
-| `ORPHAN` | a road with no sign to it | neither linked nor named anywhere |
-
-**Named-but-not-linked and named-nowhere are different problems**, and the report separates them.
-
-**Its first three versions reported confident nonsense; [references/the-family-graph.md](references/the-family-graph.md)
-records all four and what caught each.** Read it before trusting a count.
+shape of the text**, so a reader can tell a surveyed road from a guess without trusting memory. **The
+five marks, and the four wrong versions of the tool that produced them, are in
+[references/the-family-graph.md](references/the-family-graph.md).**
 
 
 

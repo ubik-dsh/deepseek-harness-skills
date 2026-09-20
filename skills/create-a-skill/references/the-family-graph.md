@@ -5,13 +5,13 @@ edge saying how it was established**. None of the marks is hand-written; each is
 of the text. The point of that is simple: **a reader can tell a surveyed road from a guess without
 trusting anybody's memory.**
 
-```
-EXTRACTED  a written link whose target resolves        the road is signposted
-INFERRED   the named file appears in the text, unlinked the place is named, no road drawn
-AMBIGUOUS  a bare name matching more than one file      one sign, two places
-DANGLING   a link whose target is not there             a sign pointing at nothing
-ORPHAN     neither linked nor named anywhere            a road with no sign to it
-```
+| mark | on a map | in the files |
+|---|---|---|
+| `EXTRACTED` | the road is signposted | a written link whose target resolves |
+| `INFERRED` | the place is named, no road drawn | the name appears in the text with no link |
+| `AMBIGUOUS` | one sign, two places | a bare name matching more than one file |
+| `DANGLING` | a sign pointing at nothing | a link whose target is not there |
+| `ORPHAN` | a road with no sign to it | neither linked nor named anywhere |
 
 **Named-but-not-linked and named-nowhere are different problems.** The first is reachable by somebody
 who reads the page that names it; the second is invisible. Reporting them together hides the one that
