@@ -67,6 +67,20 @@ file as empty and write nothing, silently, while reporting success.
 output is the usual way this bites: the console mangles them and the log becomes unreadable at
 exactly the moment it matters.
 
+**And 5.1 cannot READ non-ASCII out of its own source file either**, which is the other half of the
+same rule and was measured the hard way: **a `.ps1` with no byte-order mark is read as CP1251.** A
+script holding Russian labels failed to parse at all — *"Unexpected token"* on a string that looks
+perfectly well-formed in the editor, with the bytes in the error message rendered as `Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅРѕ`.
+That mangling is the clue: it is UTF-8 bytes being read as CP1251.
+
+| Fails | Works |
+|---|---|
+| Cyrillic literals in a `.ps1` written as UTF-8 with no BOM | transliterate the labels to ASCII |
+| the same, if the labels must stay readable | write the file with a BOM, or pass the values in from a UTF-8 data file |
+
+The transliteration is usually the right answer for a script's own labels — they identify a row for
+the reader of a screenshot, and the row's identity does not depend on its spelling. **[ours]**
+
 ```powershell
 $PSVersionTable.PSVersion.Major          # 5 or 7, and the rules differ
 [System.Text.Encoding]::UTF8             # what you think you are writing

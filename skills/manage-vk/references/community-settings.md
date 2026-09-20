@@ -143,6 +143,52 @@ demonstration is not a reason to change someone's community. **The honest entry 
 measured", and it is worth more than a guess written as a table row** — which is the same charge
 this skill earned earlier in the session and should not earn twice.
 
+## The whole panel's URL map, read without a single click
+
+**The browser's status bar shows a link's target while the pointer is over it, so every row's URL
+can be read by hovering — nothing is opened and there is no state to put back.** The whole map
+below came from fourteen hovers and one picture, where clicking through would have been fourteen
+navigations:
+
+```
+1  Настройки        https://vk.ru/club241624898?act=edit
+2  Кнопка действия  https://vk.ru/club241624898/settings/cta
+3  Разделы          https://vk.ru/club241624898/settings/sections
+4  Комментарии      https://vk.ru/club241624898?act=activity
+5  Ссылки           https://vk.ru/club241624898/settings/links
+6  Адреса           https://vk.ru/club241624898?act=addresses
+7  Меню             https://vk.ru/club241624898/settings/menu
+8  Канал            https://vk.ru/club241624898/settings/channel
+9  Подписчики       https://vk.ru/club241624898/settings/subscribers
+10 Сообщения        https://vk.ru/club241624898/settings/messages
+11 Чаты             — nothing, see below
+12 Приложения       https://vk.ru/club241624898?act=apps
+13 Дополнительно    https://vk.ru/club241624898/settings/extras
+14 Журнал действий  https://vk.ru/club241624898/settings/extras
+```
+
+**Two exceptions, and they are the reason this is a measurement and not a rule.**
+
+- **`Чаты` showed nothing at all.** It is not a link, so hovering cannot reach it and only a click
+  reveals where it goes. **Hover reads most of a panel, not all of it** — and a row that shows
+  nothing is a finding, not a failure of the method.
+- **`Дополнительно` and `Журнал действий` are the same URL.** Two rows of a sidebar can lead to one
+  page, with the second being a section within the first, so an address is not a row's identity.
+  Anyone mapping rows to URLs by counting will be wrong by one from there on.
+
+**Three shapes of address exist** — `?act=<name>`, `settings/<name>`, and a page shared between two
+rows — which is why the map could not be guessed and had to be read.
+
+**How to read a status bar that is one line tall.** Hover a row, capture the window, crop the strip
+at the bottom-left, and **stack the fourteen strips into one image with the row names drawn beside
+them**. Fourteen pictures become one, and a single look gives the whole panel. The text sits about
+28 px above the window's bottom edge on a 2568x1400 window.
+
+**And the script that does it had to be ASCII.** Windows PowerShell 5.1 reads a `.ps1` with no
+byte-order mark as CP1251, so the Russian row names in the first version did not parse at all —
+`Unexpected token` on a well-formed line. The labels were transliterated; the row *order* is the
+panel's own, so nothing was lost. The trap is written up in `manage-windows`.
+
 ## The management pages have URLs, and there are two shapes of them
 
 **Do not click through the panel — read the address after one click, then navigate directly.**
