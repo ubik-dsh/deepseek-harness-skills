@@ -102,18 +102,40 @@ enables **Long Poll API**, which a bot needs and publishing does not.
 becomes `owner_id=-241624898` at the call. Getting this sign wrong is the most common
 single mistake in this API, and it fails in a way that looks like a permissions problem.
 
-## Step 2 — read before writing
+## Step 2 — what a community token can and cannot do, measured
 
-```bash
-python scripts/preflight.py --target -241624898 --show-wall 5
+**A community token can write and cannot read, and it can write and cannot undo.** Both were
+measured against the live API, and both change the shape of the work:
+
+```
+CAN     groups.getById   groups.getTokenPermissions   groups.getMembers   groups.edit
+        messages.getConversations   users.get
+        wall.post            <- publishing works
+        wall.closeComments
+CANNOT  wall.get   wall.getById   wall.getComments      <- no reading at all
+        wall.delete   wall.edit   wall.restore          <- no undo at all
+        photos.getWallUploadServer                      <- no photo upload
+        stats.get   board.getTopics   market.get   account.getAppPermissions
 ```
 
-Reading first is not a formality. It establishes four things a write depends on: that the
-target resolves to the community you think it is, that the wall is writable at all, what is
-already on it, and that the token's authority covers it.
+Every refusal is `error 27 Group authorization failed: method is unavailable with group auth`,
+and **the permission mask says nothing about it** — this key carries a `wall` permission and
+still cannot call six of the eight `wall.*` methods. The mask says what the key is for; it does
+not say what VK will accept.
 
-**A wall that cannot be read is not a wall that can be written**, and the error it gives
-when you try is usually less specific than the one it gives when you read.
+So **"read the wall before writing to it" is not possible with this credential**, and the first
+version of this skill promised exactly that. What replaces it:
+
+- **Read with a different key.** A **service token** reads public data without acting as
+  anyone, and cannot post. Two credentials with two scopes is a design, not a workaround.
+- **Confirm by `post_id`, and by eye.** `wall.post` returns the id; the human opens the
+  community and looks. That is the verification this credential allows.
+- **The preflight still runs first**, and still changes nothing: it resolves the community,
+  lists the permissions, flips a positive id to a negative owner, and reports which reads this
+  token cannot do instead of failing on them.
+
+**Never call `wall.delete` and assume it worked.** It answers error 27 on a community token, and
+a post published with one **can only be removed by hand**.
 
 ## Step 3 — the confirmation gate
 
@@ -147,17 +169,21 @@ python scripts/preflight.py --target -241624898 --dry-run     # what would be se
 post is reviewable between the decision and the effect, and a wrong one can be removed
 before anyone sees it.
 
-## The photo sequence is four steps, and the order matters
+## The photo sequence is four steps, and none of them works with a community token
 
 1. `photos.getWallUploadServer` with `group_id` → a one-use upload URL;
 2. `POST` the file to that URL → it returns `server`, `photos`, and a `hash`;
 3. `photos.saveWallPhoto` with those three → a photo object with an `owner_id` and an `id`;
 4. `wall.post` with `attachments=photo<owner_id>_<id>`.
 
-**Each step's output is the next step's input, and none of them is a URL you can reuse.**
-The upload host is not the API host; the `hash` is not the `photos` field; and a photo that
-has been saved once does not need saving again. A failure in step 3 leaves an uploaded file
-that nobody will ever look at, which is harmless and should simply be retried.
+**Step 1 answers error 27 on a community token**, so the sequence cannot start. It is written
+down because the shape is right and a service or user token would need it — not because this
+credential can run it. Text posts are what a community token is for.
+
+**Each step's output is the next step's input, and none of them is a URL you can reuse.** The
+upload host is not the API host; the `hash` is not the `photos` field; and a photo saved once
+does not need saving again. A failure in step 3 leaves an uploaded file nobody will look at,
+which is harmless and should simply be retried.
 
 ## Errors do not arrive as HTTP errors
 
