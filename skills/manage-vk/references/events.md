@@ -84,6 +84,36 @@ way.** A community token cannot delete a post, so the first write probe left one
 human told to remove it by hand — and nothing could confirm that the human did. This event is
 that confirmation, delivered to a key that cannot read the wall.
 
+### The first real post, observed
+
+Measured, on a live community, minutes after the first post was published with this credential:
+
+```
+EVENT wall_post_new
+  {"inner_type": "wall_wallpost", "type": "post", "from_id": -241624898,
+   "date": 1789909506, "created_by": 4341552, "can_edit": 1, "can_delete": 1,
+   "comments": {"count": 0}, "attachments": [], "marked_as_ads": 0,
+   "post_author_data": {"author": 4341552}}
+```
+
+**A token that cannot call `wall.get` learned in real time that a post had appeared, and was
+handed its content.** That is the reading gap answered, and it is worth being precise about what
+it does and does not replace: this arrived because a subscription was already open and the event
+happened while it was. Nothing in it can be replayed, and it says nothing about the wall as it was
+before.
+
+### `can_delete` does not mean this token can delete
+
+The event says `can_delete: 1` and `can_edit: 1`. **That describes the post, not the credential.**
+These fields are about the rights a *human administrator* has over the post; `wall.delete`,
+`wall.edit` and `wall.restore` all answer error 27 for a community token, immediately before and
+after this event arrived.
+
+**An agent that reads `can_delete: 1` and calls `wall.delete` gets the same refusal it would have
+got without the event** — and one more reason to be sure before posting, because the field reads
+like a permission it does not have. Where a returned value describes someone else's rights, say
+whose.
+
 ### And the limit of it, which matters as much
 
 **Events are not history.** The stream carries what happens *while you are listening*. It cannot

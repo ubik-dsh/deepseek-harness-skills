@@ -193,12 +193,22 @@ Three rules make it a gate rather than a courtesy:
 ## Step 4 — publish, or schedule
 
 ```bash
-python scripts/preflight.py --target -241624898 --intent post     # what this token may do
+python scripts/post.py --env-file "$DSH_HOME/vk.env" --target 241624898 --file draft.txt
+python scripts/post.py ... --confirm          # only after the human has agreed
 ```
 
-**A post that can wait should be scheduled** (`publish_date`, a unix timestamp). A scheduled
-post is reviewable between the decision and the effect — and with this credential it is the only
-review there is, because it cannot be edited or deleted afterwards.
+**The gate is two phases and the phase is the point.** Without `--confirm` the script prints the
+target, the authority, the effect, the length and the text, and sends nothing. With it, it sends.
+A human stands between the two; the script cannot verify that one agreed, but it can refuse to act
+without a declared confirmation.
+
+**A post that can wait should be scheduled** (`--schedule`, a unix timestamp). A scheduled post is
+reviewable between the decision and the effect — and with this credential it is the only review
+there is, because it cannot be edited or deleted afterwards.
+
+**After publishing, the event stream is how you learn it worked.** `wall_post_new` arrives with the
+post's content, to a key that cannot read the wall. See
+[references/events.md](references/events.md).
 
 ### There is no safe write probe with a community token, and the first version of this got it wrong
 
