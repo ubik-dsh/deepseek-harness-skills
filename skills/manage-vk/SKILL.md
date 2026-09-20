@@ -259,18 +259,22 @@ unless the difference is on the page. The mechanism — the photo lands in the m
 (`album_id: -64`) and VK attaches only what it considers the wall's own — is **inference**, and it
 is labelled as inference rather than as the reason.
 
-**So a post with a picture is two steps, and the second one has no API at all:**
+**The composer is in the interface, and it has two buttons called «Создать».** The one beside
+`Видео | Клипы` offers only video, a live stream and a playlist. **`+ Создать` on the wall row is
+the composer**, and it offers `Пост`, `Пост в канал`, `История`, `Клип`, `Видео`, `Трансляция` and
+**`Статья`** — so an article, the one thing this family had recorded as having no route at all, has
+one here.
+
+**A post with a picture is still two steps, because the API attach is what fails:**
 
 ```
 1  wall.post through the API        the post exists, text only
 2  edit that post in the interface  … -> Редактировать -> Загрузить с устройства -> Далее -> Сохранить
 ```
 
-**There is no composer in the interface**, so step 1 cannot be skipped — on a community where the
-signed-in account is a member and not an administrator the page has no "create a post" control, and
-the wall, `Отложенные`, `Видео` and "К оформлению" are all it offers. Step 2 is documented in
-[references/editing-a-post-in-the-interface.md](references/editing-a-post-in-the-interface.md), and
-it runs as the signed-in person rather than as the scoped key.
+Step 2 is documented in [references/editing-a-post-in-the-interface.md](references/editing-a-post-in-the-interface.md),
+and it runs as the signed-in person rather than as the scoped key. **Where the text alone is enough,
+the composer makes the post in the interface and nothing leaves the scoped key at all.**
 
 **The likely mechanism is the album** — the photo lands in the messages album (`album_id: -64`)
 and VK attaches only photos it considers the wall's own. That part is inference. What is measured

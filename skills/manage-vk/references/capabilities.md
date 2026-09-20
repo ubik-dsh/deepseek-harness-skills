@@ -36,15 +36,34 @@ and `photos.saveMessagesPhoto` returns a real photo the community owns. What fai
 step — `wall.post` drops the attachment without a word. One refused method is not an absent
 capability, and the first version of this list concluded the second from the first.
 
-### The order that works for a post with a picture, and the entry point that does not exist
+### The composer exists, and the first version of this file said it did not
 
-**There is no interface route to create a post.** A fresh agent spent most of a session looking for
-one on a community where the signed-in account is a **member and not an administrator**: the page
-offers a feed, `Отложенные`, `Видео`/`Клипы`, a "К оформлению" draft card, and **no composer at
-all** — while the same account can still edit and pin an existing post, which is inconsistent and
-worth knowing before hunting for a button that is not there.
+**There are two buttons called «Создать» on a community wall, and only one of them composes a
+post.**
 
-So the order is:
+```
+«Создать» beside «Видео | Клипы»   ->  Создать видео / Начать трансляцию / Создать плейлист
+«+ Создать» on the wall row        ->  Пост / Пост в канал / История / Клип / Видео /
+                                       Трансляция / Статья
+```
+
+The second is the real composer, and `Пост` is the first item and carries the selection mark. **A
+fresh agent spent most of a session looking for a post composer, found only the first button, and
+concluded there was none** — which was written into this file as fact before anyone checked. It is
+not true: the composer is on the wall, one row below the media button, and the difference between
+them is a leading `+`.
+
+**`Статья` is in that menu**, which matters because a VK article is the one thing this family had
+recorded as having no route at all. The route is here.
+
+**And the account is not a plain member.** The community's own sidebar shows `Управление`,
+`Сообщения`, `Статистика`, `Монетизация`, `Комментарии` and `События` — management access — which
+is why editing and pinning work. A conclusion about what an interface offers, drawn from a button
+not being where it was expected, is worth checking against the sidebar before it becomes a sentence
+in a skill.
+
+So the order below still holds for a picture, but for a reason that is about the *attach* and not
+about the composer:
 
 ```
 1  wall.post through the API        the post exists, with its text and no picture
@@ -54,7 +73,9 @@ So the order is:
 
 **Step 3 runs as the signed-in person, not as the community key, and that has to be said when it is
 used** — it is the one place this skill leaves the scoped credential. It is authorised when the
-operator asked for a post with a picture and the API cannot deliver one, which is this case.
+operator asked for a post with a picture and the API cannot deliver one, which is this case. Where
+the text alone is enough, **the composer can make the post in the interface instead** and nothing
+leaves the scoped key at all.
 
 Two boundaries decide more than the rest, and both are asymmetries rather than absences:
 

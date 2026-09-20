@@ -1,5 +1,49 @@
 # Editing a post in the interface, because the API cannot
 
+## The composer, and the other button with the same name
+
+**Two controls on a community wall both say «Создать». Only one of them composes a post.**
+
+```
+Создать   beside «Видео | Клипы»   ->  Создать видео
+                                       Начать трансляцию
+                                       Создать плейлист
+
++ Создать  on the wall row         ->  Пост          <- the composer, and the default
+                                       Пост в канал
+                                       История
+                                       Клип
+                                       Видео
+                                       Трансляция
+                                       Статья
+```
+
+**The difference is a leading `+` and a row.** A fresh agent found the first button, concluded there
+was no composer, and that conclusion reached this repository before anyone checked it — so this
+section exists to stop the next reader repeating the search.
+
+**`Статья` is the interesting one.** A VK article is the thing this family had recorded as having no
+route at all, on the strength of an FAQ page that would not serve its body; the route is here, in a
+menu three rows below the wall's own compose button.
+
+**The account that can see this menu can also see `Управление` in the community sidebar**, with
+`Сообщения`, `Статистика`, `Монетизация`, `Комментарии` and `События` beneath it. If those are
+absent, the account is a plain member, the composer is absent too, and posting is API-only.
+
+## Ordering the community's own sections
+
+**`Порядок разделов` is a drag-order editor with no API at all.** It opens from the community page
+and offers draggable rows — `Посты`, `Видео`, `Клипы` — with `Отмена` and `Сохранить`. The
+description above the list is its own: *"Перетаскивайте блоки, чтобы изменить порядок разделов в
+своём сообществе. Для некоторых блоков вы можете выбрать способ отображения."*
+
+Two things follow. **A drag is not a click**, so `manage-windows`'s rule applies with the cursor
+release as well as the press — and the dialog saves on `Сохранить`, so a drag that lands wrong is
+recoverable until then. And **the order of a community's sections is a thing an operator may ask
+for and no method can do**, which makes it a capability of the interface and not of the credential.
+
+**A VK community token cannot touch any of this.**
+
 **A community token cannot edit a post.** `wall.edit` answers error 27, and `wall.delete` and
 `wall.restore` with it. So there is no API route to adding a photo to a post that already exists —
 and the interface route does exist, is not documented anywhere in this family, and was learned by
