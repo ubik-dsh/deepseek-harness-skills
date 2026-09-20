@@ -77,7 +77,22 @@ OBFUSCATES = {
 
 # ── aimed at an agent rather than at a person ────────────────────────────────
 # Candidates only. See the module docstring: this cannot be solved by patterns.
+# A document addressed to an agent that issues orders is an injection whether or not it
+# says "ignore previous instructions". The first version had the classic override phrases
+# and nothing else, so a file named AGENTS.md whose whole content is mandatory instructions
+# scored ZERO injection candidates while a setuptools exec() scored a REVIEW. Found by the
+# mathematics agent, which had downloaded exactly such a file.
 INJECTS = {
+    # The strong tier: a directive that comes WITH concealment or override. The directive
+    # alone is what a skill is made of - our own eight skills produced forty hits and one
+    # BLOCK before these were separated, which is how a reader learns to skim the one output
+    # that must never be skimmed.
+    'do not tell the user': r"\bdo not (?:tell|mention|inform|reveal|disclose)\b",
+    'asks for secrecy': r"\b(?:without (?:asking|telling|informing|confirming)"
+                        r"|(?:silently|quietly) (?:do|run|execute|modify|delete))\b",
+    'overrides previous instructions': r"\boverrid\w*\b",
+    'regardless of the rules': r"\bregardless of\b",
+    'must not be questioned': r"\bmust (?:not )?(?:be )?(?:ignored|obeyed|followed)\b",
     "overrides previous instructions": r"ignore\s+(all\s+)?(the\s+)?(previous|prior|above|earlier)\s+(instructions|prompts|rules|context)",
     "disregards or forgets": r"(disregard|forget)\s+(everything|all|the)\s+(above|previous|prior)",
     "asserts a new identity": r"you\s+are\s+(now|no\s+longer)\b|your\s+new\s+(role|instructions|rules)",
@@ -88,6 +103,11 @@ INJECTS = {
     "asks to move context out": r"(send|upload|post|exfiltrate|transmit)[^\n]{0,50}(context|conversation|history|memory|keys|tokens|\.env)",
     "hides itself": r"do not\s+(display|show|print|output)\s+this|<!--\s*(instruction|system)",
 }
+
+# Boundaries, because a substring is not a word. `.env` inside `os.environ` was reported as
+# a file being posted somewhere, which is the kind of hit that trains a reader to skim the
+# output - and the same report contained a document ordering agents that we missed entirely.
+WORD = r"(?<![A-Za-z0-9_]){}(?![A-Za-z0-9_])"
 
 NEGATIONS = re.compile(
     r"\b(never|do not|don't|avoid|must not|should not|refuse|prohibit|warning|caution|"

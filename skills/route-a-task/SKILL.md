@@ -97,6 +97,11 @@ agents routed by this regulation hit it, and one had already read the page befor
 then read it with the findings in hand. Reading first and scanning afterwards is not the gate;
 it is the gate performed after the thing it guards.
 
+**Which tool, and where it is.** `find-a-skill/scripts/check-external-skill.py`, inside the
+skill of that name in this family's skills root. Three agents were routed by this regulation
+and **all three had to find the path in the router's source**, because the prose named the
+scan without saying where it lives. A gate a reader cannot run is a gate that gets skipped.
+
 **The tool is itself third-party.** The scanner's hidden-character rules are adopted from
 NVIDIA/SkillSpector, Apache 2.0, named in its own source. That is outside content inside the
 instrument the gate declares required, and self-scanning is not a gate. **Say where the tool
@@ -152,8 +157,30 @@ is worth more than a green check that means nothing.
 | a rule from outside is about to be applied | the external-content scan, then judgement | **REQUIRED** — G1 |
 | the right approach is genuinely unknown | `find-a-skill` in its widest sense: look before deciding | **CONSIDER** |
 | a task is long and its state would be lost | a written record, wherever this harness keeps them | **CONSIDER** |
+| **a tool or repository has to be chosen from several candidates** | say why the chosen one wins and **name at least two rejected, with the reason** | **REQUIRED** — see below |
 
 ---
+
+### G5 — choosing a tool is a decision with a record
+
+**All three agents routed by this regulation were asked to pick a tool, and the regulation had
+no row for it** — so the one thing they were doing was the one thing it did not cover. Skill
+authoring was mandatory and tool selection was unregulated, which is backwards: a skill is
+written once and a tool is chosen constantly.
+
+The obligation is not "search" — it is **record the choice**, with the same shape as the search
+G2 demands:
+
+```
+chosen     the tool, and the one property that decided it
+rejected   at least two, each with the reason it lost
+limit      what you could not verify without running it
+```
+
+**Three was the number the agents reached on their own**, and each rejection was a sentence
+about a different trade-off - spans against a single label, offline against a runtime model
+download, a maintained licence against NOASSERTION. **A choice with no rejected alternative is
+not a choice**, and a choice with no reason is a preference.
 
 ## When two apply
 
