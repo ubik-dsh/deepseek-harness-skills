@@ -25,6 +25,32 @@ longer, but because it says which line is a requirement.**
 
 ---
 
+## What a gate is for
+
+**A gate is not a checklist to consult.** It is a forcing function, and the difference decides
+whether the regulation works.
+
+An agent that has forgotten a step does not need to be pointed at a skill. **It needs the step
+handed to it at the moment it is standing at the gate** — or "I forgot, let us redo it" is the
+normal outcome, and the work is thrown away rather than corrected.
+
+So every gate below carries **the literal step**, the command where there is one, the rule that
+decides, and the record it owes. `route.py` prints the steps. **An agent reading only the gate
+can comply without going anywhere else.**
+
+And what follows from that: **a gate that was passed without a record can be found at the end.**
+
+```bash
+python scripts/route.py "download a skill and publish it" --verify record.json
+```
+
+It names the gates that fired, the gates with a record, and the difference — and **for each
+missing one it reprints what that gate wanted.** Exit 1 when something is missing, so a check
+can stop on it.
+
+**That is the whole exchange:** the omission is found *before* the redo, not after, and the
+instruction arrives with the finding.
+
 ## The gates — no judgement allowed
 
 These are not "consider". A gate either passed or the work stops, and it stops **before** the
