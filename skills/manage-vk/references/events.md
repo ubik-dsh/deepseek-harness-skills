@@ -158,3 +158,19 @@ Two lessons, and the second is the one worth keeping:
 The labels on the live page ("Действие с сообщением") also differ from the earlier screenshot's
 ("Удаление сообщения"), so the first image was a different version of the page entirely — which
 is worth knowing before treating any screenshot as a record of anything.
+
+## The interface has an audit log, and this credential has no other one
+
+**Журнал действий at ?act=event_log records what the community's own administrators and the API key
+did** - section headings, the actor, the action in a sentence and a timestamp, newest first, with
+filters for action type, role and range. It logs Работа с API, Изменение настроек and Работа со
+стеной, it lists the Long Poll event toggles, and **it records the token's own creation**
+(создал ключ доступа vk1.********8_WA).
+
+**This matters more here than anywhere else in the skill, because a community token cannot read its own
+writes back.** wall.get is refused, wall.delete is refused, and a post that was dropped an
+attachment returns the same post_id as one that was not. **The audit log is the only trail of what
+this key has done** - and it is on a page, not in a method: groups.getEvents and groups.getEventLog
+both answer **err 27**, so a community token cannot read it either.
+
+**So read it by hand when a write matters**, and say in the record that you did.

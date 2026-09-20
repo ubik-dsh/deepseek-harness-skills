@@ -115,7 +115,7 @@ calls have to be combined before a person would recognise the result.
 | a person says | the capability | the calls, in order | what it costs |
 |---|---|---|---|
 | "post this" | **publish** | `wall.post` with `from_group=1` | permanent. No undo through the API |
-| "post this **with a picture**" | **publish, then edit** | `wall.post`, then the interface: `…` → Редактировать → Загрузить с устройства → Далее → Сохранить | see below — **there is no other way, and there is no composer** |
+| "post this **with a picture**" | **publish, then edit** | `wall.post`, then the interface: `…` → Редактировать → Загрузить с устройства → Далее → Сохранить | see below — **this key cannot attach a photo, and the page is the only route** |
 | "post this tomorrow at nine" | **schedule** | `wall.post` with `publish_date` | reviewable until it fires, then permanent |
 | "what's happening here" | **monitor** | Long Poll subscription — *not* `wall.get` | events only, from the moment you subscribe. Not history |
 | "close the comments on that" | **moderate** | `wall.closeComments` | small, reversible by reopening |
@@ -260,7 +260,43 @@ the missing half is the one that happened to be probed first.
 
 **err 100 is a good probe result.** It means the call reached the method and this credential was
 allowed to make it, and only the arguments were wrong — which is what a probe with no arguments should
-produce. **err 3 and err 27 prove absence; err 100 proves presence.**
+**err 100 is a good probe result — on a method that validates its parameters.** It means the call
+reached the method and this credential was allowed to make it, and only the arguments were wrong.
+**err 3 and err 27 prove absence; err 100 proves presence.**
+
+**AND THE CONTROL IS NOT OPTIONAL.** Without it, `err 27` is indistinguishable from a service that
+refuses every name with that prefix:
+
+```
+groups.zzzNoSuchMethodXYZ   err 3    a name that cannot exist - so VK resolves by FULL NAME
+groups.getSettings          err 27   and that is what makes an err 27 mean anything
+```
+
+**Always send one nonsense method name first.** An independent agent got this by luck and wrote that it
+had; the file should have said so.
+
+### `err 100` does not work on `groups.edit`, and it cost this file a table
+
+**`groups.edit` silently ignores a parameter it does not know and returns `1` anyway.** Measured twice,
+independently, on 2026-09-20:
+
+```
+groups.edit(zzzNotAParameterXYZ='1')    ->  1        accepted, meaningless
+groups.edit(title='')                   ->  1        and the name did NOT change
+```
+
+So a `groups.edit` that returns without error proves **only that the call was made**. It does not say
+the parameter exists, and it does not say the value was written.
+
+**The settings table at the top of `community-settings.md` was built by writing each value back and
+reading "accepted" — which this makes worthless.** Those parameters are **documented by VK and not
+measured here**, and the file now says so. What would measure one is a real change to a harmless field
+followed by a read-back, which is a change and not a probe.
+
+**And this is the third form of the same defect in one file**: one refused method read as an absent
+capability; a read refused read as its writes being absent; and now a reply with no error read as a
+parameter being accepted. **Every one of them is a conclusion drawn from a single reply instead of from
+the effect.**
 
 ## When to split this skill, written down before it is needed
 

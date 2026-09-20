@@ -63,6 +63,13 @@ as interface-only and send the next reader to the screen for something one reque
 
 Measured on 2026-09-20 with a community token, on community `241624898`:
 
+**READ THE TABLE WITH ITS CAVEAT.** Everything below rests on `groups.edit` returning without an error
+when each value was written back — and an independent agent then measured that **`groups.edit` ignores
+a parameter it does not know and returns `1` anyway**. So the table shows what VK **documents** and what
+this key **may call**; it does **not** prove that any named parameter is written. See
+[capabilities.md](capabilities.md), *"err 100 does not work on groups.edit"*. Measuring one properly
+means changing a harmless field and reading it back, which is a change rather than a probe.
+
 | the page shows | in the API? | how |
 |---|---|---|
 | Название | **yes, writable** | `groups.edit title=…` |
@@ -73,7 +80,12 @@ Measured on 2026-09-20 with a community token, on community `241624898`:
 | Описание, Статус | **yes, writable** | `groups.edit description=…`, `status=…` |
 | Обложка | **interface only** | `groups.edit` has no cover |
 | Отметки сообщества — Верификация, Подтверждённый бизнес | **interface only** | an application a human submits |
-| the sidebar: Адреса, Меню, Канал, Приложения, **Журнал действий** | **interface only** | — |
+| the sidebar: Адреса, Меню, Канал, **Приложения** | **interface only** | — |
+| the sidebar: **Журнал действий** | **two methods exist, refused** | `groups.getEvents`, `groups.getEventLog` — both `err 27` |
+
+**The `Журнал действий` row said "interface only" and that was wrong** — an independent agent measured
+two methods for it, and it is exactly the error this file warns about forty lines further down:
+*"this key cannot"* written as *"the API cannot"*. The row is corrected above.
 
 **So the rule is: check `groups.edit` before opening the browser.** The page and the method overlap
 more than the page suggests, and `groups.edit` is one of the calls this credential can actually
@@ -205,13 +217,61 @@ order changed. The grey background is that state, and reading it is what makes t
 rather than hoped for — see `learn-an-interface`'s *record the logic, not the coordinates*.
 
 **`Порядок разделов` on the community page and `Порядок в меню` here are two different drag lists**
-with the same interaction and different subjects. Neither saves until `Сохранить`, so a wrong drag is
-recoverable up to that point and not after.
+with the same interaction and different subjects.
+
+**AND THE DIALOG AGREEING WITH ITSELF PROVES NOTHING.** This file said *"a wrong drag is recoverable up
+to `Сохранить` and not after"*, which is true and hides the failure that matters. An independent agent
+dragged, **saw the accept state, released, watched the dialog keep the new order, clicked `Сохранить` —
+and the change did not persist.** A second attempt in the opposite direction did. It never established
+why, and neither can this file. **Only a reload proves it**, and a new tab proves it harder:
+`sections/menu` re-read after a fresh load is the test, and the dialog is not evidence of anything.
 
 The page itself carries `Показывать блоки в сообществе` as a toggle and `Добавить элемент меню` as
 the way to add a row. **`groups.getMenu` does not exist** — `err 3` — and `groups.addLink`,
 `groups.editLink` and `groups.deleteLink` all want a user token, so with a community token this page
 has no API in any direction.
+
+### `Журнал действий` — the community's audit log, and the key's own trail
+
+```
+?act=event_log
+```
+
+**Newest first, grouped by day, with three filters** — action type (`Все действия`), role (`Все роли`)
+and range (`Всё время`) — plus a list/grid toggle. Each row is a section heading, an actor link, the
+action in a sentence, a timestamp and an avatar. Sections seen include `Работа с API`,
+`Изменение настроек` and `Работа со стеной`.
+
+**It records the token's own history** — the entry for its creation reads `создал ключ доступа
+vk1.********8_WA` — and it lists the Long Poll event toggles. **This is the closest thing a community
+token has to an audit trail of itself**, in a skill whose central warning is that a write cannot be
+undone or read back; `events.md` now points here.
+
+**API: two methods exist and are refused.** `groups.getEvents` and `groups.getEventLog` both answer
+**err 27**. Every other plausible name — `groups.getLog`, `getAuditLog`, `getActionLog`, `getHistory`,
+`getModerationLog`, `getActions` — answers **err 3, absent**. That the 27s mean anything rests on the
+control: a nonsense name must answer 3 first. **Which of the two serves this page is inference from the
+names and is not measured**, because no second credential was available to try them.
+
+### `Приложения` — a catalogue with no API at all
+
+```
+?act=apps
+```
+
+A catalogue of community mini-apps: `Приложения сообществ`, `Приложения для любых задач` with
+`Перейти в каталог`, then installable apps each with a `Добавить` button — VK Донат, VK Билеты,
+ProSender, ChatRex, CalcPro. Its own sidebar tip says **«Вы можете менять порядок установленных
+приложений, перетаскивая их курсором»** — the same drag interaction as the menu, applied to apps.
+
+**The `apps.*` namespace exists and is refused** — `apps.get`, `getCatalog`, `getLeaderboard`,
+`getScore`, `getFriendsList`, `deleteAppRequests`, `sendRequest` all answer **err 27**. But **every
+community-side name answers err 3**: `groups.getApps`, `getInstalledApps`, `getGroupApps`,
+`getAppPermissions`, `editApp`, `addApp`, `getMarketApps` **do not exist**.
+
+**So installing, removing or reordering a community's apps has no API at all** — which is a stronger
+statement than a refusal, and the two are worth telling apart. The reorder is interface-only by
+construction, not by permission.
 
 ## The whole panel's URL map, read without a single click
 

@@ -107,6 +107,29 @@ written down they carry a warning to re-measure, and the warning is not a formal
 a row by 18 px between two sessions, and a whole map of fourteen rows was recorded wrong from guessed
 positions.
 
+### A coordinate read off a magnified crop is not a screen coordinate
+
+**The crop is scaled, and the model is shown a scaled copy of the scaled crop.** So a number read from
+the picture in front of you passes through two factors before it means anything, and both are easy to
+forget:
+
+```
+the crop was magnified by N        so a distance in the picture is N times a screen distance
+the harness downscales the image   so the preview may be a third size again
+```
+
+**An independent agent lost roughly half a session to this**: its first `Сохранить` click landed
+**123 px** off, from a coordinate read off a magnified crop. **Measure in the raw capture**, and compute
+the mapping explicitly — `absolute = origin + magnified / N` — rather than reading a position by eye.
+**Or do not measure at all**: find the control by its own pixels, or ask the page for its geometry.
+
+**And a dialog is animated.** A coordinate taken in the first moment after it opens is stale: the panel
+was still moving and the number describes a frame that no longer exists. **Wait for it to settle** —
+about four seconds was enough here — before measuring anything inside it.
+
+**Both of these are the same mistake as a remembered coordinate**: a number that was true of a
+different picture.
+
 **The distinction has a use in the other direction too: a calibration SHOULD record instances.** Pixels,
 timings and both endpoints are exactly how a numbering scheme gets established — `754,235` is why the
 drag could be told from a stray click. **Instances to measure with; rules to write down.**
