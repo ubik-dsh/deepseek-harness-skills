@@ -223,6 +223,26 @@ relevant, because each one protects against a different failure and the cheapest
 **A gate that is inconvenient is still a gate.** The moment it becomes optional-in-practice is
 the moment the family's rules go back to being advice.
 
+## A fault outside the harness's domain
+
+**The third agent's task was a car that would not start, and the regulation had no row for
+it.** That is not a gap to fill with advice about cars - it is the row this family was
+missing: **work that is outside every tool here, which still has to be done properly.**
+
+The obligation is small and it is the same one G5 asks for:
+
+```
+say so     name what you checked, so the gap is a finding rather than an oversight
+method     carry the frame across even where the tool does not - evidence before
+           hypothesis, a falsifiable test named before the observation, a reading not
+           taken is not a reading that came back clean
+record     what you did, so the next agent does not redo it
+```
+
+**The frame travels; the commands do not.** That agent's whole method came from the body of a
+Windows skill whose commands were useless to it. **That is the argument for a gate handing over
+the referral as well as the step**, and it is why the router now prints both.
+
 ## When nothing applies
 
 **Say so, and do the work.** A regulation that fires on everything is one nobody reads, and a

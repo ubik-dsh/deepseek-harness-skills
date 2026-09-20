@@ -64,10 +64,18 @@ GATES = [
     {
         "id": "G3",
         "name": "read the machine before changing it",
-        "when": ["repair", "fix", "broken", "fails", "failing", "crash", "reboot", "blue screen",
-                 "bsod", "slow", "hot", "noise", "boot", "won't start", "disk", "drive",
-                 "memory", "temperature", "починить", "сломал", "перезагру", "тормоз", "шум",
-                 "греет", "не грузит"],
+        # Windows symptoms and nothing else. The first version carried bare phrases like
+        # "won't start", "slow" and "hot", which belong to no platform - and "a car won't
+        # start" fired this gate and demanded a Windows hardware collector for a car, while
+        # "a car will not start" fired nothing. Coverage was keyword-shaped and punctuation
+        # decided it. Found by the agent whose task was the car.
+        "when": ["blue screen", "bsod", "event log", "device manager", "driver", "windows update",
+                 "won't boot", "will not boot", "bcdedit", "chkdsk", "sfc /scannow",
+                 "smartctl", "whea", "kernel-power", "get-physicaldisk", "wmic",
+                 "powershell", "registry", "device manager",
+                 "синий экран", "диспетчер устройств", "реестр", "не грузит windows"],
+        "platform": "Windows hardware. For a fault outside it - a car, a printer, a router - "
+                    "this gate does not apply; say so and do the work.",
         "tool": "check-hardware",
         "do": ['Take the readings first, read-only, and change nothing - not a driver, not a setting.', 'Do not reboot: a reboot clears the evidence the fault was in.', 'python <skills>/check-hardware/scripts/collect.py', 'Separate a value from an empty answer from a refusal. Only the first is a reading.'],
         "record": 'the readings taken, and every reading that was NOT taken with the reason',
@@ -178,6 +186,15 @@ def render(report: dict, only_gates: bool = False) -> str:
                 lines.append(f"       - {step}")
             lines.append("")
             lines.append(f"       record  {gate.get('record', 'what was done')}")
+            if gate.get("platform"):
+                lines.append(f"       applies {gate['platform']}")
+            # Both, deliberately. The step is faster when the domain matches; the skill
+            # holds the METHOD, and the method is what transferred to a car - its agent
+            # found "evidence before hypothesis" in check-hardware's body, not in its gate.
+            # A gate that prints only steps teaches an agent to follow instructions it
+            # cannot evaluate.
+            lines.append(f"       method  read {gate['tool']} for why, not only what - the "
+                         f"steps above are the case it was written for, not the rule")
             lines.append(f"       matched {', '.join(gate['triggered_by'][:5])}")
     else:
         lines.append("  No gate applies. Nothing here is an obligation.")
