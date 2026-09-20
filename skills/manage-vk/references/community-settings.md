@@ -95,6 +95,54 @@ And know what is being written before writing it: `groups.getById` returns `city
 `description`, `status`, `verified`, `activity`, `wall`, `is_closed`, `members_count` and
 `age_limits`, so the current value is one call away and an idempotent write needs no guessing.
 
+## The management sidebar, and the two pages inside it
+
+The `Управление` panel is not one page. Its own sidebar lists:
+
+```
+Настройки          -> Кнопка действия
+Разделы            -> Изменить порядок, Включены, Отключённые разделы
+Комментарии
+Ссылки
+Адреса
+Меню
+Канал
+Подписчики
+Сообщения
+Чаты
+Приложения
+Дополнительно
+Журнал действий
+```
+
+**`Кнопка действия`** is the "write to us" button on the community page: `Показывать кнопку
+действия` (a toggle), `Тип действия` (a list — `Написать на почту` is one), `Почта *` (required,
+placeholder `Например, ivanov@mail.ru`), `Текст на кнопке`, and `Сохранить`. **No method sets it.**
+
+**`Разделы`** is where each section of the community is switched on or off — `Посты`, `Видео`
+(`Только видео`), `Клипы` under `Включены`; `Фото`, `Музыка`, `Обсуждения`, `Товары`,
+`Комментарии`, `Файлы` under `Отключённые разделы` — with `Изменить порядок` on the same page
+opening the drag-order dialog described in
+[editing-a-post-in-the-interface.md](editing-a-post-in-the-interface.md).
+
+**Several of those toggles probably ARE in the API.** `groups.edit` is documented with parameters
+for the wall, photos, video, topics, docs and market sections, so the same reversal as above
+applies: check the method before the page. **This is recorded as documented and not as measured**,
+and the reason is the next paragraph.
+
+### When an idempotent write stops being idempotent
+
+**An idempotent write needs the current value, and when the current value cannot be read, writing is
+not a measurement — it is a change.** The settings table above was built by reading each value with
+`groups.getById` and writing it back. For the section toggles that read does not exist: the group
+object does not return a flag per section, and the only statement of their state is the screen.
+
+So they were left alone. Writing `photos=0` and then `photos=1` to discover whether the parameter
+exists would have switched the community's photo section off and on again in between, and a
+demonstration is not a reason to change someone's community. **The honest entry is "documented, not
+measured", and it is worth more than a guess written as a table row** — which is the same charge
+this skill earned earlier in the session and should not earn twice.
+
 ## The rule that came out of it
 
 **Close the door before you test anything that writes.** A test community is a test community
