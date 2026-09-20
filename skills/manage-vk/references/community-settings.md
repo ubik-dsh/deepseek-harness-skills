@@ -143,6 +143,43 @@ demonstration is not a reason to change someone's community. **The honest entry 
 measured", and it is worth more than a guess written as a table row** — which is the same charge
 this skill earned earlier in the session and should not earn twice.
 
+## The community page's own controls
+
+**`Сообщение` sits beside `Ещё`, and `Ещё` opens a menu with six things in it.** Recorded from a
+demonstration on 2026-09-20:
+
+```
+[ Избранное ]   [ Уведомления ]      <- two tabs across the top of the dropdown
++ Пригласить друзей
+  Разрешить сообщения
++ Добавить в левое меню
+  Отписаться
+```
+
+**`Добавить в левое меню` is the community adding itself to the visitor's own navigation** — it is
+the operator's menu, not the community's, which is worth knowing before looking for it under the
+community's settings. **`Разрешить сообщения` is a per-visitor toggle**: it decides whether this
+account may be written to from the community, and it is nobody else's setting.
+
+**None of it is in the API**, and this is the menu a person means when they say "the community's
+menu" on the community page — as opposed to `settings/menu`, which is a different page with a
+different subject, described further down.
+
+## Reading a demonstration, and knowing which screen it was on
+
+**A recording made across two monitors can be split by the cursor log alone, before any frame is
+opened.** In a two-monitor session the boundary is a number: **any pause with `x` beyond the primary
+monitor's width is not a step in the demonstration.**
+
+Measured on a 4480x1440 desktop whose primary monitor is 2568 wide: of 43 pauses in a three-minute
+recording, **most sat at `x` between 3000 and 4150** — the harness window on the second monitor — and
+the longest of them, 8.6 seconds at `3142,912`, was the operator reading the message that had just
+been written to them. **The demonstration itself was the handful of pauses under 2568.**
+
+**A long pause on the other screen is the operator reading, thinking or typing, not the interface
+being driven.** Opening that frame confirms it in one look; skipping it saves one. **The coordinates
+are cheaper than the pictures, and they are already in the file.**
+
 ## The whole panel's URL map, read without a single click
 
 **The browser's status bar shows a link's target while the pointer is over it, so every row's URL
