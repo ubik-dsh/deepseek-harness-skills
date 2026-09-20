@@ -16,7 +16,32 @@ metadata:
 VK is not hard to call. It is easy to call **wrongly and be told you succeeded**, which is
 why this skill is mostly about what happens before and after the request.
 
-Four things decide whether the work is real, and every one of them came out of a hearing
+## The order to think in: boundaries, functions, meaning, requests
+
+**A request is the last thing to think about, not the first.** Work down these four layers, and
+each is only useful once the one beneath it is settled.
+
+```
+1  boundaries   what this credential can touch at all
+2  functions    the exact calls, their parameters and their returns
+3  meaning      what each call does to the community, and which calls compose into a capability
+4  requests     a sentence from a person becomes a sequence, or a refusal
+```
+
+**A skill that starts at the request answers some requests and fails on the rest, and never knows
+which.** «Запость на стену погоду в Лобне» is a one-line request whose difficulty is in layers 3
+and 4 and almost not at all in layer 2 — publishing is one call. What the request leaves out is
+the source, the time, the units, the meaning of the numbers the source returns, what to do when
+the source is down, and what to do about a table VK will delete.
+
+**Layer 3 is the one this family keeps skipping**, and the failure it causes is quiet: a function
+is documented and a capability is assumed. `wall.post` is a function; *publish something that
+cannot be taken back* is the capability, and only the second one is what the person asked for.
+
+[references/capabilities.md](references/capabilities.md) is the whole of layer 3 and 4, with that
+example worked through end to end. Read it before composing any post.
+
+Four more things decide whether the work is real, and every one of them came out of a hearing
 over a skill that got it wrong:
 
 1. **The token's authority must be the community's, not the account's.** A community token
