@@ -33,6 +33,25 @@ for a permission that was never the problem.
 
 And the transport reports itself: `api_version "5.199"`, `is_enabled True`.
 
+## The page and the API agree, once the page is read properly
+
+The comparison was completed at native resolution across every section, and **there are no
+disagreements at all**:
+
+| section | the page | `groups.getLongPollSettings` |
+|---|---|---|
+| Сообщения, Фотографии, Аудио, Видео, Комментарии, Обсуждения | all ticked | all `1` |
+| Записи на стене, including «Удаление отложенной записи из расписания» | all ticked | all `1` |
+| **Товары** | all clear | all `0` |
+| **Пользователи** | all four ticked | all `1` |
+| **Донаты** | all seven clear | all `0` |
+| **Прочие** | only «Изменение настроек» | `group_change_settings 1`, the rest `0` |
+
+**The API also returns flags the interface never shows** — 62 against roughly 48 rows —
+including `message_reaction_event`, `lead_forms_new`, `music_subscription_update`,
+`inapp_order_*` and `market_order_*`. So the read-back is not a mirror of the page; it is a
+superset, and it is the one to trust.
+
 So the capability set of a community key is stranger than the mask suggests: **it cannot read the
 wall it can post to, and it can subscribe to everything that happens on that wall.**
 
