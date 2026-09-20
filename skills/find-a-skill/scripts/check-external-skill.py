@@ -462,10 +462,36 @@ def scan_file(path: Path) -> list[tuple[str, str, int, str]]:
     return findings
 
 
+def skipped_binary(paths: list[Path]) -> list[str]:
+    """Files the text scanners cannot read, named rather than dropped in silence.
+
+    A .png or a .zip in the folder is not scanned and will not be. Saying so is the
+    difference between "nothing was found" and "nothing was looked for".
+    """
+    unreadable = []
+    for one in paths:
+        try:
+            with open(one, "rb") as handle:
+                chunk = handle.read(4096)
+        except OSError:
+            unreadable.append(f"{one.name} (unreadable)")
+            continue
+        if b"\x00" in chunk:
+            unreadable.append(one.name)
+    return unreadable
+
+
 def scan_path(path: Path) -> list[tuple[Path, str, str, int, str]]:
     targets = [path] if path.is_file() else sorted(
-        p for p in path.rglob("*") if p.is_file()
-        and p.suffix.lower() in {".md", ".py", ".ps1", ".sh", ".js", ".ts", ".json", ".yaml", ".yml"})
+        # EVERY file, not a shortlist of extensions. The first version filtered a folder
+        # walk to nine text extensions, .txt was not among them, and a directory containing
+        # two .txt files was reported as clean with exit 0 - while the same two files by
+        # explicit path produced twelve findings. An agent following the regulation's own
+        # printed step, "the file or folder", got a false clean.
+        #
+        # A filter that silently drops the file that mattered is worse than no filter, and
+        # this repository has spent a day on exactly that shape of failure.
+        p for p in path.rglob("*") if p.is_file())
     results = []
     for target in targets:
         try:

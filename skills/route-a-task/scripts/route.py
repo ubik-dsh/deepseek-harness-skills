@@ -83,6 +83,24 @@ GATES = [
                 "repair destroys the evidence for the expensive fault.",
     },
     {
+        "id": "G5",
+        "name": "choosing a tool is a decision with a record",
+        "when": ["which tool", "choose", "select", "compare", "best", "alternative", "library",
+                 "framework", "which one", "выбрать", "какой", "сравнить", "лучше"],
+        "tool": "nothing - this gate is a record, not a tool",
+        # Declared in the prose for a day with no entry here, so the router never asked for
+        # it. A gate that exists in the document and not in the router is one an agent
+        # cannot be held to - and three agents owed this record before it existed.
+        "do": [
+            "Name the tool you chose and the ONE property that decided it - spans against "
+            "a single label, offline against a runtime download, a licence against none.",
+            "Name at least two you rejected, each with the reason it lost. A choice with "
+            "no rejected alternative is not a choice.",
+            "Say what you could not verify without running it.",
+        ],
+        "record": "the chosen tool, the deciding property, the rejected alternatives and why",
+    },
+    {
         "id": "G4",
         "name": "an independent agent reads a skill before it is called done",
         "when": ["publish", "release", "adopt", "done", "finished", "ship", "выпуск",
