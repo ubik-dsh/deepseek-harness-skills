@@ -30,6 +30,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -106,6 +107,37 @@ def local_scan(project: Path, keywords: list[str]) -> list[dict]:
     return sorted(found.values(), key=lambda item: -item["score"])
 
 
+def rate_note(headers) -> tuple[str, int]:
+    """What the response says about the budget, and how long until it returns.
+
+    GitHub puts the whole answer in the headers of every authenticated response:
+    `x-ratelimit-remaining` and `x-ratelimit-reset`, an epoch second. Measured on this
+    machine, the limits are 5000 an hour for the REST API, 30 a minute for repository
+    search and 10 a minute for code search - all three read from the responses rather
+    than from documentation, because documentation is the thing that goes stale.
+
+    Returns a human note and the seconds to wait. A wait of 0 means the budget is fine.
+    """
+    remaining = headers.get("x-ratelimit-remaining") if headers else None
+    reset = headers.get("x-ratelimit-reset") if headers else None
+    retry_after = headers.get("retry-after") if headers else None
+
+    wait = 0
+    if retry_after and str(retry_after).isdigit():
+        wait = int(retry_after)
+    elif reset and str(reset).isdigit():
+        wait = max(0, int(reset) - int(time.time()))
+        if remaining is not None and str(remaining).isdigit() and int(remaining) > 2:
+            wait = 0                      # budget left; nothing to wait for
+
+    if remaining is None:
+        return "", wait
+    note = f"{remaining} left"
+    if wait > 0:
+        note += f", resets in {wait}s"
+    return note, wait
+
+
 def github_search(keywords: list[str], token: str | None, limit: int) -> list[dict]:
     """Find SKILL.md files on GitHub whose path or repo matches.
 
@@ -124,9 +156,26 @@ def github_search(keywords: list[str], token: str | None, limit: int) -> list[di
         request = urllib.request.Request(url, headers=headers)
         try:
             with urllib.request.urlopen(request, timeout=25) as response:
+                # The budget is on every response. Reading it is what turns a limit into
+                # a pause instead of a wall.
+                _note, wait = rate_note(response.headers)
+                if wait > 0:
+                    time.sleep(min(wait, 60))
                 data = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as trouble:
-            results.append({"error": f"repositories '{query}': HTTP {trouble.code}"})
+            # A limit is not a failure and must not read like one. Without the reset
+            # time the reader cannot tell a minute from an hour, and "no results" and
+            # "refused" look identical in a log.
+            note, wait = rate_note(trouble.headers)
+            if trouble.code in (403, 429) and wait > 0:
+                results.append({
+                    "error": f"repositories '{query}': HTTP {trouble.code} - rate limited"
+                             f"{', ' + note if note else ''}. Retry in {wait}s; this is a "
+                             "budget, not an empty result",
+                })
+            else:
+                results.append({"error": f"repositories '{query}': HTTP {trouble.code}"
+                                         f"{', ' + note if note else ''}"})
             continue
         except Exception as trouble:                     # noqa: BLE001
             results.append({"error": f"repositories '{query}': {trouble}"})
