@@ -143,6 +143,84 @@ demonstration is not a reason to change someone's community. **The honest entry 
 measured", and it is worth more than a guess written as a table row** — which is the same charge
 this skill earned earlier in the session and should not earn twice.
 
+## The management pages have URLs, and there are two shapes of them
+
+**Do not click through the panel — read the address after one click, then navigate directly.**
+Measured on 2026-09-20:
+
+```
+Разделы       https://vk.ru/club241624898/settings/sections
+Комментарии   https://vk.ru/club241624898?act=activity
+settings/comments                            -> "Такой страницы нет"
+```
+
+**Two shapes, and which page uses which cannot be guessed.** `Разделы` is a `settings/<name>` page
+and `Комментарии` is an `?act=<name>` page; `settings/comments` looks like the obvious guess for the
+second and **is not a page at all**. A wrong management URL answers `Такой страницы нет` and
+**collapses the sidebar to its top-level items only** — `Настройки`, `Подписчики`, `Сообщения`,
+`Чаты`, `Приложения`, `Дополнительно`, `Журнал действий` — so a reader who guessed wrongly and did
+not look at the sidebar could conclude that most of the panel does not exist.
+
+**Read the address bar, and the clipboard is how to read it.** Yandex Browser shows only `vk.ru` for
+a trusted page and hides the rest of the URL, so a screenshot of the address bar is not a reading.
+Click the field, `Ctrl+A`, `Ctrl+C`, `Get-Clipboard` — the same trick that reads a post's URL out of
+`Скопировать ссылку`.
+
+## Comments, and the two kinds of control on the sections page
+
+**`Комментарии` (`?act=activity`)** is two things on one page: the community's comment settings, and
+the moderation view of its comments.
+
+```
+Обратная связь:   [x] Комментарии включены
+Настройки:        [ ] Запретить комментарии от сообществ   (?)
+                  [ ] Фильтр нецензурных выражений
+                  [ ] Фильтр враждебных высказываний        Beta
+                  [ ] Фильтр по ключевым словам
+[ Сохранить ]
+Все комментарии 0   |   Удалённые фильтром 0
+Здесь будут выводиться все комментарии в сообществе
+```
+
+**`Ссылки`** is one toggle and a list: `Показывать в сообществе`, described as *"Ссылки будут видны
+в разделе «Подробная информация»"*, over an empty `Вы можете добавить в сообщество ссылки на
+внутренние страницы ВКонтакте или на внешние сайты`.
+
+**On the sections page, a control's shape says what it can do.** Seven rows carry a **bare toggle** —
+`Клипы`, `Статьи`, `Моменты`, `Товары`, `Мероприятия`, `Чаты`, `Контакты` — and eight carry a
+**state word and a chevron** — `Посты` *Включены*, `Видео` *Только видео*, `Фото` *Отключено*,
+`Музыка`, `Обсуждения`, `Файлы`, `Услуги`, `Материалы`. **A chevron means the row opens sub-settings
+and a bare toggle means on or off and nothing else**, which is worth knowing before clicking a row
+expecting a page and getting a switch. The full list is fifteen rows: three under `Включены`,
+twelve under `Отключённые разделы`.
+
+## A method that does not exist and a method this key may not call
+
+Two error codes that a reader will meet while checking whether a page has an API, and they mean
+different things:
+
+```
+err 3    Unknown method passed                       the method does not exist
+err 27   not available with group auth               the method EXISTS, this credential may not
+```
+
+Measured with the community token:
+
+```
+groups.getSettings          err 27   exists, needs a user token
+groups.getAddresses         err 27
+groups.getRequests          err 27
+groups.getInvitedUsers      err 27
+groups.getLongPollSettings  OK       returns the event subscription list
+groups.getMenu              err  3   no such method
+```
+
+**So the boundary is not "API against interface". It is "which credential".** `groups.getSettings`
+would answer a user token; the community token is deliberately narrow, and a management page that
+has no call *for this key* may have one for another. Saying "the API cannot do this" when the truth
+is "this key cannot" sends the next reader to the screen for something a different token would do in
+one request — and it is the same mistake as reading one refused method as an absent capability.
+
 ## The rule that came out of it
 
 **Close the door before you test anything that writes.** A test community is a test community
