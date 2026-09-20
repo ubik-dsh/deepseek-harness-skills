@@ -2,6 +2,35 @@
 
 Moved out of SKILL.md when it passed the family's 500-line limit — which is the rule working on this skill rather than on somebody else's.
 
+## Reading a recording: three tools, and the reason they ship here
+
+**A description of a method with no tool beside it makes every reader build the tool.** This reference
+described how to find a change in a recording and how to look at one, and shipped neither — so an
+independent agent given a 1635-frame recording **rebuilt the analysis four times over** (`scan`,
+`motion`, `stamps`, `titles`), spending most of an hour arriving where a script would have put it in
+one command. **`create-a-skill` says it plainly — anything deterministic belongs in `scripts/`, because
+a script gives the same answer twice and costs fewer tokens than regenerated code — and this file broke
+its own family's rule.**
+
+| script | what it answers |
+|---|---|
+| `scripts/read_demo.py <folder>` | **where the hand paused** — the trajectory as numbers, pauses and jumps, before any picture is opened |
+| `scripts/find_shift.py <folder> --box X,Y,W,H` | **where the interface moved** — the frames where a screen region changed, largest first |
+| `scripts/stack_column.py <folder> --box …` | **what it looks like** — the same screen column from many frames, side by side, with a reference line |
+
+**`read_demo.py` comes first, always.** Twenty-five pictures are *watched*; twenty-five coordinates are
+*read*, and the pauses fall out of the numbers. It is the cheapest step and it removes most of the work.
+
+**`find_shift.py` needs `cursor.csv`, and that is the point.** The frames are cropped around the pointer,
+so a fixed box means a different part of the screen in every frame; the script maps each one back before
+comparing. **Its first version did not, and reported that a region was byte-identical for three minutes
+while a page was being driven** — the zeroes were the only clue.
+
+**`stack_column.py` is how a shift is actually seen** rather than inferred: the same screen column from
+ten frames minutes apart, with a red line at one fixed screen y. The line crossing the same words in
+every column is the answer in one look.
+
+
 ## The recorder writes three things, and the third is the one that shows a drag
 
 `scripts/screenwatch.ps1` produces **frames**, `cursor.csv` and `mouse.csv`, all on one clock:

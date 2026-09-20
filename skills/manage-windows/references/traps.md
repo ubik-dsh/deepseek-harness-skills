@@ -125,6 +125,25 @@ available.
 
 ## Input
 
+**The XBUTTON number goes in the LOW word of `mouseData`, and the wrong word is silent.** `SendInput`
+with `mouseData = 1 << 16` **returns exactly what it returns when it works — "2 of 2" — and produces no
+event at all.** Measured with a low-level hook watching, both encodings, one session:
+
+```
+3325  X-down  700,499  X1(back)     LOW word   (data = 1)        the event exists
+      (nothing at all)              HIGH word  (data = 1 << 16)  no event, and no error
+9366  X-down  900,499  X1(back)     LOW word   again              the event exists
+```
+
+**This is the fourth "success that does nothing" in this family's record**, and the reason the family
+keeps a low-level hook around: **a call that returns success is not evidence that anything happened.**
+An independent agent hit it, blamed its own tooling, and a control in the same hook session settled it —
+a left click recorded, an X1 six hundred milliseconds later not.
+
+**Send one X button and watch for it before sending the real one.** It costs two seconds and it is the
+only way to tell a broken encoding from a window that was not listening.
+
+
 | Fails where it matters | Works |
 |---|---|
 | `mouse_event` | `SendInput` |
@@ -142,6 +161,30 @@ returns nothing usable for Latin text. `KEYEVENTF_UNICODE` bypasses the layout e
 Without `MOUSEEVENTF_VIRTUALDESK`, absolute coordinates are interpreted against the primary
 monitor. On a multi-monitor machine the click lands on a different screen than the one intended.
 **[ours]**
+
+## Editing a window with a Save button
+
+**Two halves, and the second one is the one that gets skipped.**
+
+```
+BEFORE  re-read what you are about to save      the form's own state, not what you typed into it
+AFTER   prove it persisted, by RELOADING        not by the dialog, and not by the absence of an error
+```
+
+**A dialog agreeing with itself is evidence of nothing.** Measured on VK's reorder dialog, 2026-09-20: a
+drag showed the accept state, was released, the dialog kept the new order, `Сохранить` was pressed — **and
+the change did not persist.** A second attempt in the other direction did. **Only a reload proved
+either.** A fresh tab proves it hardest, because it cannot be a cached page.
+
+| Fails | Works |
+|---|---|
+| pressing Save and trusting the form | re-read the form, press Save, **reload**, read again |
+| "it looked right" | the same thing read back from the source of truth |
+| the dialog's own list | a reload, or a new tab |
+
+**And read the form, not your intentions.** A field that looks filled may hold a stale value, a
+placeholder, or nothing; `GroupBox`, `TextBox` and a canvas all render a value they do not own. **Set a
+value, then read it back** — the same rule as `Set-Content` into a file and reading the file.
 
 ## Files
 
