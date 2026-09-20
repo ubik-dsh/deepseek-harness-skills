@@ -28,8 +28,11 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import os
 import sys
+import urllib.request
+import uuid
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
@@ -40,6 +43,61 @@ vk = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(vk)
 
 
+def upload_photo(token: str, path: Path) -> str | None:
+    """Upload one image by the only route a community token has, and return `photo<owner>_<id>`.
+
+    The wall upload server is refused (error 27). The messages upload server is not, so:
+    get a server, POST the file as multipart, save with `photos.saveMessagesPhoto`.
+
+    **The body is built by hand and the boundary is written into the header**, and that is
+    deliberate rather than primitive. A fresh agent reported that urllib and `requests` both got
+    `{"photo": ""}` from this host while `curl -F` worked, and concluded that Python's multipart
+    is refused. **That did not reproduce**: on the same day, on this host, a hand-built body,
+    `requests`, and `curl -F` each returned a filled `photo` field for the same two files.
+    Whatever that agent met, it was not "Python's multipart".
+
+    So this uses the standard library with the body written out, and the diagnostic is recorded
+    instead of a rule: **an empty `photo` with HTTP 200 means the host received a POST whose file
+    field did not arrive.** If this function ever returns that, the body is the thing to suspect,
+    `curl -F photo=@<file>` is the control that separates the two, and **a `upload_url` is
+    single-use** - posting to one twice, which is what a loop over three clients does, fails on
+    the second attempt and looks exactly like a broken client.
+    """
+    server = vk.call("photos.getMessagesUploadServer", token,
+                     group_id=os.environ.get("VK_GROUP_ID") or None)
+    url = server.get("upload_url")
+    if not url:
+        print(f"  FAIL       no upload_url in {str(server)[:120]}")
+        return None
+
+    boundary = "----dsh" + uuid.uuid4().hex
+    head = (
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="photo"; filename="{path.name}"\r\n'
+        f"Content-Type: image/png\r\n\r\n").encode()
+    tail = f"\r\n--{boundary}--\r\n".encode()
+    request = urllib.request.Request(
+        url, data=head + path.read_bytes() + tail,
+        headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+    try:
+        with urllib.request.urlopen(request, timeout=120) as answer:
+            sent = json.loads(answer.read().decode("utf-8", errors="replace"))
+    except Exception as trouble:                                # noqa: BLE001
+        print(f"  FAIL       the upload host: {type(trouble).__name__}: {trouble}")
+        return None
+
+    if not sent.get("photo"):
+        print("  FAIL       the upload host accepted the POST and returned an empty photo")
+        print(f"             field - {json.dumps(sent)[:160]}")
+        print("             the body is what to suspect; `curl -F photo=@<file>` is the control")
+        return None
+
+    saved = vk.call("photos.saveMessagesPhoto", token,
+                    server=sent["server"], photo=sent["photo"], hash=sent["hash"])
+    photo = saved[0] if isinstance(saved, list) and saved else saved
+    return f"photo{photo.get('owner_id')}_{photo.get('id')}"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--text", default="", help="the post body")
@@ -48,6 +106,10 @@ def main() -> int:
                         help="the wall, as the community id negated, e.g. -241624898")
     parser.add_argument("--schedule", type=int, default=None,
                         help="a unix timestamp; later than now makes it a scheduled post")
+    parser.add_argument("--photo", type=Path, default=None,
+                        help="an image to upload and try to attach. The upload works and VK is "
+                             "expected to DROP the attachment - check the wall, then add it by "
+                             "editing the post in the interface")
     parser.add_argument("--confirm", action="store_true",
                         help="the human has confirmed THIS text and THIS target")
     parser.add_argument("--env-file", type=Path, default=None)
@@ -99,10 +161,31 @@ def main() -> int:
         print("  and THIS target. The confirmation covers the content, not the intention.")
         return 5
 
+    # ---- the picture, if there is one ----------------------------------------------
+    # The upload works and the ATTACH is what fails: wall.post takes `attachments`, returns a
+    # post_id, and VK drops a photo from the messages album without a word. Measured on
+    # 2026-09-20 on community 241624898, and re-confirmed by a fresh agent the same day by
+    # reloading the wall and looking. It is stated with the date because it is an observation
+    # about one host, not a law - and a reader cannot tell those apart unless the difference is
+    # written down.
+    attachment = None
+    if args.photo:
+        uploaded = upload_photo(token, args.photo)
+        if uploaded is None:
+            return 4
+        attachment = uploaded
+        print("")
+        print(f"  picture    uploaded and saved as {attachment}")
+        print("             VK IS EXPECTED TO DROP THIS ATTACHMENT. Every measurement so far")
+        print("             says a photo from the messages album does not reach a wall post,")
+        print("             and wall.post will not say so - it returns a post_id either way.")
+        print("             Check the wall. If it is not there, add it by editing the post in")
+        print("             the interface - see references/editing-a-post-in-the-interface.md.")
+
     # ---- send ----------------------------------------------------------------------
     try:
         made = vk.call("wall.post", token, owner_id=owner, from_group=1, message=body,
-                       publish_date=args.schedule)
+                       publish_date=args.schedule, attachments=attachment)
     except vk.VkError as trouble:
         meaning = vk.MEANING.get(trouble.code)
         print(f"  FAIL       {trouble}")
@@ -116,6 +199,10 @@ def main() -> int:
     print("")
     print("  That id is the whole of the API's confirmation. Whether it looks right, and")
     print("  whether it is on the wall at all, is the human's eye - this token cannot read.")
+    if attachment:
+        print("")
+        print("  AND WITH A PICTURE, LOOK AT THE WALL BEFORE BELIEVING ANYTHING. The reply is")
+        print("  identical whether the attachment landed or was dropped.")
     return 0
 
 

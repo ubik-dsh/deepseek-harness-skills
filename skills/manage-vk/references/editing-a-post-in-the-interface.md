@@ -41,6 +41,26 @@ undo** — VK shows `Пост удалён. Восстановить` where the 
 destructive action in this interface. It does not last; treat it as a grace period, not a safety
 net.
 
+**The row above it is the one an agent is told to click.** `Скопировать ссылку` is the row that
+reads the post's URL out, and `Удалить` sits about **155 px** below it — closer than the 130 px
+between `Редактировать` and `Удалить` that the first version of this file warned about. Measure the
+menu; never aim at a row by counting from another row.
+
+**One item changes its own label once it has been used.** The fifth row reads `Сохранить в
+закладках` on a post that is not bookmarked and **`Удалить из закладок`** on one that is. A reader
+checking their menu against this table and seeing the second form has the right post, not the wrong
+one.
+
+## The dialog between «Далее» and a saved picture
+
+**A second screen is not always what follows `Далее`.** With unsaved work in the editor VK raises
+**`Сохранить черновик?`** with `Выйти без сохранения` and `Сохранить`, and the two are about
+**95 px apart**. `Выйти без сохранения` discards the picture silently — no confirmation, no toast,
+and the post returns to text only.
+
+So the last step is not "click the blue button". It is: **read the dialog.** If it offers three
+ways out rather than two, the one that saves is named `Сохранить` and it is on the right.
+
 **The menu flips.** With a post near the bottom of the window it opens **upward**, and `Удалить`
 then sits *above* the `…` button rather than about 250 px below it. A coordinate measured from a
 menu that opened downward deletes nothing there and lands on the post instead. **Measure the menu

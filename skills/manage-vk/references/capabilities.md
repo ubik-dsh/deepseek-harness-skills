@@ -36,6 +36,26 @@ and `photos.saveMessagesPhoto` returns a real photo the community owns. What fai
 step — `wall.post` drops the attachment without a word. One refused method is not an absent
 capability, and the first version of this list concluded the second from the first.
 
+### The order that works for a post with a picture, and the entry point that does not exist
+
+**There is no interface route to create a post.** A fresh agent spent most of a session looking for
+one on a community where the signed-in account is a **member and not an administrator**: the page
+offers a feed, `Отложенные`, `Видео`/`Клипы`, a "К оформлению" draft card, and **no composer at
+all** — while the same account can still edit and pin an existing post, which is inconsistent and
+worth knowing before hunting for a button that is not there.
+
+So the order is:
+
+```
+1  wall.post through the API        the post exists, with its text and no picture
+2  open that post's menu            … -> Редактировать
+3  add the picture in the editor    Загрузить с устройства -> the path -> Далее -> Сохранить
+```
+
+**Step 3 runs as the signed-in person, not as the community key, and that has to be said when it is
+used** — it is the one place this skill leaves the scoped credential. It is authorised when the
+operator asked for a post with a picture and the API cannot deliver one, which is this case.
+
 Two boundaries decide more than the rest, and both are asymmetries rather than absences:
 
 - **It can write and cannot read.** There is no way to see what is on the wall, or to confirm by
@@ -74,6 +94,7 @@ calls have to be combined before a person would recognise the result.
 | a person says | the capability | the calls, in order | what it costs |
 |---|---|---|---|
 | "post this" | **publish** | `wall.post` with `from_group=1` | permanent. No undo through the API |
+| "post this **with a picture**" | **publish, then edit** | `wall.post`, then the interface: `…` → Редактировать → Загрузить с устройства → Далее → Сохранить | see below — **there is no other way, and there is no composer** |
 | "post this tomorrow at nine" | **schedule** | `wall.post` with `publish_date` | reviewable until it fires, then permanent |
 | "what's happening here" | **monitor** | Long Poll subscription — *not* `wall.get` | events only, from the moment you subscribe. Not history |
 | "close the comments on that" | **moderate** | `wall.closeComments` | small, reversible by reopening |

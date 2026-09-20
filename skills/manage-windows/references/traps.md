@@ -168,7 +168,15 @@ preparation step rather than the press.
 
 The three states are separate and each needs its own call: `IsIconic` → `SW_RESTORE`, `IsZoomed`
 → already fine, neither → already fine. And a call that changes geometry is **an action on
-someone's desktop**: measure the rectangle before and after, and put it back. **[ours]**
+someone's desktop**: measure the rectangle before and after, and put it back.
+
+**Putting it back is not a guess either.** `GetWindowPlacement` before the change and
+`SetWindowPlacement` after it restore the window exactly, including its maximised state and its
+restored-size rectangle; `SetWindowPos` with the old `RECT` is the fallback when only the rectangle
+was captured. A fresh agent hit the same trap — 2576x1408 became 968x524 — noticed because its
+capture printed the geometry, and **had to write the remedy itself because this file gave the
+warning and not the cure**. A trap entry that names the danger and not the way out costs a reader
+the same hour it cost the writer. **[ours]**
 
 ## Assembling an input struct in PowerShell
 

@@ -245,12 +245,32 @@ So a community token **can** upload a file: POST it to the messages upload serve
 
 **And it still cannot appear on the wall.** `wall.post` with `attachments=photo<owner_id>_<id>`
 **accepts the call, returns a `post_id`, and silently drops the attachment.** Confirmed by two
-independent witnesses on the same post:
+independent witnesses on the same post, and re-confirmed by a fresh agent on 2026-09-20 by
+reloading the wall and looking:
 
 ```
 the event     wall_post_new  ->  "attachments": []
 the page      the post renders as text, with no picture
 ```
+
+**Measured on 2026-09-20 against community 241624898, and written with its date on purpose.** It is
+an observation about one host rather than a law of VK, and a reader cannot tell the two apart
+unless the difference is on the page. The mechanism — the photo lands in the messages album
+(`album_id: -64`) and VK attaches only what it considers the wall's own — is **inference**, and it
+is labelled as inference rather than as the reason.
+
+**So a post with a picture is two steps, and the second one has no API at all:**
+
+```
+1  wall.post through the API        the post exists, text only
+2  edit that post in the interface  … -> Редактировать -> Загрузить с устройства -> Далее -> Сохранить
+```
+
+**There is no composer in the interface**, so step 1 cannot be skipped — on a community where the
+signed-in account is a member and not an administrator the page has no "create a post" control, and
+the wall, `Отложенные`, `Видео` and "К оформлению" are all it offers. Step 2 is documented in
+[references/editing-a-post-in-the-interface.md](references/editing-a-post-in-the-interface.md), and
+it runs as the signed-in person rather than as the scoped key.
 
 **The likely mechanism is the album** — the photo lands in the messages album (`album_id: -64`)
 and VK attaches only photos it considers the wall's own. That part is inference. What is measured
