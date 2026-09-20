@@ -28,6 +28,7 @@ Exit codes: 0 nothing that must block, 1 something that must be looked at, 2 BLO
 from __future__ import annotations
 
 import argparse
+import unicodedata
 import re
 import sys
 from pathlib import Path
@@ -91,7 +92,26 @@ NEGATIONS = re.compile(
     r"danger|risk|unsafe|malicious|injection|exfiltrat|attacker|не\s|никогда|запрещ)",
     re.IGNORECASE)
 
-INVISIBLE = re.compile(r"[\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff\u00ad]")
+# Characters a reader cannot see and a parser can. The first version covered the
+# zero-width range, the bidi embeddings and overrides, the word joiner, the BOM and the
+# soft hyphen - and stopped at U+2064. The bidi ISOLATES at U+2066-U+2069 were missing,
+# and those are the modern vector: the embeddings it did cover are deprecated, the
+# isolates are not. U+061C and U+180E are the same family, and U+2028/U+2029 end a line
+# in one language and not in another, which is how a single line becomes two.
+#
+# Source: the patterns P2, TP1 and TP2 of NVIDIA/SkillSpector (Apache 2.0), which carries
+# 71 of them across 17 categories. Its study of 42,447 skills found 26.1% carrying at
+# least one vulnerability and 5.2% looking malicious, with skills that ship executable
+# scripts 2.12x more likely to be among them.
+INVISIBLE = re.compile(
+    r"[\u200b-\u200f"      # zero-width, LRM, RLM
+    r"\u202a-\u202e"       # bidi embeddings and overrides - deprecated, still used
+    r"\u2060-\u2064"       # word joiner, invisible operators
+    r"\u2066-\u2069"       # bidi isolates - MISSING until this change, and current
+    r"\u061c\u180e"        # Arabic letter mark, Mongolian vowel separator
+    r"\u2028\u2029"        # line and paragraph separator
+    r"\ufeff\u00ad]"       # BOM, soft hyphen
+)
 
 BLOCK, REVIEW, NOTE = "BLOCK", "REVIEW", "NOTE"
 
@@ -153,9 +173,62 @@ def scan_file(path: Path) -> list[tuple[str, str, int, str]]:
 
     hidden = INVISIBLE.findall(text)
     if hidden:
+        named = ", ".join(f"U+{ord(character):04X}" for character in sorted(set(hidden))[:6])
         findings.append((REVIEW, "injection candidate: hidden characters", 0,
-                         f"{len(hidden)} invisible codepoints - text a human reader "
-                         f"cannot see but an agent can"))
+                         f"{len(hidden)} invisible codepoint(s) - text a human reader "
+                         f"cannot see but an agent can ({named})"))
+
+    # P9, whitespace padding. A run of whitespace long enough to push content past the
+    # right edge, or a line whose visible part is a sliver, is how instructions sit
+    # beside what a reader thinks they are reading. Thresholds, not a rule, and low
+    # severity on purpose: a table is allowed to be wide.
+    for number, line in enumerate(lines, 1):
+        # Count the NON-whitespace characters, not what strip() leaves. strip() removes
+        # from the ends only, so a line padded in the middle - or padded after a short
+        # label, which is the shape this exists to catch - survives it untouched and the
+        # check never fires. Measuring the wrong thing is this repository's whole subject.
+        visible = sum(1 for character in line if not character.isspace())
+        if len(line) > 400 and visible < 40:
+            findings.append((NOTE, "injection candidate: whitespace padding", number,
+                             f"{len(line)} characters of line carrying {visible} of content"))
+            break
+
+    # SC8, shipped Python bytecode. There is a written rule against it in this repository
+    # and no check, which is the difference between a rule and a hope. Bytecode is not
+    # readable as source and runs regardless.
+    stems = {target.stem for target in path.parent.glob("*.py")} if path.parent.is_dir() else set()
+    for cache in list(path.parent.rglob("__pycache__"))[:3] if path.parent.is_dir() else []:
+        findings.append((REVIEW, "supply chain: shipped Python bytecode", 0,
+                         f"__pycache__ beside the skill ({cache.name}) - .pyc runs and "
+                         f"cannot be read as source"))
+        break
+    for stale in list(path.parent.glob("*.pyc"))[:3] if path.parent.is_dir() else []:
+        findings.append((REVIEW, "supply chain: shipped Python bytecode", 0,
+                         f"{stale.name} - .pyc runs and cannot be read as source"))
+        break
+    _ = stems
+
+    # TP2, a token that mixes scripts. `pаypal` with a Cyrillic а is the shape: a human
+    # reader sees the word they expect and a parser sees different bytes. Only reported
+    # when one token holds letters from two alphabets, because a Russian document is
+    # supposed to be Cyrillic and saying so would be noise.
+    for number, line in enumerate(lines, 1):
+        for token in line.split():
+            scripts = set()
+            for character in token:
+                if character.isalpha():
+                    try:
+                        scripts.add(unicodedata.name(character).split()[0])
+                    except ValueError:
+                        continue
+            if "LATIN" in scripts and scripts & {"CYRILLIC", "GREEK", "CHEROKEE"}:
+                findings.append((REVIEW, "injection candidate: mixed-script token", number,
+                                 f"{token[:60]!r} mixes {'+'.join(sorted(scripts))}"))
+                break
+        else:
+            continue
+        break
+
     return findings
 
 
