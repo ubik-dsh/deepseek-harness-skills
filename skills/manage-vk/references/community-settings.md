@@ -161,23 +161,42 @@ navigations:
 8  Канал            https://vk.ru/club241624898/settings/channel
 9  Подписчики       https://vk.ru/club241624898/settings/subscribers
 10 Сообщения        https://vk.ru/club241624898/settings/messages
-11 Чаты             — nothing, see below
+11 Чаты             https://vk.ru/club241624898?act=chats
 12 Приложения       https://vk.ru/club241624898?act=apps
 13 Дополнительно    https://vk.ru/club241624898/settings/extras
-14 Журнал действий  https://vk.ru/club241624898/settings/extras
+14 Журнал действий  https://vk.ru/club241624898?act=event_log
 ```
 
-**Two exceptions, and they are the reason this is a measurement and not a rule.**
+**Fourteen rows, fourteen distinct addresses.** Three shapes exist — `?act=<name>`, `settings/<name>`,
+and `settings/extras` as a page of its own — which is why the map could not be guessed and had to be
+read.
 
-- **`Чаты` showed nothing at all.** It is not a link, so hovering cannot reach it and only a click
-  reveals where it goes. **Hover reads most of a panel, not all of it** — and a row that shows
-  nothing is a finding, not a failure of the method.
-- **`Дополнительно` and `Журнал действий` are the same URL.** Two rows of a sidebar can lead to one
-  page, with the second being a section within the first, so an address is not a row's identity.
-  Anyone mapping rows to URLs by counting will be wrong by one from there on.
+### The two rules this map cost, and they are both about trusting one pass
 
-**Three shapes of address exist** — `?act=<name>`, `settings/<name>`, and a page shared between two
-rows — which is why the map could not be guessed and had to be read.
+**The row is measured, not counted.** The panel's rows are about **38 px apart** and the first pass
+guessed their positions instead of measuring them, landing up to **22 px out** — more than half a
+row. `Чаты` fell into a gap and its status bar stayed **empty**, which was written up as *"this row
+is not a link"*. And `Журнал действий`, twenty-two pixels low, landed on `Дополнительно`, which was
+written up as *"two rows share a URL"*. **Both sentences were in this file before either was
+checked**, and both were wrong: `Чаты` has an address, and every row has its own.
+
+**A surprising finding from one pass is a reason to re-measure, not a sentence to publish.** Both
+wrong entries had the shape of a discovery — an exception to a rule is exactly what a reader
+remembers — and an exception produced by a bad measurement is indistinguishable from a real one
+until someone measures again. The operator caught this one by saying the row exists; nothing in the
+file would have.
+
+The measured positions, for the next reader, with the page scrolled as it was here:
+
+```
+Настройки 227   Кнопка действия 265   Разделы 304   Комментарии 342
+Ссылки 379      Адреса 418            Меню 456      Канал 494
+Подписчики 530  Сообщения 569         Чаты 606      Приложения 644
+Дополнительно 684                     Журнал действий 722
+```
+
+**Re-measure them anyway** — they depend on the scroll position, and this list is the thing that was
+wrong the first time.
 
 **How to read a status bar that is one line tall.** Hover a row, capture the window, crop the strip
 at the bottom-left, and **stack the fourteen strips into one image with the row names drawn beside
