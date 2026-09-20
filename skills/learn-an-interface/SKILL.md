@@ -156,6 +156,27 @@ operator, and it is worth keeping in his words:
 **A silent empty result is the failure mode to design against**, because it looks like an answer. An
 error would have been caught; a blank is read as *"the row is not a link"* and written down.
 
+### Two triggers, and neither one replaces the other
+
+The quantitative rule above and *"a surprising finding is a reason to re-measure"* cover different
+ground, and it was a mistake to treat the second as the vaguer version of the first. **The first
+fires without judgement but needs a majority to compare against. The second fires on a single reading
+where no majority exists, and pays for that reach by needing the reader to notice surprise at all.**
+Neither subsumes the other, and both belong here.
+
+| the situation | what fires |
+|---|---|
+| many readings, one odd, the rest agree | **an anomaly against a unanimous majority is a miss** — no judgement needed |
+| **one** reading, and it is surprising | **a surprising result is a reason to re-measure, not a sentence to publish** |
+| **no majority, and nothing looks surprising** | **neither fires** — and this is the dangerous row |
+
+**The third row is not hypothetical.** `wall.post` returned the same `post_id` twice, identically,
+once with a picture attached and once without, and the attachment was dropped in silence. There was
+no majority to be odd against and nothing surprising in the reply — **one reading, looking exactly as
+it should.** Nothing in either trigger reaches it; only *verify the effect, never the reply* does.
+That is why the two rules here are a pair and not a hierarchy, and why neither is a substitute for
+looking at the result.
+
 
 A worked run of the whole method on a second program, where the answer turned out to be
 **"there is nothing to learn"**, is in

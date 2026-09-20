@@ -190,9 +190,17 @@ file would have.
 empty or odd reading against a unanimous majority is a miss, not a datum.** Thirteen rows gave
 addresses and the fourteenth gave none — a panel whose every row is a link does not have one row that
 is not a link, it has one row the pointer missed. *If nine out of ten have it, the tenth is probably
-"not found" rather than "not there".* **A blank is the dangerous failure mode precisely because it
-looks like an answer** — an error would have been caught, a blank was read as a fact and written
-down.
+"not found" rather than "not there".*
+
+**The two rules are a pair, not a hierarchy.** *Re-measure when a finding surprises you* needs no
+majority and so reaches a single reading, and pays for that by needing the reader to notice surprise;
+*an anomaly against a majority is a miss* fires with no judgement at all but needs the majority to
+exist. Neither reaches the third case, **no majority and nothing surprising** — which is where
+`wall.post` lives, returning the same `post_id` twice, once with a picture and once without. That
+case is caught by *verify the effect, never the reply*, and by nothing else.
+
+**A blank is the dangerous failure mode precisely because it looks like an answer** — an error would
+have been caught, a blank was read as a fact and written down.
 
 The measured positions, for the next reader, with the page scrolled as it was here:
 
