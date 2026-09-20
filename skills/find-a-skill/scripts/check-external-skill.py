@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import sys
 import unicodedata
 import re
 import sys
@@ -415,6 +416,14 @@ def scan_file(path: Path) -> list[tuple[str, str, int, str]]:
     # supposed to be Cyrillic and saying so would be noise.
     for number, line in enumerate(lines, 1):
         for token in line.split():
+            # A homoglyph attack is ONE WORD with a character swapped. A token carrying a
+            # path separator, a bracket or a quote is a path or an expression, and a
+            # Russian document quoting a path is not an attack - which is exactly what
+            # this reported on the family's own create-a-skill before the rule was added:
+            # '<папка-скилла>/scripts/check-skill.py' mixes CYRILLIC+LATIN, from a file
+            # describing a path. Only a token of letters and digits can be a word.
+            if not token.isalnum():
+                continue
             scripts = set()
             for character in token:
                 if character.isalpha():
@@ -425,10 +434,10 @@ def scan_file(path: Path) -> list[tuple[str, str, int, str]]:
             if "LATIN" in scripts and scripts & {"CYRILLIC", "GREEK", "CHEROKEE"}:
                 findings.append((REVIEW, "injection candidate: mixed-script token", number,
                                  f"{token[:60]!r} mixes {'+'.join(sorted(scripts))}"))
-                break
-        else:
-            continue
-        break
+                # No break. The first version stopped at the first mixed-script token per
+                # file - a break out of both loops - so recall was one finding per file,
+                # which on a document ABOUT confusables is useless. Both agents that were
+                # routed by the regulation named this.
 
     return findings
 
@@ -448,6 +457,20 @@ def scan_path(path: Path) -> list[tuple[Path, str, str, int, str]]:
 
 
 def main() -> int:
+    # A mixed-script finding carries a homoglyph, and a console in cp1251 cannot encode one.
+    # The first version raised UnicodeEncodeError while reporting a finding and still exited
+    # 1 - the code that means "a human must look at this" - so a scan that crashed was
+    # indistinguishable from a scan that found something. This repository has spent a day on
+    # exactly that failure and the scanner committed it.
+    #
+    # Reconfiguring once covers every print in the file, including any added later; wrapping
+    # each one would have been a dozen edits and a rule to remember.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="backslashreplace")
+    except (AttributeError, OSError):
+        pass
+
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("path", type=Path)
     parser.add_argument("--quiet", action="store_true")
