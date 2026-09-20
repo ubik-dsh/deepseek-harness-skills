@@ -33,6 +33,11 @@ MAX_NAME = 64
 MAX_DESCRIPTION = 1024
 MAX_BODY_LINES = 500
 COMFORTABLE_BODY_LINES = 100
+# The budget the standard actually names, and the one the line count only approximates.
+# Measured on this family: 12.3 tokens per line and about 4.4 characters per token, so
+# characters // 4 is a safe over-estimate with no tokenizer installed.
+MAX_BODY_TOKENS = 5000
+MAX_PARAGRAPH_TOKENS = 200
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv"}
 # `__pycache__` is skipped when looking for skills, but not when looking for
 # binaries: a compiled file inside a skill is exactly what a reader should be
@@ -456,18 +461,48 @@ def check(path: Path) -> Result:
             result.warn("the description opens with what the skill is, not when to use it")
 
     # ── size ──────────────────────────────────────────────────────────────
-    # The standard recommends keeping SKILL.md under 500 lines; it is not a hard
-    # limit and DSH caps nothing. Total lines, not non-empty ones: counting only
-    # the lines with content let a 605-line file pass a 500-line rule.
+    # The budget is in TOKENS. The line count is kept as the quick check, but the two
+    # figures disagreed: measured on this family's own nine skills the density is 12.3
+    # tokens per line, so 500 lines is 6,143 tokens - 1.23x the 5,000-token body the
+    # standard recommends. Three skills passed the line check while sitting over the
+    # token one, and nothing noticed because only lines were counted.
+    #
+    # No tokenizer is assumed here. English prose in this house style runs about 4.4
+    # characters per token (measured 4.18 to 4.58 across the nine), so characters / 4
+    # is a safe OVER-estimate and needs nothing installed.
     total_lines = len(body.splitlines())
     non_empty = [line for line in body.splitlines() if line.strip() != ""]
-    if total_lines > MAX_BODY_LINES:
+    estimated_tokens = len(body) // 4
+    if estimated_tokens > MAX_BODY_TOKENS:
+        result.fail(
+            f"the body is about {estimated_tokens:,} tokens ({total_lines} lines). The "
+            f"standard recommends under {MAX_BODY_TOKENS:,}; move detail into references/. "
+            f"The line figure alone does not catch this - 500 lines is about 6,100 tokens "
+            f"at this family's own density"
+        )
+    elif total_lines > MAX_BODY_LINES:
         result.fail(
             f"the body is {total_lines} lines. The standard recommends staying under "
             f"{MAX_BODY_LINES}; move detail into references/"
         )
     elif len(non_empty) > COMFORTABLE_BODY_LINES:
-        result.note(f"the body has {len(non_empty)} non-empty lines — fine for a procedure, worth watching")
+        result.note(
+            f"the body has {len(non_empty)} non-empty lines, about {estimated_tokens:,} tokens "
+            f"— fine for a procedure, worth watching"
+        )
+
+    # A wall is not a total. The same content split under headings is easier to read than
+    # one long stretch, so the biggest single paragraph is measured separately: 512 tokens
+    # with no heading to navigate by is a different problem from 512 tokens across four.
+    paragraphs = [p for p in re.split(r"\n\s*\n", body)
+                  if p.strip() and not p.lstrip().startswith("#")]
+    if paragraphs:
+        biggest = max(len(p) // 4 for p in paragraphs)
+        if biggest > MAX_PARAGRAPH_TOKENS:
+            result.note(
+                f"the largest paragraph is about {biggest:,} tokens. A wall is harder to "
+                f"read than the same words under headings"
+            )
 
     # ── a stated limit ────────────────────────────────────────────────────
     # Silence about the edges is read as covering them, which makes it a claim.

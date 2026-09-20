@@ -159,11 +159,32 @@ a plausible one.
 
 Keep `SKILL.md` focused. Move detail into `references/`, templates into
 `assets/`, and anything deterministic into `scripts/` — a script gives the same
-answer twice and costs fewer tokens than regenerated code. The standard suggests
-metadata around 100 tokens, a body under about 5,000 tokens, and **keeping
-`SKILL.md` under 500 lines**. None of these is enforced anywhere; DSH caps the
-body at nothing at all. Treat 500 as the point at which a reader should be
-splitting the file, and 100 as a sign the skill may be doing more than one thing.
+answer twice and costs fewer tokens than regenerated code.
+
+**The budget is in TOKENS, not in lines or characters, and the two figures this
+rule used to carry disagreed.** The standard suggests metadata around 100 tokens
+and a body under about 5,000 tokens, and it also suggested staying under 500
+lines. **Measured on this family's own nine skills, the density is 12.3 tokens per
+line** (10.8 to 13.5 across them), so 500 lines is **6,143 tokens** — the line
+limit was 1.23× more permissive than the token limit, and **three skills passed the
+line check while sitting over the token one**:
+
+```
+route-a-task        6,706 tokens  495 lines   passes the lines, fails the tokens
+learn-an-interface  5,971 tokens  453 lines   same
+create-a-skill      5,424 tokens  431 lines   same, and this is the rule's own file
+```
+
+**So the token figure is the one to keep and the line figure is a convenience.** If
+a token count is not to hand, English prose in this house style runs about
+**4.4 characters per token**, so characters ÷ 4 is a safe over-estimate; a heading
+every ~300 tokens and no paragraph over ~200 keep a file navigable rather than
+merely small. **A wall of 500 tokens is harder to read than two files of 250**, and
+the same total hides it.
+
+None of this is enforced anywhere upstream; DSH caps the body at nothing at all.
+The bundled checker now estimates tokens from characters and warns, which is the
+part that was missing when this rule was written.
 
 ## Write the body as a procedure
 
@@ -177,129 +198,8 @@ Name the inputs the skill expects, and say what to do when one is missing. A
 skill that assumes a file, a credential or a network read it never mentions fails
 on first use and looks like the agent's fault.
 
-## When the test is outside the machine
 
-Some tasks have their success test in a place the agent cannot reach: a hand on a
-mouse, a cable in a socket, a person's judgement. The temptation is to write the
-skill anyway and make step 1 out of words — *"the user is comfortable with it"* —
-which produces a skill that can never be finished and never be failed.
-
-Do not look for a better adjective. **Build a small world with the same shape as
-the real one, and score it.** Not a mock of the hardware — a model of the decision
-the skill is about. Then the agent has a number, and a number repeats.
-
-Three things make such a world worth having, and each was measured on a real
-trainer built this way:
-
-- the agent sees a **picture**, never the coordinates, or it is reading an answer key;
-- there is a **reaction delay**, because the trainee acts on stale information —
-  without it the measured accuracy was 100% at every difficulty and nothing at all
-  was tested;
-- **difficulty increases**, so perception can be told apart from prediction.
-
-The pattern, the measured table, and the six wrong versions it took to get there:
-[references/simulating-a-test.md](references/simulating-a-test.md). Three lessons
-from the adversarial version are there too, and two of them apply to any rule you
-write, not only to simulations: **put something against your rule that wins by
-exploiting it**, because the seam is where it clamps and a tester who follows the
-rules never finds it; and **measure what you can, not what you want to know**,
-which is the one mistake behind every broken learner in that file.
-
-## When the test needs a real interface driven
-
-**Only if nothing else will do.** Most tasks that look like they need a mouse have
-an API, a command-line tool, or a file format behind them, and every one of those is
-better: a coordinate is coupled to a version, a theme, a display scale, a keyboard
-layout and a monitor count, and all five have broken this work in one afternoon.
-
-So the branch reads like this, and the reader evaluates it:
-
-> If the success test needs this program driven, **and** it has no API, no CLI, no
-> scriptable interface and no readable file format, that is a subject of its own —
-> use the **`learn-an-interface`** skill, which carries the method, the measured
-> traps and a runnable learning loop. Otherwise do not — and if you are unsure, the
-> answer is no.
-
-If the skill does drive an interface, say in the body **why the alternatives were
-rejected**. That sentence is the difference between a considered choice and a habit,
-and it tells the next person where to look when a release breaks it.
-
-Two rules from that work belong here, because they are not about interfaces at all:
-
-- **the success test must check the thing, not its shadow.** "The file exists"
-  certified a Paint project file named `.png` as a saved image, every time. Check a
-  property only the right result has — magic bytes, a parse that succeeds, a count
-  that rose by the amount it should — and then **run the test against the wrong
-  thing once**, to watch it fail. A test that has never failed is not yet a test.
-- **"the action failed" and "there was nothing to act on" are different findings.**
-  A twelve-attempt run scored zero on every try because the program had died
-  mid-run, and the learner concluded that no candidate worked.
-
-If the success test is graded rather than yes-or-no — anything a learner is trained
-against — the reward is the subject of a third skill: **`design-a-reward`**.
-
-## The author cannot test the skill
-
-**If independent testing is possible, it is not optional.** This is the strongest rule here,
-and it is the one that found the most.
-
-A skill is written by someone who knows what it means. That person reads `verify the target
-before anything is pressed` and understands it, because they wrote it about a specific click
-that went wrong. **A reader with no context does not have that click.** They have a sentence,
-and whether the sentence carries the meaning is exactly what has not been tested.
-
-So the test is not the author reading it again. It is **a fresh agent, given no context and no
-history, told the skill exists, and asked to do a real task with it.** Then asked, bluntly,
-where it had to guess.
-
-### How to run one
-
-1. **Start an agent with no context.** Not a summary of the work, not a fork of the
-   conversation — a fresh one. Anything carried over is context the real reader will not have.
-2. **Name the skill and give a task that exercises it.** The task must be one where the skill
-   changes what happens; a task the agent could do anyway tests nothing.
-3. **Do not explain the skill.** If it needs explaining, that is the finding.
-4. **Ask these six questions, in this order**, and require quotes rather than paraphrase:
-   - Did you find it, and did the `description` make it clear it applied? Quote the part.
-   - What did it tell you to do that you would not have done anyway? For each: followed,
-     or not, and why not.
-   - **Where did you have to guess?** A complete skill leaves nothing to guess.
-   - Was anything wrong, stale, or contradicted by what actually happened?
-   - **Its centre, in one sentence.** If the agent cannot state it, the skill has none.
-   - The three changes you would make, ranked.
-5. **Tell it to say "the skill was silent"** rather than inventing what the skill probably
-   meant. You are testing the skill, not the agent's charity.
-6. **Change nothing in the skill during the test**, or the report describes a version that
-   no longer exists.
-
-### What one found here
-
-A single fresh agent, one pass, on a skill four other checks had passed:
-
-- **Two of six skills did not load at all.** A colon inside a frontmatter value, which the
-  author could not see because the author knew the skills existed. `skill <name>` answered
-  *"unknown or no longer available"*. **Every unit test passed while neither skill existed.**
-- **The skill warning loudest about encoding corruption carried a corrupted character** in its
-  own reference file — typed by the author, copying from a console that had already mangled it.
-- A directory the skill tells you to use, **unnamed**, so the agent invented one.
-- "Use a UTF-8-aware tool" **naming no tool**, while the only encoding type the skill names
-  **emits a byte-order mark by default** — the fault the skill exists to prevent.
-- An exemption from the checking step, **unstated**, so the agent had to decide whether it
-  applied.
-
-**Nothing on that list was reachable by reading the skill.** Every item needed a reader who
-did not already agree with it.
-
-### The uncomfortable part
-
-The author's own tests passed. Six skills, all checks green, and two of them were not skills
-anyone could load. **A test written by the author shares the author's blind spot, and passes
-for the same reason the defect exists.**
-
-If you cannot run an independent test — no fresh agent available, no way to isolate one — then
-say so where the skill records its state, and do not write that it was verified. The honest
-entry is `not independently tested`, and it is worth more than a green check that means
-nothing.
+**When a skill's test is outside this machine, and what an independent run has found here, are in [references/testing-a-skill.md](references/testing-a-skill.md).**
 
 ## Prove it before you finish
 
