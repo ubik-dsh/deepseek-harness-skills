@@ -162,12 +162,30 @@ Three rules make it a gate rather than a courtesy:
 ## Step 4 — publish, or schedule
 
 ```bash
-python scripts/preflight.py --target -241624898 --dry-run     # what would be sent
+python scripts/preflight.py --target -241624898 --intent post     # what this token may do
 ```
 
 **A post that can wait should be scheduled** (`publish_date`, a unix timestamp). A scheduled
-post is reviewable between the decision and the effect, and a wrong one can be removed
-before anyone sees it.
+post is reviewable between the decision and the effect — and with this credential it is the only
+review there is, because it cannot be edited or deleted afterwards.
+
+### There is no safe write probe with a community token, and the first version of this got it wrong
+
+`preflight.py --prove-write` was designed to be self-deleting: create a post scheduled an hour
+ahead, read its id, delete it. **It cost a real post.** `wall.post` was accepted and
+`wall.delete` answered error 27, along with `wall.edit` and `wall.restore`. The probe could not
+clean up after itself, because no community-token write is reversible — `wall.closeComments` is
+the only mutation besides `wall.post`, and it does not remove anything.
+
+The flag now exits **6** and prints a warning naming the post id, the publish time and the URL
+to remove it by hand. But the honest conclusion is larger than the fix:
+
+> **Do not probe write authority with this credential. Make the first write the real one, on a
+> private community, with the text already agreed.**
+
+A probe that leaves residue is not a probe. If write authority must be established before the
+real post, the way to do it is a real post whose content is worth publishing — the ceiling is
+the same and the residue is the point.
 
 ## The photo sequence is four steps, and none of them works with a community token
 
@@ -241,12 +259,15 @@ success.
 
 Version 0.1.0. What is least trustworthy:
 
-- **The error table is half measured and half received.** Error 15 and the HTTP 200 shape
-  were measured without a token. The rest came from reading four rejected skills' source,
-  and is marked in the reference as unverified until a real token produces it.
-- **The permission check assumes `groups.getTokenPermissions` is available to a community
-  token.** That is the documented behaviour and it has not been run here.
-- **The typography rules are trialled** — 8 of 9 mechanised, 0 false positives against 14
-  control traps — and the ninth is deliberately left to the reader.
-- **Nothing here has published to a live wall yet.** The preflight is untested against the
-  API, and the first real run is the trial that matters.
+- **The preflight has now been run against the live API**, which is more than it could say when
+  it was written: the community resolves, the permissions arrive by name, the sign flip works,
+  and the write probe was executed once — at the cost of one post that could not be deleted.
+- **The method table is measured for one community key with one mask.** A key with fewer
+  permissions will fail differently, and a *service* token is a different set entirely. The
+  table is a floor, not a law.
+- **Reading is not implemented.** The skill says a service token is the right answer for it and
+  ships no code for one. That is a named gap, not a design.
+- **The typography rules are trialled** — 8 of 9 mechanised, 0 false positives against 20
+  control traps — and the ninth is deliberately left to the reader. `--nbsp` is untested.
+- **Nothing has published a real post yet.** A scheduled post was created and abandoned; the
+  next write should be the intended one, with the text agreed beforehand.
