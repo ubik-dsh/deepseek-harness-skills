@@ -38,21 +38,32 @@ wall it can post to, and it can subscribe to everything that happens on that wal
 
 ## Why that matters: the event stream is the read path
 
-`wall.get` is refused. But a subscribed community receives, with content:
+`wall.get` is refused. But a subscribed community receives wall activity as events, and the
+flags VK actually reports are these — read off `groups.getLongPollSettings`, not off a
+documentation page:
 
 ```
 wall_post_new              a post appeared
-wall_post_edit             a post changed
-wall_post_delete           a post was removed
+wall_repost                a repost appeared
+wall_reply_new             a comment was added
+wall_reply_edit            a comment was edited
+wall_reply_delete          a comment was removed
+wall_reply_restore         a comment was restored
 wall_schedule_post_new     a post was scheduled
 wall_schedule_post_delete  a scheduled post was removed
-wall_repost, like_add, like_remove
+like_add / like_remove     a like arrived or was taken back
 ```
 
-**The last one closes a loop this skill could not close any other way.** A community token cannot
-delete a post, so the first write probe left one behind with a human told to remove it by hand —
-and nothing could confirm that the human did. `wall_schedule_post_delete` is that confirmation,
-delivered as an event, to a key that cannot read the wall.
+**There is no `wall_post_edit` and no `wall_post_delete` flag.** VK does not offer them, so an
+edit to, or the removal of, an *already published* post is not delivered. The first version of
+this file listed both, because they seemed obviously necessary — which is exactly the mistake
+this reference exists to warn about, made in the reference itself. The list above is the one VK
+returned.
+
+**`wall_schedule_post_delete` is the one that closes a loop this skill could not close any other
+way.** A community token cannot delete a post, so the first write probe left one behind with a
+human told to remove it by hand — and nothing could confirm that the human did. This event is
+that confirmation, delivered to a key that cannot read the wall.
 
 ### And the limit of it, which matters as much
 
