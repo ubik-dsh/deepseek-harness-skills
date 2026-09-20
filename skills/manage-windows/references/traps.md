@@ -152,6 +152,68 @@ This repository has done it repeatedly. **[ours]**
 The trailing-backslash trap is worth naming: `"C:\dir\"` is not a string ending in a
 backslash, it is an unterminated string, and the error points somewhere else.
 
+## Window state
+
+| Fails | Works |
+|---|---|
+| `ShowWindow($h, 9)` to "make sure it is visible" | `if (IsIconic($h)) { ShowWindow($h, 9) }` |
+| assuming a restored window is where it was | re-measure after any geometry change |
+
+**`SW_RESTORE` (9) un-maximises a maximised window.** It does not mean "make it usable"; it means
+"put it back to its restored size", and for a window that is already maximised that is a
+**change**. Calling it unconditionally shrank a full-screen browser to 968x524 and moved every
+control the click coordinates had been measured against — the coordinates were still right and
+the window was not, which is the failure this skill exists to prevent, arriving through the
+preparation step rather than the press.
+
+The three states are separate and each needs its own call: `IsIconic` → `SW_RESTORE`, `IsZoomed`
+→ already fine, neither → already fine. And a call that changes geometry is **an action on
+someone's desktop**: measure the rectangle before and after, and put it back. **[ours]**
+
+## Assembling an input struct in PowerShell
+
+| Fails | Works |
+|---|---|
+| `$i = New-Object Win+INPUT; $i.mi.dx = 100` | build the struct inside a C# helper method |
+| trusting `SendInput`'s return value | reading the cursor position back |
+
+**`SendInput` reports success while sending nothing.** PowerShell does not reliably write a field
+of a nested value-type field on a boxed struct: `$input.mi.dx = …` left `dx` at zero, the event
+went out with no movement, and `SendInput` returned **1**. The cursor never moved.
+
+This is the most expensive shape of bug in this file — a call that succeeds and does nothing —
+and the only defence is the one the skill already demands: **read the state back**.
+`GetCursorPos` after the move, `WindowFromPoint` at the point before the press. A check that
+compares the reply to an expectation catches it; believing the reply does not. **[ours]**
+
+## One process, several windows
+
+| Fails | Works |
+|---|---|
+| `--pid` alone to mean "this window" | the window **handle**, or pid plus a verified title |
+| `MainWindowHandle` as "the window of the process" | enumerating the process's top-level windows |
+
+**A pid is not a window.** Two Yandex Browser windows — the VK settings page and this harness —
+had the **same pid, 7092**, because one browser process owns both. `MainWindowHandle` named only
+one of them, so pid identity would have "verified" the wrong window while passing every check.
+
+The preflight's fifth check says *"by process id **or handle**"*; it implements the pid. On a
+machine where one process owns several windows that is a gap between the prose and the code, and
+it was found by needing the handle. **[ours]**
+
+## Reading a control out of a screenshot
+
+| Fails | Works |
+|---|---|
+| a colour threshold to classify ticked against empty | an ASCII map of the pixels, read directly |
+| eyeballing a crop to a coordinate | a bounding box computed from the drawn border |
+
+A threshold classifier reported nearly every row of a settings list as *ticked* while the image
+plainly showed one tick. It was measuring antialiased glyph edges in the label column, not the
+boxes. **A classifier that disagrees with the picture is one to stop using** — printing the
+pixels as a character map gave the box, its state and its centre in one look, because a drawn
+border is a shape and a threshold is a guess. **[ours]**
+
 ---
 
 ## Where these came from
@@ -173,5 +235,7 @@ PowerShell invocation with the reason for each flag, and the shortcut COM lines.
 now held by `learn-an-interface`.
 
 **[ours]** — found by doing it: the BOM defect, the input calls that reach nothing, the
-virtual-desktop move, the layout-dependent typing, and the scripts written into the working
-tree.
+virtual-desktop move, the layout-dependent typing, the scripts written into the working
+tree, and — from one click on a VK settings page — `SW_RESTORE` shrinking the window it was
+meant to prepare, a hand-assembled input struct that `SendInput` accepted and ignored, a pid
+that two windows shared, and a colour threshold that classified label glyphs as ticked boxes.

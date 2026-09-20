@@ -141,6 +141,19 @@ you created, and verify the window still belongs to it. Then pass `--pid` and le
 enforce it. Without it the preflight refuses, because a title match is a guess that has been
 right often enough to be dangerous.
 
+**And a pid is not a window.** One process can own several top-level windows, and two browser
+windows showing different pages proved it — both had pid 7092, and `MainWindowHandle` named only
+one of them. Where that is the case, hold the **handle**: pid identity verifies the wrong window
+while passing every check, and the prose of this skill already says "by process id **or handle**"
+while the preflight implements only the pid.
+
+**Preparation is not free either.** `ShowWindow($h, SW_RESTORE)` to "make sure the target is
+usable" **un-maximises a maximised window**. It shrank a full-screen browser to 968x524 and moved
+every control the click coordinates had been measured against — the coordinates were still right
+and the window was not. Check `IsIconic` first, use `SW_MAXIMIZE` to put a maximised window back,
+and treat any geometry change as an action on someone's desktop: measure before, measure after,
+restore. See [references/traps.md](references/traps.md).
+
 ```bash
 python scripts/preflight.py --title "Notepad" [--point X,Y]
 ```
