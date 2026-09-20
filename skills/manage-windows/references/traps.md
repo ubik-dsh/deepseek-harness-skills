@@ -201,6 +201,39 @@ The preflight's fifth check says *"by process id **or handle**"*; it implements 
 machine where one process owns several windows that is a gap between the prose and the code, and
 it was found by needing the handle. **[ours]**
 
+## A script's step order
+
+| Fails | Works |
+|---|---|
+| an action block written above the `Add-Type` that defines its type | every action after the code it calls |
+| assuming a failed statement stops the script | `$ErrorActionPreference`, or ordering that cannot fail |
+
+**A script whose steps are in the wrong order does not stop at the step that failed.** Two action
+blocks were written above the `Add-Type` that defined the class they called: they raised
+`Unable to find type [Typer]`, and the script **carried on to the next block anyway** and pressed
+Enter twice into a field nothing had been typed into. PowerShell reported both failures and ran
+everything else.
+
+The damage was small and the shape is not: a step that fails silently leaves the steps after it
+running on a state that was never prepared. Order the actions after their dependencies, and make
+the following step depend on the one before it — the fixed version types only when there is a
+string to type.
+
+## `$Home` is taken
+
+| Fails | Works |
+|---|---|
+| `param([switch]$Home)` | `param([switch]$ToStart)` |
+| `$Host`, `$Input`, `$Args`, `$Error`, `$Matches` as parameter names | anything else |
+
+**PowerShell's automatic variables cannot be parameter names.** `-Home` fails at binding time with
+*"Cannot overwrite variable Home because it is read-only or constant"*, and **the script body never
+runs at all** — while the click that preceded it and the keystrokes that followed it both did. The
+first attempt at adding a line to a text field left a click and two newlines applied with no text
+between them, which split a word in the middle of a sentence.
+
+The failure is loud and the consequence is quiet, which is the combination worth remembering. **[ours]**
+
 ## Reading a control out of a screenshot
 
 | Fails | Works |
