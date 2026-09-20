@@ -17,7 +17,7 @@ reading both.
 
     python hearing.py --new <skill-name> > sheet.json
     python hearing.py sheet.json                  # validate and render
-    python hearing.py sheet.json --artefact <path-to-SKILL.md>
+    python hearing.py sheet.json --artefact <skill-folder-or-file> [--artefact ...]
 """
 
 from __future__ import annotations
@@ -63,6 +63,14 @@ BLANK = {
     "verdict": "fix",
     "order": [],
     "boundary": "",
+    "appeal": {
+        "appellant": "",
+        "respondent": "",
+        "attacks": ["unexamined part"],
+        "decision": "uphold",
+        "what_changed": "",
+        "rating": {"appellant": 5, "respondent": 5},
+    },
 }
 
 
@@ -77,7 +85,7 @@ def load_sheet(path: Path) -> dict:
         raise SystemExit(2)
 
 
-def check(sheet: dict, artefact: str | None) -> list[str]:
+def check(sheet: dict, artefact: list | None) -> list[str]:
     """Every rule this recorder enforces, as a list of complaints."""
     problems: list[str] = []
 
@@ -100,12 +108,32 @@ def check(sheet: dict, artefact: str | None) -> list[str]:
             problems.append(
                 "no charges were filed, so the verdict cannot be anything but 'acquit'")
 
-    text = None
+    # A corpus rather than one file. The first version opened a single path and refused
+    # every citation from anywhere else - including a correct citation of a bundled script,
+    # which is the normal case for a skill whose prose and whose behaviour are in different
+    # files. A checker that refuses a correct answer teaches the author to cite only what
+    # the checker reads.
+    corpus: dict[str, str] = {}
     if artefact is not None:
-        try:
-            text = Path(artefact).read_text(encoding="utf-8", errors="replace")
-        except OSError as trouble:
-            problems.append(f"the artefact could not be read: {trouble}")
+        for entry in artefact:
+            path = Path(entry)
+            try:
+                if path.is_dir():
+                    # Named extensions rather than rglob("*"). A skill is made of these, the
+                    # walk terminates, and a path holding something unexpected is not read
+                    # as though it were prose.
+                    for pattern in ("*.md", "*.py", "*.sh", "*.js", "*.json", "*.yml",
+                                    "*.yaml", "*.ps1", "*.txt"):
+                        for found in sorted(path.rglob(pattern)):
+                            if found.is_file() and found.stat().st_size < 2_000_000:
+                                corpus[str(found.relative_to(path))] = found.read_text(
+                                    encoding="utf-8", errors="replace")
+                elif path.is_file():
+                    corpus[path.name] = path.read_text(encoding="utf-8", errors="replace")
+                else:
+                    problems.append(f"the artefact path does not exist: {path}")
+            except OSError as trouble:
+                problems.append(f"the artefact could not be read: {trouble}")
 
     charge_ids = set()
     for index, charge in enumerate(charges, 1):
@@ -124,10 +152,15 @@ def check(sheet: dict, artefact: str | None) -> list[str]:
         if not evidence:
             problems.append(
                 f"{where}: cites no evidence - a vague unease is not a charge")
-        elif text is not None and evidence not in text:
+        elif not corpus:
+            # No corpus given: the check cannot run, and saying nothing would read as a pass.
+            pass
+        elif not any(evidence in body for body in corpus.values()):
+            # Name where it was looked, so a genuine miss and a file the search did not
+            # reach are distinguishable by the reader.
             problems.append(
-                f"{where}: the cited evidence does not appear in the artefact - "
-                f"{evidence[:60]!r}")
+                f"{where}: the cited evidence appears in none of the "
+                f"{len(corpus)} artefact file(s) searched - {evidence[:60]!r}")
 
         level = str(charge.get("level", "")).strip().lower()
         if level not in ("premise", "execution"):
@@ -208,6 +241,42 @@ def check(sheet: dict, artefact: str | None) -> list[str]:
     if verdict == "keep with a boundary" and not str(sheet.get("boundary", "")).strip():
         problems.append("the verdict keeps it 'with a boundary' and names none")
 
+    # ── the appeal, when there is one ─────────────────────────────────────
+    # It judges the hearing rather than the skill, so its rules are about the reasoning:
+    # a filing that argues the artefact instead of the judgement is refused, because that
+    # is a second opinion and not an appeal.
+    appeal = sheet.get("appeal")
+    if appeal is not None:
+        decisions = ("uphold", "vary", "overturn")
+        if not str(appeal.get("appellant", "")).strip():
+            problems.append("the appeal does not state the appellant's case")
+        if not str(appeal.get("respondent", "")).strip():
+            problems.append("the appeal does not state the respondent's case")
+        attacked = appeal.get("attacks")
+        if not isinstance(attacked, list) or len(attacked) == 0:
+            problems.append(
+                "the appeal attacks nothing in the first hearing — an appeal that does not "
+                "name a fault in the reasoning is a second opinion, not an appeal")
+        else:
+            grounds = {"misread charge", "evidence weighed wrongly", "levels confused",
+                       "manufactured charge", "averaging", "verdict does not follow",
+                       "unexamined part"}
+            for one in attacked:
+                if str(one) not in grounds:
+                    problems.append(
+                        f"the appeal attacks {one!r}, which is not one of the grounds: "
+                        f"{', '.join(sorted(grounds))}")
+        decision = str(appeal.get("decision", "")).strip().lower()
+        if decision not in decisions:
+            problems.append(f"the appeal's decision must be one of: {', '.join(decisions)}")
+        if decision == "vary" and not str(appeal.get("what_changed", "")).strip():
+            problems.append("the appeal varies the verdict and does not say what changed")
+        ratings = appeal.get("rating") or {}
+        for side in ("appellant", "respondent"):
+            value = ratings.get(side)
+            if not isinstance(value, int) or not 0 <= value <= 10:
+                problems.append(f"the appeal's {side} rating must be 0 to 10")
+
     return problems
 
 
@@ -265,8 +334,9 @@ def main() -> int:
     parser.add_argument("sheet", nargs="?", type=Path)
     parser.add_argument("--new", metavar="SKILL-NAME",
                         help="print a blank sheet and exit")
-    parser.add_argument("--artefact", type=Path,
-                        help="check each cited piece of evidence against this file")
+    parser.add_argument("--artefact", type=Path, action="append", default=None,
+                        help="check each cited piece of evidence against this path; "
+                             "repeatable, and a directory is searched in full")
     parser.add_argument("--json", action="store_true",
                         help="emit the rendered record as JSON instead of markdown")
     args = parser.parse_args()
@@ -281,7 +351,12 @@ def main() -> int:
         parser.error("give a sheet, or --new <skill-name>")
 
     sheet = load_sheet(args.sheet)
-    problems = check(sheet, str(args.artefact) if args.artefact else None)
+    # The list goes through as a list. Stringifying it here made `for entry in
+# artefact` iterate the CHARACTERS of "['C:\\...']", one of which is a
+# backslash - Path("\\") is a drive root, is_dir() is true, and the corpus walk
+# then traversed the whole disk. A type change in one place and an iteration
+# assumption in another, and the tool walked C: instead of a skill folder.
+    problems = check(sheet, list(args.artefact) if args.artefact else None)
 
     if problems:
         print(f"  the record cannot be written: {len(problems)} problem(s)", file=sys.stderr)

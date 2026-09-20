@@ -183,6 +183,71 @@ something taken, two of them decided **6 against 5**. A close score with a clear
 is the useful result — it says the arguments were nearly equal and the prosecutor's
 held, which is exactly when there is something worth salvaging.
 
+## The appeal — judging the judgement
+
+A hearing decides whether a skill is worth keeping. **An appeal decides whether that hearing
+was any good.** They are different questions, and running the first one twice answers neither.
+
+**An appeal does not re-hear the case.** The appellant who argues the skill again has filed the
+wrong document — the skill was already read, and a second reading produces a second opinion
+rather than a check. **Two opinions are not better than one; they are two.**
+
+### What the appellant attacks
+
+The first hearing's **reasoning**, with the same evidence rule that binds a charge:
+
+| what to attack | what it looks like |
+|---|---|
+| **a misread charge** | the artefact does not say what the charge claims it says |
+| **evidence weighed wrongly** | an impression was preferred to something reproducible |
+| **the two levels confused** | a premise-level fault used to condemn the file, or the reverse |
+| **a manufactured charge** | it cites nothing checkable, or something the author would rewrite |
+| **averaging instead of adjudicating** | "both sides make good points" where the evidence was unequal |
+| **a verdict that does not follow** | the charges support a different entry from the fixed list |
+| **an unexamined part** | a section of the artefact no charge and no defence point touched |
+
+That last one is the most productive and the least used. **A hearing reads what it argues
+about**, and what nobody argued about is exactly where a defect survives — the battery probe
+that SKILL.md promised and the tool never had was found by a reader, not by the first hearing,
+because no charge had a reason to open that sentence.
+
+**And the recorder cannot enforce it.** It checks that the grounds name something from the
+list; it cannot check that the body argues it. The first appeal run said so itself: a filing
+whose grounds read `unexamined part` while its body re-argues the artefact is recorded as
+valid. **The distinction holds because it is stated, not because the sheet makes it** — so
+state it, and read the filing.
+
+`--artefact` takes any number of paths and a directory, and searches all of them, because a
+skill's checkable prose and its behaviour are usually in different files. The first version
+opened one file and refused a correct citation of a bundled script, which is a check that
+teaches an author to cite only what the checker reads.
+
+### The respondent
+
+The respondent defends **the first hearing**, not the skill: the charge was read correctly, the
+evidence did support it, the verdict does follow. Conceding a point is allowed and does not
+lose the appeal — what loses it is defending the reasoning with a new argument about the skill.
+
+### The decision
+
+| | |
+|---|---|
+| **Uphold** | the reasoning holds; the first verdict stands |
+| **Vary** | the verdict was right and the reasoning was not, or the remedy was wrong — say which |
+| **Overturn** | the reasoning does not hold, and the verdict it produced is replaced |
+
+**A rating of the two cases, as in the first hearing.** An appeal decided 6–5 tells the reader
+the first hearing was nearly right, which is different from 9–2 and is worth knowing.
+
+### What an appeal is not for
+
+- **Changing the verdict because a different verdict is defensible.** Most verdicts are. The
+  question is whether *this* reasoning supports *this* one.
+- **A second opinion on the skill.** If the appellant's best material is about the artefact
+  rather than the hearing, the appeal fails and says so.
+- **A tie-break by seniority.** The appeal has no more authority than the first hearing; it has
+  a different job.
+
 ## Failure modes, all of them observed
 
 - **The hearing becomes a description.** Nothing was charged, so the output summarises
