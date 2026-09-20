@@ -244,7 +244,15 @@ def on_motion(event: tk.Event) -> None:
 def on_release(event: tk.Event) -> None:
     global drag_from
     if event.num == 1 and drag_from is not None:
-        record("B1-release", event.x, event.y, f"moved={int(drag_moved)}")
+        # BOTH the instance and the rule. The pixels are what a calibration needs - they are how a
+        # drag is told from a stray click, and how the path is proved continuous. The NAMES are what a
+        # skill needs, because the drop point belongs to the situation: "MOVE cube -> right-half", not
+        # "release at 754,235". Recording only the second is how a rule turns into a coordinate
+        # somebody later reuses in a window where it means something else.
+        target = "right-half" if event.x > LEFT_LIMIT else "left-half"
+        start_target = "right-half" if drag_from[0] > LEFT_LIMIT else "left-half"
+        record("DRAG", event.x, event.y,
+               f"from={start_target} to={target} moved={int(drag_moved)}")
         if event.x > LEFT_LIMIT:
             complete("drag")
         drag_from = None

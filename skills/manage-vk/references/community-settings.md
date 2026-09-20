@@ -198,6 +198,12 @@ not a label from VK. **The row being held is drawn with a grey background**, whi
 evidence in a screenshot that a drag is in progress — position alone does not show it, and neither
 does a cursor log without button state.
 
+**What a skill should carry here is the shape, not a drop point.** Where to drop depends on what is
+being reordered, so a coordinate is worthless: find the row by its **name**, press its handle, move in
+steps, **check that the row under the pointer shows the insertion state**, release, and verify the
+order changed. The grey background is that state, and reading it is what makes the drop verified
+rather than hoped for — see `learn-an-interface`'s *record the logic, not the coordinates*.
+
 **`Порядок разделов` on the community page and `Порядок в меню` here are two different drag lists**
 with the same interaction and different subjects. Neither saves until `Сохранить`, so a wrong drag is
 recoverable up to that point and not after.
