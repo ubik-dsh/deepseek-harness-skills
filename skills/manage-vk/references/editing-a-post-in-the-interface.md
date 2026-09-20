@@ -61,6 +61,57 @@ every time; never carry a coordinate from one opening to the next** — this is 
   lives. **An attachment is removed on the second screen**, by the ✕ beside its name — not in the
   editor, where it does not appear at all.
 
+## The whole menu, walked from top to bottom
+
+**None of this is in the API.** `wall.edit`, `wall.delete`, `wall.getById` and `stats.get` are all
+refused to a community token, so every one of these seven items is interface-only. Each was opened
+on a live post and the result recorded.
+
+| item | what it does | visible effect on the wall |
+|---|---|---|
+| **Статистика** | opens a panel over the wall | see the readings below |
+| **Закрепить** | pins the post | a 📌 appears beside the author's name; the item becomes «Открепить» |
+| **Редактировать** | opens the editor | — (the editor is above) |
+| **Отключить комментарии** | closes the post to comments | the 💬 disappears from the action row: `❤ 💬 ↪` becomes `❤ ↪` |
+| **Сохранить в закладках** | saves to the account's bookmarks | **nothing at all** — it is personal, and the post is unchanged |
+| **Скопировать ссылку** | puts the post URL on the clipboard | none, and the clipboard is the point |
+| **Удалить** | deletes the post | a `Пост удалён. Восстановить` toast where it was |
+
+### Статистика, read off the panel
+
+```
+Статистика записи
+  Просмотры записи   3        (3 / 0 - подписчиков / не подписчиков)
+  Обратная связь     ❤ 0   ↪ 0   💬 0
+  0 перехода в группу         0 скрытия
+  0 подписки на сообщество    0 жалобы
+  0 переходов по ссылке       0 скрытия всех записей
+```
+
+**This is post analytics, and no API method gives a community token anything like it** —
+`stats.get` is refused and that is community statistics in any case, not a single post's. The panel
+is the only way to know whether a post was seen.
+
+### Скопировать ссылку is the interface's output channel
+
+It put `https://vk.ru/wall-241624898_4` on the clipboard, which is **both** the canonical address of
+the post **and** its numeric id — the same `post_id` that `wall.post` returned. Two uses:
+
+- **it is the address to give a human**, in the form VK itself uses;
+- **it is a way to read the id back** for a post whose id was not recorded, on a credential that
+  cannot call `wall.getById`.
+
+Together with `Ctrl+A`/`Ctrl+C` on a text field, that is a general point rather than a VK one:
+**the clipboard is how an agent reads what an interface knows**, and it needs no API at all. It is
+the operator's clipboard, so G7 governs it exactly as it governs a screenshot.
+
+### The two items with no undo
+
+`Сохранить в закладках` and `Скопировать ссылку` change nothing on the post, so there is nothing to
+undo. `Закрепить` and `Отключить комментарии` **do** change it and are reversed by opening the same
+menu again — the item reads «Открепить», and comments are turned back on the same way.
+`Удалить` offers the toast, and that is the only undo in the interface and it does not last.
+
 ## Editing the text: replace the whole field, never position a caret
 
 **The clipboard is the way in and the way out.** Click once in the text field, then:
