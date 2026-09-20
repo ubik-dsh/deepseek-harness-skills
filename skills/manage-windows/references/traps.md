@@ -145,6 +145,50 @@ monitor. On a multi-monitor machine the click lands on a different screen than t
 
 ## Files
 
+**Before editing anything whose loss would hurt — a config file, a skill, a document, a script that
+exists nowhere else — one of four must be true, and it is a question with a yes.** This is G8 in
+`route-a-task`; the practice belongs here.
+
+| the four | what it means |
+|---|---|
+| a **backup** exists | and not the same file on the same disk |
+| you are on a **copy** | the original is untouched |
+| **loss is not critical** | said out loud, and meant |
+| **a copy is held where the file cannot take it** | git, usually |
+
+**Prefer the committed copy, because it is the only one that also tells you what changed.**
+
+**The failure this prevents happened while writing this repository.** A script that moves sections
+between two files wrote the shortened file **first** and the new one **second**; the destination folder
+did not exist, so it cut the file and then died on the write. **The moved text existed nowhere at all.**
+It came back with `git checkout` — and only because the work had been committed minutes earlier. A
+power cut, a crash, or a mistyped path is the same event with no recovery.
+
+**A move is two writes, and the safe order is to prepare the destination first.** Create the folder,
+write the receiver, and only then shorten the source.
+
+```powershell
+# The shape that cannot lose the text: the new copy lands before the old one is touched.
+New-Item -ItemType Directory -Force -Path $destination | Out-Null
+Set-Content -Path $newFile -Value $content -Encoding UTF8
+# ...verify $newFile is on disk and non-empty...
+Set-Content -Path $oldFile -Value $shortened -Encoding UTF8
+```
+
+**And write through a temporary name when the file is read by something else.** `Set-Content` truncates
+before it writes, so a reader that opens the file mid-write sees an empty or half-written one:
+
+```powershell
+Set-Content -Path "$target.tmp" -Value $content -Encoding UTF8
+Move-Item -Path "$target.tmp" -Destination $target -Force   # the rename is the atomic step
+```
+
+| Fails | Works |
+|---|---|
+| editing a file with no copy anywhere | commit, or copy beside it, or say the loss is not critical |
+| writing the source first, the destination second | create and write the destination, verify, then shorten the source |
+| `Set-Content` straight onto a file others read | write `.tmp`, then `Move-Item -Force` |
+
 | Fails | Works |
 |---|---|
 | a generated script in the working tree | a scratch directory the tool owns |
