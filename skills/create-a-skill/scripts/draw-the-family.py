@@ -127,10 +127,29 @@ def main() -> int:
             label += '<br><font color="#D79B00">· назван, но не связан</font>'
         vertex(ids[rel], label, x, y, fill, stroke, height=HEIGHT + (22 if russian else 0))
 
-    # Every edge, coloured by how it was established. Only the declared ones by default: a picture is
-    # for reading, and four hundred inferred mentions between sixty-eight boxes is a hairball. The JSON
-    # keeps them all; the drawing keeps what a person can follow.
-    drawn = data["edges"] if args.all else [e for e in data["edges"] if e["mark"] == "EXTRACTED"]
+    # Every edge, coloured by how it was established.
+    #
+    # TWO KINDS OF INFERRED, AND ONLY ONE OF THEM IS A GUESS. When a SKILL.md names a file inside its
+    # OWN skill - its own script, in backticks - the author declared that relationship as surely as a
+    # markdown link does; they wrote the name instead of the link. When one skill names a file in
+    # ANOTHER skill, that is a mention and nothing more.
+    #
+    # The first version filtered to EXTRACTED only, and the script column came out with ZERO arrows
+    # pointing at it. The scripts looked orphaned and they are not - their own SKILL.md names them on
+    # its first screen. A filter that removes real edges along with the noise is a blindfold.
+    def keep(edge: dict) -> bool:
+        if args.all or edge["mark"] == "EXTRACTED":
+            return True
+        if edge["mark"] in {"INFERRED", "AMBIGUOUS"}:
+            source = nodes.get(edge["from"], {})
+            target = nodes.get(edge.get("to", "").split("|")[0], {})
+            # Only the SKILL.md naming its own files. A mention inside a reference is a weaker thing
+            # than the skill declaring what belongs to it, and drawing both put 366 edges on the page.
+            return (bool(source) and source.get("skill") == target.get("skill")
+                    and source.get("name") == "SKILL.md")
+        return False
+
+    drawn = [e for e in data["edges"] if keep(e)]
     for index, edge in enumerate(drawn):
         source = ids.get(edge["from"])
         target = ids.get(edge.get("to", "").split("|")[0])
