@@ -1,13 +1,13 @@
 ---
 name: route-a-task
-description: Decide which skill a task requires, and which of them are mandatory rather than optional. A regulation rather than a menu - untrusted content must be scanned before it is used, a search must happen before a skill is written, hardware symptoms must be read before anything is changed, an independent agent must read a skill before it is called done. Covers the situations that force a skill with no judgement allowed, the ones that force it only under a condition, the ones that are only worth considering, what to do when two apply, and what to do when none does. Ships a router that prints the obligations in order for a described task. Use when starting any task whose right approach is not obvious, when about to take something from the internet, when about to write or change a skill, when a machine misbehaves, when a score or a check is being designed, or when unsure whether a rule applies at all.
+description: Decide which skill a task requires, and which are mandatory rather than optional. A regulation rather than a menu - untrusted content is scanned before it is used, a search happens before a skill is written, hardware symptoms are read before anything is changed, a result that could quietly be wrong is checked by something that did not produce it, an independent agent reads a skill before it is called done. Covers what forces a skill with no judgement allowed, what forces it under a condition, what is only worth considering, what to do when two apply, and what to do when none does. Ships a router that prints the obligations in order with the literal step for each, and a test of its own triggers. Use when starting a task whose approach is not obvious, when taking something from the internet, when writing or changing a skill, when a machine misbehaves, when a score or check is being designed, when about to report a number, a proof or a measurement, or when unsure whether a rule applies at all.
 license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text. Names other skills in this family; where one is absent, the obligation is stated rather than the tool.
 metadata:
   spec: https://agentskills.io/specification
-  version: 0.1.0
-  status: first formulation, written because seven tools had no entry point
-  borrowed_from: the gate idea - a check that must pass before work continues - is NVIDIA/SkillSpector's install gate, read as "map the recommendation to an action" and generalised here from installs to tasks
+  version: 0.2.0
+  status: the correctness gate was added after three independent agents found the regulation silent on the one thing each of them was doing
+  borrowed_from: the gate idea - a check that must pass before work continues - is NVIDIA/SkillSpector's install gate, read as "map the recommendation to an action" and generalised here from installs to tasks. The word-boundary trigger rule is find-a-skill's own scanner, which needed it first and whose author did not carry it across
   sibling: names all of them, and is named by none. find-a-skill, judge-a-skill, create-a-skill, learn-an-interface, manage-windows, check-hardware, design-a-reward
 ---
 
@@ -50,6 +50,12 @@ can stop on it.
 
 **That is the whole exchange:** the omission is found *before* the redo, not after, and the
 instruction arrives with the finding.
+
+**The router is tested, because a router is a keyword list and a keyword list is wrong until
+something fails.** `python scripts/test-route.py` holds 24 tasks in both directions — the ones a
+gate must fire on and the ones it must not — plus the exit codes and the routes that must not be
+suggested. It exits 1 on any case. Against the previous version it reports 16 failures; every
+one of them is a defect that was on screen and unread.
 
 ## The gates — no judgement allowed
 
@@ -104,10 +110,14 @@ a scan that may as well not have run.
 Each one found by the same agent, each one real:
 
 **Scope wider than the tool.** The gate says *any file, script, repository or archive*. The
-scanner reads nine text extensions — `.md .py .ps1 .sh .js .ts .json .yaml .yml` — and **cannot
-read an archive, an image, a PDF or a notebook.** When the thing is one of those, the tool is
-not the gate: unpack it, read it by hand, or say plainly that the gate could not run on it.
-**"The scanner passed" is false when the scanner never opened the file.**
+scanner now opens **every** file in a folder — an earlier version filtered the walk to nine text
+extensions, missed two `.txt` files, and reported the folder clean with exit 0 — and a file it
+cannot read, because it holds a NUL byte in its first block, is **named as unreadable rather
+than skipped in silence**. What it still cannot do is **look inside an archive, an image, a PDF
+or a notebook.** When the thing is one of those, the tool is not the gate: unpack it, read it by
+hand, or say plainly that the gate could not run on it. **"The scanner passed" is false when the
+scanner never opened the file** — and "the scanner passed" is also false when it opened the file
+and told you it could not read it.
 
 **A threat that arrives by being read.** The scanner guards what is **on disk**. Text fetched
 into a session and never saved **never touches a disk**, so the tool never sees it — and that
@@ -163,6 +173,78 @@ advertising a reading it never took.
 **If no independent agent is available, the honest entry is `not independently tested`.** That
 is worth more than a green check that means nothing.
 
+### G6 — a result that could quietly be wrong is checked by something that did not produce it
+
+**The row this regulation was missing**, and the one all three agents of the A/B found
+independently. The third had the task *"compute natural logarithms accurately for arguments
+near 1, and verify independently"*. It matched **no gate at all** — the sentence asking for the
+check names no subject — and then `--verify` passed its empty record in the confident register
+of real coverage. Two defects at once: no row, and a pass for a task that was never examined.
+
+**A subject cannot be matched by a keyword. A deliverable can.** A value, a proof, a
+classification and a reading have the same shape in every domain, **including the domains no
+skill in this family covers** — and that is the point rather than a side effect. Where a subject
+is mapped, the subject's skill is the better instruction. Where it is not, **this gate is the
+only check there is**, and it is deliberately written to need no domain knowledge to run: a
+second route, the units, and the boundary case.
+
+```
+name it    the check AND the expected answer, before the computation - not after
+second     a route that fails differently: a formula against an estimate, a parser
+           against a hand count on a sample, forward against inverse
+units      same units, then magnitudes, then digits. A wrong power of ten looks like a
+           small slip and is the error most likely to survive every other test
+boundary   the case known by construction: n = 0, a unit input, the one row you can
+           count by hand. If the boundary is wrong too, the METHOD is wrong
+limits     say what you could not verify, with its size where it has one
+```
+
+**Agreement is evidence, never proof.** A sweep over five hundred cases does not prove a
+statement about all `n`, and a result reported with no stated limit is read as a verified one.
+Say which of the two you have.
+
+**This is the gate for the ground nothing here has mapped**, and it is the answer to the
+question the third agent asked: what does an agent do when the regulation's whole subject list
+misses the task? It names no skill on purpose, because naming one would make it a referral
+again — and on unmapped ground a referral has nowhere to go.
+
+---
+
+## How a trigger is matched, and why that became a finding
+
+**A trigger is matched as words, not as a run of letters**, and this was not always true. The
+first version tested `needle in text`, and the result was on screen for two days:
+
+| trigger | fired on | so the regulation ordered |
+|---|---|---|
+| `repo` | "re**po**rt" | a malware scan before summarising a report |
+| `ship` | "relation**ship**" | an independent agent before changing a setting |
+| `form` | "**from**", "**form**at", "in**form**ation" | the Windows preflight before anything at all |
+| `ratio` | "ope**ratio**ns", "configu**ratio**n" | a second route for a documentation task |
+
+**Every one of those is a gate telling an agent to stop and do something the task never called
+for**, which is how a regulation stops being read. `from` alone put the interface route into
+almost every sentence in the language.
+
+The form is now written into the trigger, so a new one cannot be added by accident:
+
+```
+repo        the whole word, nowhere inside a longer one
+install*    a stem - install, installs, installed, installing, installation
+sum of      a phrase, bounded at both ends
+```
+
+**Measured, over 54 sentences of this family's own skill descriptions and the A/B tasks:**
+11 gate firings removed, all of them substring artefacts; 9 route suggestions removed, every
+one of them `form` inside `from`, `format` or `information`; **0 route suggestions added**. The
+gates that were added are G6, on the tasks it exists for.
+
+**And the lesson was already in this repository.** `find-a-skill`'s scanner carries a
+word-boundary helper — it needed one after producing forty false positives on this family's own
+files. This router was written afterwards, by the same hand, and did not inherit it. **A
+practice learned in one tool does not travel to the next one on its own**, and that is worth
+more than the bug it caused.
+
 ---
 
 ## The routing table
@@ -173,6 +255,7 @@ is worth more than a green check that means nothing.
 | the situation | the tool | strength |
 |---|---|---|
 | anything arrived from the internet, to be used or installed | the external-content scan | **REQUIRED** — G1 |
+| **a value, a proof, a classification or a reading is about to be reported** | nothing — the check itself: a second route, the units, the boundary case | **REQUIRED** — G6, and the only row that applies where no skill here does |
 | a skill is about to be written, forked, or made | `find-a-skill` | **REQUIRED** — G2 |
 | a skill has been written and is about to be adopted or published | `judge-a-skill`, then an independent reader | **REQUIRED** — G4 |
 | a computer misbehaves: reboots, heat, noise, a drive, a failure to boot | `check-hardware` | **IF** the symptom is not obviously software |
@@ -215,6 +298,9 @@ relevant, because each one protects against a different failure and the cheapest
 
 - **Scan before search.** A search query is not a use, but a fetched result is content from
   outside — and a search that returns a payload is a scan waiting to happen.
+- **Scan before check.** G6's first step is to name the check *before* the computation, so G6
+  runs early. G1 still runs first: a payload that has not been read is a payload that could
+  choose the check for you.
 - **Search before write.** Always. The point of G2 is the authoring it prevents.
 - **Read before change.** Always, and it is not a preference: the change destroys the reading.
 - **Judge before adopt, and read independently before done.** A hearing you ran yourself is not
@@ -246,17 +332,24 @@ the referral as well as the step**, and it is why the router now prints both.
 ## What this regulation is, and what it is not
 
 **It is a safety and process ontology.** Its triggers are about content arriving from outside,
-machines being changed, work being published and tools being chosen. That is a real and useful
-set, and it is not everything.
+machines being changed, work being published, tools being chosen, and results being checked.
+That is a real and useful set, and it is not everything.
 
-**It has no row for correctness.** A task whose difficulty is that an answer might quietly be
-wrong — a numerical result, a proof, a measurement, a classification — matches nothing here.
-The third agent to be routed by this regulation had exactly that task, and the honest verdict
-it returned was that **neither design served it**, because neither covered it.
+**It had no row for correctness, and that gap was found three times before it was closed.** A
+task whose difficulty is that an answer might quietly be wrong — a numerical result, a proof, a
+measurement, a classification — matched nothing here. The third agent to be routed by this
+regulation had exactly that task, and the honest verdict it returned was that **neither design
+served it**, because neither covered it. **G6 is that row**, and the reason it works is that it
+is keyed to the shape of the deliverable instead of to the subject: the subject is what a
+keyword cannot see, and the shape is what it can.
 
-**And the router matches vocabulary, not intent.** "Verify the result independently" matched
-nothing; adding the word "install" to the same sentence fired G1. That is the price of
-keyword triggers and it should be known before the output is trusted.
+**The router still matches vocabulary, not intent.** "Verify the result independently" now fires
+G6, but it fires because the phrase is in the table — not because the router understood it. A
+task can be quietly wrong in words this table does not hold, and then nothing fires. Adding the
+word "install" to any sentence fires G1; that is the price of keyword triggers and it should be
+known before the output is trusted. `test-route.py` holds the counter-examples in both
+directions, and a phrase that fires wrongly is a case to add there rather than a sentence to
+reword here.
 
 **So when nothing fires, that is a statement about this document, not about the work.** The
 router now says so in those words and exits 3, distinct from 0 — because "nothing applied" and
@@ -276,17 +369,28 @@ finding: the table is incomplete, and the row that was missing is worth adding.
 - **Any of the tools themselves.** It routes and it stops; each skill holds its own procedure.
 - **The order inside a gate.** Whether the scan runs before or after you read the file for
   interest is nobody's business; that it ran before use is not.
+- **What the triggers do not contain.** The tables are keyword lists, and a keyword list is a
+  list of what someone thought of. A task described in other words is not covered, and the
+  router says so rather than guessing — but it cannot say *that it should have been*.
 - **Enforcement.** Nothing here can stop an agent that decides to skip a gate. It can make the
   skipping visible, which is the most a document can do — the enforcement is that a skipped
   gate is a named failure rather than a silent one.
 
 ## Refining this skill
 
-Version 0.1.0, written on the day the family reached seven tools without an entry point.
+Version 0.2.0, written on the day the family reached seven tools without an entry point and
+revised on the day the correctness gate was added.
 
-- **The strengths have not been tested.** No task has been routed by this table and then
-  checked against what actually happened. The gate that will prove it wrong is the one that
-  fires where it should not, and a table that cries wolf gets ignored.
+- **The strengths now have a test, and it was written by the author of the defects.** It caught
+  sixteen failures against the previous router, and it is the reason the trigger rewrite could
+  be attempted at all. Run it with `python scripts/test-route.py`; it exits 1 on any case.
+- **The trigger tables are matched by words, and the counter-examples are in that file.** Every
+  false positive found so far is a case there rather than a sentence here, which is deliberate:
+  a rule about words is worth less than a test that fails.
+- **G6 has never been routed on a real task by a fresh agent.** It was written from the record
+  of the agent it would have served, not from that agent's trial of it. That is the same
+  "author tests their own work" defect G4 exists to catch, and it is recorded here rather than
+  repaired.
 - **The rows are the situations met so far**, which is a small sample and biased toward the
   work that produced them.
 - **G4 is the weakest in practice.** It depends on an independent agent existing, and it says

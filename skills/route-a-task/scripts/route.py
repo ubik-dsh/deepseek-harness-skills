@@ -18,19 +18,25 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 
 # The gates. Order is the order they run in, and each protects against a different failure.
 # A gate fires on a condition and cannot be skipped by judgement - that is what makes it a
 # gate rather than a suggestion.
+#
+# THE LIST ORDER IS THE RUN ORDER. The numbers are the order the gates were written in, not
+# the order they run in - which is why G6 sits second and G4 last. A reader who assumes the
+# numbers are the order has already misread the regulation, and the rendered output prints
+# them in the order they run, so the numbers on screen can look shuffled by design.
 GATES = [
     {
         "id": "G1",
         "name": "content from outside is scanned before it is used",
-        "when": ["download", "downloaded", "internet", "github", "clone", "archive", "zip",
-                 "skill from", "install", "external", "third-party", "repo", "fetch",
-                 "paste", "copied from", "скачать", "скачал", "интернет", "установить",
-                 "внешн", "чужой"],
+        "when": ["download*", "internet*", "github", "clone*", "archive*", "zip*",
+                 "skill from", "install*", "external*", "third-party", "repo", "fetch*",
+                 "paste*", "copied from", "скача*", "интернет*", "установ*", "внешн*",
+                 "чуж*"],
         "tool": "the external-content scan",
         # The step, literal and in place. An agent at this gate should not have to go and
         # read another skill to find out what to run - that is how a gate becomes a
@@ -51,10 +57,75 @@ GATES = [
         "then": "a BLOCK stops the work; a REVIEW is dismissed in writing, not in silence.",
     },
     {
+        "id": "G6",
+        "name": "a result that could quietly be wrong is checked by something that did not produce it",
+        # The row the regulation lacked, and the gap all three A/B agents found independently.
+        # One of them - "compute natural logarithms accurately for arguments near 1, and verify
+        # independently" - matched NO gate, got an empty record, and then got a --verify pass
+        # in the confident register of real coverage. The sentence asking for a check matched
+        # nothing, because it names no subject.
+        #
+        # A subject cannot be matched by keyword. A DELIVERABLE can: a value, a proof, a
+        # classification and a reading have the same shape in every domain - including the
+        # domains no skill in this family covers. That is the point. Where a subject is
+        # mapped, the domain skill is the better instruction; where it is not, this gate is
+        # the only check there is, and it needs no domain knowledge to run.
+        #
+        # So it fires on the shape of what is being produced, never on the topic, and it sits
+        # second because its first step - name the check before you compute - must happen
+        # before the computation, not after it.
+        "when": ["calculat*", "compute*", "computing", "computation*", "how many",
+                 "how much is", "count the", "sum of", "average*", "median*", "percentage*",
+                 "percent", "ratio", "ratios", "conversion factor", "convert the units",
+                 "estimat*", "formula*", "solve for", "equation*", "probabilit*",
+                 "statistic*", "derivative*", "integral*", "logarithm*",
+                 "prove*", "proving", "proof that", "the proof", "theorem*",
+                 "counterexample*", "measurement*", "measured value", "take a reading",
+                 "units of", "classif*", "transcri*", "accuracy",
+                 "verify the result", "verify independently", "check the answer",
+                 "check the result", "is the answer right", "double-check",
+                 "посчита*", "вычисл*", "сколько", "процент*", "среднее", "средний",
+                 "средняя", "средние", "сумма", "сумму", "суммы",
+                 "переведи в", "перевести в", "единиц*", "оцени*", "формул*", "уравнени*",
+                 "логарифм*", "доказ*", "опроверг*", "контрпример*", "измерени*", "замер*",
+                 "точност*", "погрешнос*", "классифиц*", "распозна*",
+                 "проверь результат", "проверить результат", "проверить ответ",
+                 "проверить независимо"],
+        "platform": "any task whose deliverable is a value, a proof, a classification or a "
+                    "reading - and especially one no skill here covers, because then this "
+                    "check is the only one there is",
+        "tool": "nothing - this gate is its own procedure, and it is written to run where no "
+                "skill here applies",
+        # Without this the rendered line reads "read nothing - this gate is its own procedure
+        # for why, not only what", which is not a sentence. G5 had the same defect from the day
+        # it was added and nobody read its output closely enough to see it.
+        "method": "this gate names no skill on purpose: the check is a second route, the units, "
+                  "and the boundary case, and it needs no domain knowledge to run",
+        "do": [
+            "Name the check AND the answer you expect BEFORE you compute it. A check chosen "
+            "after the result is seen is a rationalisation, not a check.",
+            "Get the answer by a second route that fails differently - a formula and a scaled "
+            "estimate, a parser and a hand count on a sample, forward and inverse. Two routes "
+            "that share a bug agree with each other.",
+            "Same units, then magnitudes, then digits. A wrong power of ten looks like a small "
+            "arithmetic slip and is the error most likely to survive every other test.",
+            "Compute the case where the answer is known by construction - n = 0, a unit input, "
+            "the one row you can count by hand. If the boundary is wrong too, the method is "
+            "wrong and not the arithmetic.",
+            "State what you could not verify, with its size where it has one. A result with no "
+            "stated limit is read as a verified one.",
+        ],
+        "record": "the check named before the computation, the second route and its verdict, "
+                  "the boundary case, and what remains unverified",
+        "then": "agreement is evidence, never proof - a sweep over 500 cases does not prove a "
+                "statement about all n. Say which of the two you have.",
+    },
+    {
         "id": "G2",
         "name": "search before you write",
-        "when": ["write a skill", "create a skill", "make a skill", "new skill", "fork",
-                 "author", "build a tool", "написать скилл", "создать скилл", "сделать скилл"],
+        "when": ["write a skill", "create a skill", "make a skill", "new skill", "fork*",
+                 "author a skill", "authoring a skill", "build a tool", "написать скилл",
+                 "создать скилл", "сделать скилл"],
         "tool": "find-a-skill",
         "do": ['Search the roots this harness resolves, then GitHub, then the web, with the scout.', 'Write the result down BEFORE writing anything - two candidates and why each lost.', 'Any hit is a candidate, not an answer: read it in full, then trial it on your case.'],
         "record": 'the search, the candidates, and why the fresh skill is still the right answer',
@@ -69,11 +140,11 @@ GATES = [
         # start" fired this gate and demanded a Windows hardware collector for a car, while
         # "a car will not start" fired nothing. Coverage was keyword-shaped and punctuation
         # decided it. Found by the agent whose task was the car.
-        "when": ["blue screen", "bsod", "event log", "device manager", "driver", "windows update",
-                 "won't boot", "will not boot", "bcdedit", "chkdsk", "sfc /scannow",
-                 "smartctl", "whea", "kernel-power", "get-physicaldisk", "wmic",
-                 "powershell", "registry", "device manager",
-                 "синий экран", "диспетчер устройств", "реестр", "не грузит windows"],
+        "when": ["blue screen", "bsod", "event log", "device manager", "driver*",
+                 "windows update", "won't boot", "will not boot", "bcdedit", "chkdsk",
+                 "sfc /scannow", "smartctl", "whea", "kernel-power", "get-physicaldisk",
+                 "wmic", "powershell*", "registry", "registries",
+                 "синий экран", "диспетчер устройств", "реестр*", "не грузит windows"],
         "platform": "Windows hardware. For a fault outside it - a car, a printer, a router - "
                     "this gate does not apply; say so and do the work.",
         "tool": "check-hardware",
@@ -85,9 +156,13 @@ GATES = [
     {
         "id": "G5",
         "name": "choosing a tool is a decision with a record",
-        "when": ["which tool", "choose", "select", "compare", "best", "alternative", "library",
-                 "framework", "which one", "выбрать", "какой", "сравнить", "лучше"],
+        "when": ["which tool", "choos*", "chose", "chosen", "select*", "compare*", "comparing",
+                 "comparison*", "comparative*", "best", "alternative*", "librar*",
+                 "framework*", "which one",
+                 "выбр*", "выбир*", "какой", "какая", "какое", "какие", "сравн*", "лучш*"],
         "tool": "nothing - this gate is a record, not a tool",
+        "method": "this gate is a record rather than a skill to read: the choice exists in the "
+                  "writing of it or it does not exist",
         # Declared in the prose for a day with no entry here, so the router never asked for
         # it. A gate that exists in the document and not in the router is one an agent
         # cannot be held to - and three agents owed this record before it existed.
@@ -103,8 +178,9 @@ GATES = [
     {
         "id": "G4",
         "name": "an independent agent reads a skill before it is called done",
-        "when": ["publish", "release", "adopt", "done", "finished", "ship", "выпуск",
-                 "опубликовать", "готово", "закончил"],
+        "when": ["publish*", "releas*", "adopt*", "done", "finish*", "ship", "shipping",
+                 "shipped", "выпуск*", "опублико*", "публикац*", "публиковать", "готов*",
+                 "законч*"],
         "tool": "judge-a-skill, then a fresh agent with no context",
         "do": ['Run the hearing, then hand the skill to an agent with NO context and a real task.', 'Ask it to report where the skill was silent and what it had to guess.', 'Fix what it found, then run it again - the last fix is always unverified.'],
         "record": "the hearing, the fresh agent's report, and what was changed because of it",
@@ -117,16 +193,16 @@ GATES = [
 # and not taking it is a decision rather than an omission.
 ROUTES = [
     {
-        "when": ["windows", "powershell", "registry", "driver", "service", "setting",
-                 "setting change", "group policy", "виндовс", "реестр", "драйвер", "служб"],
+        "when": ["windows*", "powershell*", "registry", "registries", "driver*", "service*",
+                 "setting*", "group policy", "виндовс*", "реестр*", "драйвер*", "служб*"],
         "tool": "manage-windows",
         "strength": "IF the change is on Windows",
         "because": "the platform's traps are silent: JSON truncates, 5.1 corrupts text, and a "
                    "click can land on another window.",
     },
     {
-        "when": ["click", "gui", "window", "dialog", "button", "form", "interface", "menu",
-                 "screenshot", " mouse", "keyboard", "нажать", "окно", "кнопк"],
+        "when": ["click*", "gui", "window*", "dialog*", "button*", "form", "interface*",
+                 "menu*", "screenshot*", "mouse", "keyboard*", "нажат*", "окн*", "кнопк*"],
         "tool": "manage-windows preflight, then learn-an-interface",
         "strength": "REQUIRED before the first press; learn-an-interface IF no API, CLI or "
                     "file format reaches the control",
@@ -134,21 +210,22 @@ ROUTES = [
                    "an action taken on someone else's work.",
     },
     {
-        "when": ["score", "grader", "reward", "success test", "metric", "rating", "rubric",
-                 "награда", "оценк", "критери"],
+        "when": ["score*", "grader*", "reward*", "success test", "metric*", "rating*",
+                 "rubric*", "наград*", "оценк*", "критери*"],
         "tool": "design-a-reward",
         "strength": "IF anything will be optimised against it",
         "because": "a reward satisfied without the task being done is the defect that costs "
                    "the most time to find.",
     },
     {
-        "when": ["skill", "скилл", "скилы"],
+        "when": ["skill*", "скилл*", "скилы"],
         "tool": "find-a-skill, then judge-a-skill, then create-a-skill",
         "strength": "CONSIDER, unless the task is writing or adopting one",
         "because": "the family is a pipeline and this is its order.",
     },
     {
-        "when": ["search", "find", "look for", "is there", "does a", "искать", "найти", "есть ли"],
+        "when": ["search*", "find*", "look for", "is there", "does a", "иска*", "найти",
+                 "найди", "есть ли"],
         "tool": "find-a-skill",
         "strength": "CONSIDER",
         "because": "looking before deciding is cheap and looking after is not.",
@@ -157,8 +234,36 @@ ROUTES = [
 
 
 def matches(text: str, needles: list[str]) -> list[str]:
+    """Which of these triggers the text contains.
+
+    A trigger is matched as WORDS, not as a run of letters, and the difference is not
+    academic. Measured on the previous version: "repo" fired G1 on the word "report", so
+    "summarise the report" ordered a malware scan; "ship" fired G4 on "relationship";
+    "ratio" fired G6 on "operations" and "configuration"; "form" fired the interface route
+    on "information". Every one of those is a gate telling an agent to stop and do something
+    the task never called for - which is how a regulation stops being read.
+
+    The form is written into the trigger, so a new one cannot be added by accident:
+
+        repo        the whole word, nowhere inside a longer one
+        install*    a stem - install, installs, installed, installing, installation
+        sum of      a phrase, bounded at both ends
+        won't boot  a phrase containing punctuation, bounded the same way
+
+    The lesson is not new here. find-a-skill's scanner has carried a word-boundary helper
+    since it produced forty false positives on this family's own files; this router was
+    written later and did not inherit it.
+    """
     lowered = text.lower()
-    return [needle for needle in needles if needle in lowered]
+    hits = []
+    for needle in needles:
+        if needle.endswith("*"):
+            pattern = r"\b" + re.escape(needle[:-1])
+        else:
+            pattern = r"\b" + re.escape(needle) + r"\b"
+        if re.search(pattern, lowered):
+            hits.append(needle)
+    return hits
 
 
 def route(text: str) -> dict:
@@ -211,8 +316,14 @@ def render(report: dict, only_gates: bool = False) -> str:
             # found "evidence before hypothesis" in check-hardware's body, not in its gate.
             # A gate that prints only steps teaches an agent to follow instructions it
             # cannot evaluate.
-            lines.append(f"       method  read {gate['tool']} for why, not only what - the "
-                         f"steps above are the case it was written for, not the rule")
+            #
+            # A gate whose tool is "nothing" supplies its own sentence. Gluing the default
+            # onto it produced "read nothing - this gate is a record, not a tool for why,
+            # not only what", which is not a sentence, and it was on screen the whole time.
+            method = gate.get("method") or (
+                f"read {gate['tool']} for why, not only what - the steps above are the case "
+                f"it was written for, not the rule")
+            lines.append(f"       method  {method}")
             lines.append(f"       matched {', '.join(gate['triggered_by'][:5])}")
     else:
         lines.append("  No gate applies. Nothing here is an obligation.")
