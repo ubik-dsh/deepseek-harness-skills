@@ -205,6 +205,58 @@ VK's SPA does fail to load a section now and then and offers a reload. **Retry o
 concluding anything about a URL**, and prefer the app's own navigation when a click is available
 anyway — not because deep links are unreliable, but because a retry costs less than a wrong rule.
 
+### Each section has its own settings dialog, and they differ
+
+**A row with a chevron on the `Разделы` page opens `Настройки раздела` for that section — and the
+dialog's contents depend on which section it is.** Recorded from a demonstration of six of them:
+
+```
+Посты       Кто может публиковать посты
+            Кто может предлагать посты
+            Запретить делать посты
+Музыка      Показывать в разделе        Только треки  |  Треки и плейлисты
+            Кто может добавлять         Все подписчики | Администраторы и редакторы
+Обсуждения  Кто может создавать темы    Все подписчики | Администраторы и редакторы
+Файлы       Кто может добавлять файлы   Все подписчики | Администраторы и редакторы
+Материалы   Кто может добавлять файлы   Все подписчики | Администраторы и редакторы
+Фото        a single on/off toggle and nothing else
+```
+
+**So the dialog's height and its field count change from section to section**, which is a reason to
+re-measure after every one of them rather than to carry a coordinate across.
+
+**`Выйти без сохранения?` is a real confirmation.** Leaving a section's settings with unsaved changes
+raises it. It is the second place in this interface where the destructive option and the safe one sit
+beside each other, and like `Сохранить черновик?` on the post editor, the reading is the point.
+
+**Rows that carry a toggle** — `Клипы`, `Статьи`, `Моменты`, `Товары`, `Мероприятия`, `Чаты`,
+`Контакты` — are switched in place, with no dialog at all.
+
+### A demonstration recorded around the pointer cannot be compared without `cursor.csv`
+
+**Three measurement errors in one analysis, all from forgetting that the frames move.** The operator
+reported that the interface shifted after a toggle. The recording is 889 frames cropped around the
+pointer, so:
+
+- **a fixed box means a different part of the screen in every frame.** Comparing raw frames reported
+  that the region was byte-identical for three minutes — impossible while a page is being driven, and
+  the zeroes were the only clue. The mapping is `frame = screen - (cursor - size/2)`;
+- **comparing two frames by eye compares two different origins.** A "69-pixel shift" of the sidebar
+  came from reading frame coordinates instead of screen ones, and vanished when the same screen
+  column was stacked from ten frames;
+- **a modal's dimming dominates a difference.** Every large change found this way was a dialog
+  opening or closing, which darkens the whole region and swamps any real movement.
+
+**The way to see a shift is to stack the same SCREEN column from many frames side by side, with a
+reference line at one fixed screen y.** Ten frames minutes apart, mapped back through `cursor.csv`,
+put the same text at the same height — and the red line crossing the same words in every column is
+the answer, in one look.
+
+**And the honest residue:** the shift the operator saw was **not reproduced**. The sidebar was stable,
+the section list was stable, and no measurement found movement. It is recorded as unreproduced rather
+than as a finding — which is the rule this file already carries, applied to someone else's report
+instead of to my own.
+
 ### The two rules this map cost, and they are both about trusting one pass
 
 **The row is measured, not counted.** The panel's rows are about **38 px apart** and the first pass
