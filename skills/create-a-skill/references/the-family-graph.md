@@ -58,3 +58,25 @@ problem. The lists worth acting on are the short ones.
 The output is markdown with relative links, so **opening the repository as an Obsidian vault makes the
 graph pane work with no plugin and no copying.** Nothing is duplicated: the pages point at the real
 files, which is the only version of a generated view that cannot go stale.
+
+## Drawing it, and the one place the documentation was wrong
+
+**`scripts/draw-the-family.py` renders the same `graph.json` as a `.drawio` file**, and the mark on each
+edge becomes its colour and its line style: declared edges are solid green, mentions dashed amber,
+ambiguous dotted purple, dangling solid red, and an invisible file gets a red border. **A reader sees
+which connections are declared and which are guessed without being told.**
+
+**It draws only the declared edges by default.** All 409 of them at once is a hairball around 68 boxes;
+`--all` exists for anyone who wants to see it. **The JSON keeps everything; the drawing keeps what a
+person can follow.**
+
+**`.drawio` is XML, which is why this needed no skill and no editor automation** — the third rung of
+`learn-an-interface`'s ladder. The vendor publishes a style reference, the file structure and an XSD to
+validate against, and the rules that matter are few: two mandatory structural cells, no XML comments,
+unique ids, one type flag per cell, HTML escaped in labels.
+
+**AND THE VENDOR'S OWN DOCUMENTATION WAS WRONG ABOUT ONE THING.** It says a bare `<mxGraphModel>` is "a
+valid draw.io XML fragment" and that draw.io wraps it automatically. Wrapped in nothing, **draw.io
+Desktop opened it as an empty page with the right filename in the title bar** — a silent failure with no
+error, which is the most expensive kind. Wrapped in `<mxfile><diagram>`, the same cells render. **One
+line of difference, found by opening the file and looking rather than by trusting the page about it.**
