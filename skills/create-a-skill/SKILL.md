@@ -134,6 +134,36 @@ Then measure it instead of guessing: [references/eval-protocol.md](references/ev
 has the trigger-eval method, which is the only way to tell a good description from
 a plausible one.
 
+## Write for the agent, not for a reader
+
+**A skill is not documentation. It is a program whose interpreter is a model**, and the only question
+that decides its form is whether the agent loading it does the job better. **The human is an observer in
+this frame** — they author it, approve it, and read it afterwards — **but they are not who it is for**,
+and a sentence written to please a person is a sentence the agent pays for and cannot act on.
+
+Four consequences. This family already followed all four; none was written down until an operator said
+it plainly: *the agent is what matters, the person is in the frame as an observer, and if English is
+optimal then English is the working version.*
+
+- **English by default, and it is a measured choice.** On one meaning, on a modern tokenizer, English is
+  30 tokens against Russian's 35, French's 35, German's 40, Japanese's 45 — and against **147 for Russian
+  on an older one**. It is also what the body's own identifiers already are: `wall.post`, `post_id`,
+  `SKILL.md`, `references/` are Latin in every language, so a body in another script pays for the
+  mixture twice (measured: 23% more on a sentence carrying identifiers).
+- **A translation is a REFERENCE, never a second skill.** A Russian copy shipped as its own skill is
+  paid for in the **always-on** catalogue — all nine descriptions here cost 1,536 tokens on every
+  request — and it **competes for the same trigger**, which is the routing failure `route-a-task` exists
+  to prevent. Put it in `references/`. There it costs nothing until somebody opens it and cannot steal a
+  match.
+- **Never let the two drift.** A stale translation is worse than none, because it reads as the skill.
+  `scripts/check-translations.py` refuses one that no longer matches the source it names.
+- **Write so a model can act on it.** Imperative, one rule per sentence, the condition before the
+  action, nothing that only decorates. **"It would be nice to consider" is a token the agent pays for
+  and cannot act on.**
+
+**The test is not "is this clear to a person".** It is *"can an agent that has never seen this do the
+right thing without asking"* — and an operator reading it afterwards is a benefit, not the target.
+
 ## Write instructions, not documentation
 
 - **No course material.** No Python tutorial, no "what is git". Challenge every
