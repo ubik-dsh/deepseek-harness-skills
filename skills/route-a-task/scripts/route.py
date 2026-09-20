@@ -74,7 +74,10 @@ GATES = [
         # So it fires on the shape of what is being produced, never on the topic, and it sits
         # second because its first step - name the check before you compute - must happen
         # before the computation, not after it.
-        "when": ["calculat*", "compute*", "computing", "computation*", "how many",
+        "when": ["accurate*", "accuracy", "correctness", "the correct answer", "is it correct",
+                 "error bound", "relative error", "absolute error", "to within", "tolerance*",
+                 "precision", "significant figures", "verified correct",
+                 "calculat*", "compute*", "computing", "computation*", "how many",
                  "how much is", "count the", "sum of", "average*", "median*", "percentage*",
                  "percent", "ratio", "ratios", "conversion factor", "convert the units",
                  "estimat*", "formula*", "solve for", "equation*", "probabilit*",
@@ -104,19 +107,33 @@ GATES = [
         "do": [
             "Name the check AND the answer you expect BEFORE you compute it. A check chosen "
             "after the result is seen is a rationalisation, not a check.",
-            "Get the answer by a second route that fails differently - a formula and a scaled "
-            "estimate, a parser and a hand count on a sample, forward and inverse. Two routes "
-            "that share a bug agree with each other.",
+            "Get the answer by a second route that is SENSITIVE TO THE DOMINANT ERROR, not "
+            "merely a different one - a formula and a scaled estimate, a parser and a hand "
+            "count on a sample, forward and inverse. Two routes that share the dominant error "
+            "agree with each other, and their agreement is evidence of nothing. The agent "
+            "routed by this gate first checked exp(log(x)) against x, and that passed an "
+            "implementation wrong by 1.45e-10, because both routes carried the same "
+            "truncation error.",
             "Same units, then magnitudes, then digits. A wrong power of ten looks like a small "
             "arithmetic slip and is the error most likely to survive every other test.",
             "Compute the case where the answer is known by construction - n = 0, a unit input, "
             "the one row you can count by hand. If the boundary is wrong too, the method is "
             "wrong and not the arithmetic.",
+            "BOUND WHAT YOU DID NOT SWEEP, and do not confuse a sample with a bound. Either "
+            "the space is finite and you say how much of it remains, or it is infinite and "
+            "you give an argument that covers all of it plus a sample that checks the "
+            "argument. Never report a maximum over sampled points as a maximum over the "
+            "space. The agent routed by this gate had to invent this unaided, and the "
+            "decomposition it reached is the one to copy: your error against a reference, "
+            "measured over everything, plus the reference's own error against the truth, "
+            "bounded separately - 2.220446e-16 + 1.103888e-16, over all 135,107,990 "
+            "representable doubles in the zone.",
             "State what you could not verify, with its size where it has one. A result with no "
             "stated limit is read as a verified one.",
         ],
         "record": "the check named before the computation, the second route and its verdict, "
-                  "the boundary case, and what remains unverified",
+                  "the boundary case, the bound on what was not swept, and what remains "
+                  "unverified",
         "then": "agreement is evidence, never proof - a sweep over 500 cases does not prove a "
                 "statement about all n. Say which of the two you have.",
     },
@@ -361,13 +378,34 @@ def render(report: dict, only_gates: bool = False) -> str:
 
 
 def main() -> int:
+    # A Russian console defaults to cp1251, and 31 of the 75 trigger phrases in this table
+    # are Russian. Measured through a pipe, with the bytes captured directly: without this,
+    # `--json` writes `ef ee f1 f7 e8 f2 e0 e9` for the word "посчита", and a UTF-8 consumer
+    # gets a hard decode error - 41% of the table unreadable to a program that read the rest
+    # of it without complaint. Every other script in this family reconfigures stdout; this
+    # one did not, which is the third time in one session that a practice learned in one
+    # tool failed to travel to the next.
+    #
+    # The first attempt to measure this went through PowerShell's `>` redirection, which
+    # decoded the child's bytes with one codec and wrote UTF-16LE - so the evidence came
+    # back as a BOM and a row of U+FFFD. That is the trap manage-windows/references/traps.md
+    # documents, and it is worth knowing that a measurement can be wrong in the same way as
+    # the thing it measures.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
+    except AttributeError:
+        pass
+
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("task", nargs="*", help="what is about to be done, in a sentence")
     parser.add_argument("--gates", action="store_true", help="print only the obligations")
-    parser.add_argument("--json", action="store_true", help="machine-readable")
-    parser.add_argument("--verify", type=str, default="",
-                        help="a record file naming what was done; reports every fired "
-                             "gate with nothing written against it")
+    parser.add_argument("--json", action="store_true", help="machine-readable, always UTF-8")
+    parser.add_argument("--verify", type=str, default="", metavar="RECORD.json",
+                        help="check a record against the gates that fired. The record is "
+                             "{\"gates\": {\"G6\": \"what was done, and what came of it\"}} "
+                             "- one entry per gate, with evidence. "
+                             "{\"gates\": [\"G6\"]} names a gate without recording one and "
+                             "is reported as a claim, not a record")
     args = parser.parse_args()
 
     text = " ".join(args.task).strip()
@@ -389,10 +427,33 @@ def main() -> int:
         except (OSError, json.JSONDecodeError) as trouble:
             print(f"  cannot read the record: {trouble}", file=sys.stderr)
             return 2
-        recorded = done.get("gates", {}) if isinstance(done, dict) else {}
-        if isinstance(recorded, list):
-            recorded = {name: True for name in recorded}
+        raw_record = done.get("gates", {}) if isinstance(done, dict) else {}
+
+        # Two shapes are accepted and they mean different things, which the first version of
+        # this did not know:
+        #
+        #   {"gates": {"G6": "the check I named, and its verdict"}}   a record
+        #   {"gates": ["G6"]}                                        a claim
+        #
+        # A list of names says a gate was noticed. It cannot say what was done with it, and
+        # this file's own principle is that an unrecorded gate is indistinguishable from one
+        # nobody ran. The first version flattened the list to True, so a file whose entire
+        # content was {"gates":["G6"]} returned exit 0 and "every gate that fired has a
+        # record" - the same not-examined-read-as-clear failure this file was rewritten once
+        # already to stop, arriving through a different door. Found by the agent routed by
+        # G6, which is the only reader who had a reason to write such a record and ask what
+        # it was supposed to contain.
+        if isinstance(raw_record, list):
+            recorded = {str(name): "" for name in raw_record}
+        elif isinstance(raw_record, dict):
+            recorded = {str(name): ("" if value is True else str(value).strip())
+                        for name, value in raw_record.items()}
+        else:
+            recorded = {}
+
         missing = [gate for gate in report["gates"] if gate["id"] not in recorded]
+        claimed = [gate for gate in report["gates"]
+                   if gate["id"] in recorded and recorded[gate["id"]] == ""]
         print(f"  gates that fired: {', '.join(g['id'] for g in report['gates']) or 'none'}")
         print(f"  gates with a record: {', '.join(sorted(recorded)) or 'none'}")
         print("")
@@ -423,9 +484,23 @@ def main() -> int:
             print("  So: the regulation does not cover this task. Say so, carry the frame")
             print("  across where the commands do not, and record what you did.")
             return 3
+        # Named is not recorded. A gate listed by name and nothing else has been noticed,
+        # not done, and the two must not share an exit code any more than "no gate fired"
+        # and "everything passed" do.
+        if claimed:
+            print("  NAMED IS NOT RECORDED. These gates were named and nothing was written")
+            print("  against them:")
+            for gate in claimed:
+                print(f"    [{gate['id']}] {gate['name']}")
+                print(f"        write  {gate.get('record', 'what was done')}")
+            print("")
+            print("  A name says the gate was noticed. It cannot say what was done with it,")
+            print("  and an unrecorded gate is indistinguishable from one nobody ran. Put the")
+            print("  evidence in the record - a sentence per gate, in your own words, and not")
+            print("  the gate's name again.")
+            return 4
         print("  every gate that fired has a record. Nothing was forgotten.")
         return 0
-
     if args.json:
         print(json.dumps(report, indent=2, ensure_ascii=False))
     else:

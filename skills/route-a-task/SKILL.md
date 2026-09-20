@@ -44,18 +44,45 @@ And what follows from that: **a gate that was passed without a record can be fou
 python scripts/route.py "download a skill and publish it" --verify record.json
 ```
 
+**The record is a mapping from a gate to the evidence, and the format was undocumented until
+the agent routed by G6 tried to write one and had to probe for it nine times.** It is:
+
+```json
+{"gates": {"G6": "named the check before computing; second route via mpmath; bound over all
+ 135,107,990 doubles in the zone; what remains unverified: the region outside it"}}
+```
+
 It names the gates that fired, the gates with a record, and the difference — and **for each
 missing one it reprints what that gate wanted.** Exit 1 when something is missing, so a check
 can stop on it.
+
+**A name is not a record, and the two have different exit codes.** `{"gates": ["G6"]}`, or a
+gate mapped to `true`, names a gate and says nothing about it. That is a **claim**, exit **4**,
+and the output says so in those words. The first version of this flattened both into "has a
+record" and returned 0 for a file whose entire content was a list of one name — **the same
+not-examined-read-as-clear failure as the empty record, arriving through a different door**,
+and found the same way: by the agent who had a reason to write such a file and ask what it was
+supposed to contain.
+
+| exit | meaning |
+|---|---|
+| 0 | every gate that fired carries evidence |
+| 1 | a gate that fired is absent from the record |
+| 2 | the record cannot be read, or the plain router matched nothing at all |
+| 3 | no gate fired — `--verify` mode only (the plain router returns 2 for this) |
+| 4 | a gate was named and nothing was written against it |
 
 **That is the whole exchange:** the omission is found *before* the redo, not after, and the
 instruction arrives with the finding.
 
 **The router is tested, because a router is a keyword list and a keyword list is wrong until
-something fails.** `python scripts/test-route.py` holds 24 tasks in both directions — the ones a
-gate must fire on and the ones it must not — plus the exit codes and the routes that must not be
-suggested. It exits 1 on any case. Against the previous version it reports 16 failures; every
-one of them is a defect that was on screen and unread.
+something fails.** `python scripts/test-route.py` holds cases in both directions — the ones a
+gate must fire on and the ones it must not — plus every exit code, the record format, and the
+routes that must not be suggested. It exits 1 on any case. Two of its checks exist because a
+tool in this family failed them: the `--json` output must decode as UTF-8 **on a console
+without `PYTHONIOENCODING`**, since a Russian console defaults to cp1251 and 31 of the 75
+trigger phrases are Russian; and a gate named with no evidence must not be reported as
+recorded.
 
 ## The gates — no judgement allowed
 
@@ -188,16 +215,39 @@ is mapped, the subject's skill is the better instruction. Where it is not, **thi
 only check there is**, and it is deliberately written to need no domain knowledge to run: a
 second route, the units, and the boundary case.
 
+**The first version of this gate claimed that and did not do it.** It was keyed to the subject
+word after all: *"Write a Python function ln_near_one(x) returning the natural logarithm"* fired
+it, and *"Write a Python function ln_near_one(x) that is accurate near one"* — the same
+correctness task, with the difficulty in the same place — returned `nothing in the regulation
+covers this`. Found by the agent routed through the gate, which is the only reader positioned to
+notice. The trigger table now carries the shape words as well: `accurate*`, `correctness`,
+`error bound`, `relative error`, `to within`, `tolerance*`, `precision`, `significant figures`.
+
 ```
 name it    the check AND the expected answer, before the computation - not after
-second     a route that fails differently: a formula against an estimate, a parser
-           against a hand count on a sample, forward against inverse
+second     a route SENSITIVE TO THE DOMINANT ERROR, not merely a different one: a formula
+           against an estimate, a parser against a hand count, forward against inverse.
+           Two routes sharing the dominant error agree with each other, and that
+           agreement is evidence of nothing
 units      same units, then magnitudes, then digits. A wrong power of ten looks like a
            small slip and is the error most likely to survive every other test
 boundary   the case known by construction: n = 0, a unit input, the one row you can
            count by hand. If the boundary is wrong too, the METHOD is wrong
+bound      what you did NOT sweep, and how you know. Either the space is finite and you
+           say how much remains, or it is infinite and you argue for all of it and
+           sample the argument. NEVER report a maximum over sampled points as a
+           maximum over the space - that is the mistake this row exists to prevent
 limits     say what you could not verify, with its size where it has one
 ```
+
+**The second and fifth steps were learned the hard way, by the agent that ran the gate.** Its
+first second route was `exp(log(x))` against `x`, which **passed an implementation wrong by
+1.45e-10**, because both routes carried the same truncation error. And the gate said "state what
+you could not verify, with its size" while giving no method for sizing it — so the agent invented
+the decomposition that is now step five, and it is the one worth copying: **your error against a
+reference, measured over every representable value; plus the reference's own error against the
+truth, bounded separately.** 2.220446e-16 + 1.103888e-16 over all 135,107,990 doubles in the
+zone, which is a bound rather than a sample.
 
 **Agreement is evidence, never proof.** A sweep over five hundred cases does not prove a
 statement about all `n`, and a result reported with no stated limit is read as a verified one.
@@ -347,13 +397,23 @@ keyword cannot see, and the shape is what it can.
 G6, but it fires because the phrase is in the table — not because the router understood it. A
 task can be quietly wrong in words this table does not hold, and then nothing fires. Adding the
 word "install" to any sentence fires G1; that is the price of keyword triggers and it should be
-known before the output is trusted. `test-route.py` holds the counter-examples in both
+known before the output is trusted.
+
+**The exit codes are not one number.** The plain router returns **2** when nothing matched at
+all; **3** is returned by `--verify` when no gate fired, and it means something different —
+*not covered*, not *not understood*. `SKILL.md` claimed the router "exits 3" without saying
+which mode, which the agent that ran the gate caught by measuring the two.
+
+**And the gate was edited while its own trial was running.** `route.py` and `test-route.py`
+changed at 15:20 while the agent was still working, which is a defect in how the trial was run
+rather than in the skill: the artefact under test moved. Every finding was re-verified against
+the finished router afterwards, so nothing here is a verdict on an intermediate version — but
+the next trial should freeze the file first, and this is recorded so that the next trial does. `test-route.py` holds the counter-examples in both
 directions, and a phrase that fires wrongly is a case to add there rather than a sentence to
 reword here.
 
 **So when nothing fires, that is a statement about this document, not about the work.** The
-router now says so in those words and exits 3, distinct from 0 — because "nothing applied" and
-"everything that applied passed" are different sentences, and printing the second when the
+router now says so in those words and exits 3, distinct from 0 — because "nothing applied" and"everything that applied passed" are different sentences, and printing the second when the
 first is true turns *not examined* into *checked and clear*.
 
 ## When nothing applies

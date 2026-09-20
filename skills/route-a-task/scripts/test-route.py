@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -72,6 +73,14 @@ CASES: list[tuple[str, list[str], list[str], str]] = [
     ("prove that the sum converges",
      ["G6"], [],
      "a proof is a deliverable with no domain in its wording."),
+    ("write a python function that is accurate near one",
+     ["G6"], [],
+     "the same correctness task WITHOUT the word 'logarithm', which the first version of "
+     "G6 missed - it claimed to key on the shape of the deliverable and keyed on the "
+     "subject word instead. Found by the agent routed through it."),
+    ("the answer is correct to within 1e-15",
+     ["G6"], [],
+     "and this phrasing names no subject at all."),
 
     # --- the false trigger, in both spellings -----------------------------------------
     ("a car won't start",
@@ -242,7 +251,9 @@ def check_cli() -> tuple[int, int]:
         empty = Path(folder) / "empty.json"
         empty.write_text(json.dumps({"gates": {}}), encoding="utf-8")
         full = Path(folder) / "full.json"
-        full.write_text(json.dumps({"gates": {"G6": True}}), encoding="utf-8")
+        full.write_text(json.dumps(
+            {"gates": {"G6": "the check, named before the computation, and its verdict"}}),
+            encoding="utf-8")
 
         # Three different sentences, and the whole design is that they stay different.
         done = run("compute the average", "--verify", str(full))
@@ -269,6 +280,53 @@ def check_cli() -> tuple[int, int]:
         expect("no task at all is an argument error, not a pass",
                blank.returncode != 0,
                f"exit {blank.returncode}")
+
+        # Named is not recorded. A file naming a gate and saying nothing about it is a claim,
+        # and the first version of --verify accepted it as a record and exited 0 - the same
+        # not-examined-read-as-clear failure as the vacuous pass, through a different door.
+        claim = Path(folder) / "claim.json"
+        claim.write_text(json.dumps({"gates": ["G6"]}), encoding="utf-8")
+        claimed = run("compute the average accurately", "--verify", str(claim))
+        expect("a gate named with no evidence is a claim, not a record (exit 4)",
+               claimed.returncode == 4 and "NAMED IS NOT RECORDED" in claimed.stdout,
+               f"exit {claimed.returncode}\n{claimed.stdout}")
+
+        flag = Path(folder) / "flag.json"
+        flag.write_text(json.dumps({"gates": {"G6": True}}), encoding="utf-8")
+        flagged = run("compute the average accurately", "--verify", str(flag))
+        expect("and a bare true is the same claim",
+               flagged.returncode == 4,
+               f"exit {flagged.returncode}")
+
+        evidenced = Path(folder) / "evidenced.json"
+        evidenced.write_text(json.dumps(
+            {"gates": {"G6": "named the check before computing; second route via mpmath"}}),
+            encoding="utf-8")
+        recorded = run("compute the average accurately", "--verify", str(evidenced))
+        expect("a record with evidence against the gate exits 0",
+               recorded.returncode == 0 and "Nothing was forgotten" in recorded.stdout,
+               f"exit {recorded.returncode}\n{recorded.stdout}")
+
+        # The trigger table is 41% Russian, and a Russian console defaults to cp1251. Every
+        # other script in this family reconfigures stdout; this one did not, so --json wrote
+        # cp1251 bytes and a UTF-8 consumer got a hard decode error on 31 of 75 phrases.
+        # PYTHONIOENCODING is removed from the child's environment on purpose: with it set,
+        # the child would write UTF-8 whether or not the bug was fixed, and the test would
+        # pass while proving nothing.
+        bare = {key: value for key, value in os.environ.items() if key != "PYTHONIOENCODING"}
+        raw = subprocess.run([sys.executable, str(HERE / "route.py"),
+                              "посчитай среднее по выборке", "--json"],
+                             capture_output=True, env=bare)
+        try:
+            parsed = json.loads(raw.stdout.decode("utf-8"))
+            matched = parsed["gates"][0]["triggered_by"] if parsed.get("gates") else []
+            expect("--json is UTF-8 on a bare cp1251 console",
+                   "посчита*" in matched,
+                   f"decoded, but triggered_by={matched}")
+        except UnicodeDecodeError as trouble:
+            expect("--json is UTF-8 on a bare cp1251 console", False,
+                   f"a UTF-8 consumer cannot read it - {trouble}\n"
+                   f"first bytes: {' '.join(f'{b:02x}' for b in raw.stdout[:20])}")
 
     rendered = route_module.render(route_module.route("compute the average"))
     expect("a fired gate prints its step, not just a tool name",
