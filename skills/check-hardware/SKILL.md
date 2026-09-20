@@ -112,7 +112,9 @@ Each of these is in `references/readings.md` with the command and the limit. The
 - **`Get-PhysicalDisk` health is a field, not a test.** A controller that reports no SMART
   leaves it at its default. Read the attributes with `smartctl` before believing it.
 - **`Win32_PhysicalMemory` lists the sticks; `Win32_PhysicalMemoryArray` lists the slots.**
-  Reading only the first hides an empty slot and a machine running single-channel.
+  Reading only the first hides an empty slot and a machine running single-channel. **Free
+  slots is `MemoryDevices` minus the number of sticks** — a subtraction the two readings make
+  possible and neither one states.
 - **`Win32_DiskDrive` and `Get-PhysicalDisk` are different views** and disagree about numbers,
   sizes and identification. Know which one you asked.
 - **The battery report has two capacities.** Design capacity and full-charge capacity; their

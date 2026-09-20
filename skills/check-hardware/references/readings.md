@@ -15,6 +15,16 @@ Get-CimInstance Win32_BIOS |
   Select-Object Manufacturer,SMBIOSBIOSVersion,ReleaseDate
 ```
 
+**`SMBIOSBIOSVersion` is a vendor label, not a firmware release.** On the machine this was
+written on it reads `5.27`, while `Version` in the same record reads `ALASKA - 1072009` — the
+AMI string. Quoting `5.27` as "the BIOS version" is what a support page will accept and what an
+AMI release note will not recognise. Report the label and say it is a label.
+
+**`ReleaseDate` is not a date.** It arrives as `/Date(1722902400000)/` — milliseconds since the
+epoch, wrapped in a .NET serialisation marker — and the value is the firmware's build date.
+Parse the digits, and treat the field as approximate: it has been seen carrying the
+motherboard's manufacture date instead.
+
 **Two queries in one probe produce a two-element list**, `[0]` the system and `[1]` the
 firmware. A caller that takes `[0]` and reads BIOS fields off it gets `None` for every one of
 them — which is how this was discovered, on a machine whose manufacturer came back empty.

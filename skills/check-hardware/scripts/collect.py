@@ -66,10 +66,13 @@ PROBES: list[tuple[str, str, str]] = [
      "AdapterRAM,VideoModeDescription,Status | ConvertTo-Json -Depth 4"),
     # Usually absent. MSAcpi_ThermalZoneTemperature answers on some machines and returns a
     # plausible wrong number on others; absence is the common case.
+    # No try/catch. The first version swallowed the error and returned an empty string, so
+    # an access-denied refusal arrived as "the machine returned nothing" - the same
+    # conflation the refusal handling exists to prevent, committed one layer below it. Let
+    # the error reach the runner, which can tell the two apart.
     ("thermal", "thermal zones, where the firmware exposes any",
-     "try { Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature "
-     "-ErrorAction Stop | Select-Object InstanceName,CurrentTemperature | ConvertTo-Json -Depth 4 } "
-     "catch { '' }"),
+     "Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature "
+     "-ErrorAction Stop | Select-Object InstanceName,CurrentTemperature | ConvertTo-Json -Depth 4"),
     ("smart", "per-disk reliability counters, which are not SMART attributes",
      "Get-PhysicalDisk | ForEach-Object { $_ | Get-StorageReliabilityCounter | "
      "Select-Object DeviceId,Temperature,ReadErrorsTotal,WriteErrorsTotal,Wear,PowerOnHours } | "
@@ -103,9 +106,22 @@ def run(shell: str, script: str, timeout: int = 90) -> tuple[object | None, str]
     text = (result.stdout or "").strip()
     if text == "":
         # The interesting case, and the one a careless report calls "fine".
-        detail = (result.stderr or "").strip().splitlines()
-        why = detail[0][:160] if detail else "the machine returned nothing for this"
-        return None, why
+        #
+        # A refusal and an absence are different and must not be merged. A sensor the
+        # firmware does not expose is a property of the machine; a query refused for want
+        # of rights is a property of how it was asked, and it has a different fix. The
+        # first version of this called an access-denied failure "the machine returned
+        # nothing", which sends the reader to the wrong place.
+        detail = " ".join((result.stderr or "").strip().split())
+        lowered = detail.lower()
+        if any(marker in lowered for marker in
+               ("отказано в доступе", "access is denied", "access denied",
+                "not available to the client", "privilege", "elevation")):
+            return None, f"REFUSED, not absent - the query needs rights this session does " \
+                         f"not have: {detail[:130]}"
+        if detail:
+            return None, detail[:160]
+        return None, "the machine returned nothing for this"
     try:
         parsed = json.loads(text)
     except json.JSONDecodeError:
@@ -169,6 +185,14 @@ def main() -> int:
     print(f"  {read} reading(s) taken, {missing} not taken")
     if missing:
         print()
+        refused = [pair for pair in report["not_read"].items()
+                   if pair[1]["why"].startswith("REFUSED")]
+        if refused:
+            print(f"  Of those, {len(refused)} were REFUSED for want of rights rather than "
+                  "absent from the machine.")
+            print("  An unelevated session cannot read them; that is a different fact about "
+                  "the machine than a sensor it does not have.")
+            print()
         print("  NOT TAKEN, and none of these is a clean bill of health:")
         for name, detail in report["not_read"].items():
             print(f"    {name:14} {detail['what']}")
