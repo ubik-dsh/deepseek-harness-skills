@@ -182,8 +182,12 @@ read.
 ```
 
 An address and opening hours for the organisation, shown in the community's information block once
-there is one. `groups.getAddresses` answers **error 27** — the method exists and wants a user token —
-so with a community token this page has no API at all.
+there is one. `groups.getAddresses` answers **error 27** — present, wants a user token — **but the
+writes are callable by this credential**: `groups.addAddress`, `groups.editAddress` and
+`groups.deleteAddress` all answer **err 100**, which means the call reached the method and was
+allowed and only the arguments were bad. **So addresses can be written and not read**, and the first
+version of this entry got that wrong by probing the read first. See the method table in
+[capabilities.md](capabilities.md).
 
 ### A loading error is transient, and it was nearly written down as a property
 

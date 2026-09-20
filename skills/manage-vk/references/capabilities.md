@@ -208,6 +208,95 @@ is confidently wrong, and it will have no way to know.
 
 ---
 
+## What a community token may do to a community, measured by method
+
+The community's own operations, probed on 2026-09-20 with the community token. **There are three
+answers, not two**: a method can be absent, present-but-for-another-token, or callable by this one.
+
+```
+groups.create          exists, needs a USER token     community creation is not ours
+groups.delete          NO SUCH METHOD                 there is no API for deleting a community
+groups.editManager     exists, needs a user token
+groups.removeUser      exists, needs a user token
+groups.search          exists, needs a user token
+groups.addLink         exists, needs a user token
+groups.editLink        exists, needs a user token
+groups.deleteLink      exists, needs a user token
+groups.getAddresses    exists, needs a user token
+groups.getMembers      WORKS
+groups.getBanned       WORKS
+groups.getCallbackServers           WORKS
+groups.getCallbackConfirmationCode  WORKS
+groups.getLongPollServer            WORKS
+groups.setLongPollSettings          WORKS
+groups.getTokenPermissions          WORKS
+groups.addAddress      err 100        <- the method is callable; the parameters were wrong
+groups.editAddress     err 100
+groups.deleteAddress   err 100
+groups.getManagers     NO SUCH METHOD   managers come from groups.getMembers filter=managers
+groups.getCatalog      NO SUCH METHOD
+```
+
+**`groups.delete` does not exist, and that is a permanent fact rather than a permission.** Deleting a
+community is a web flow with its own confirmation period, and no credential changes that. A skill
+that promises it is promising what the platform does not offer.
+
+### The address page writes but does not read
+
+**This file said the `Адреса` page had no API. That was wrong, and the shape of the error is worth
+keeping.** `groups.getAddresses` answers **error 27** — present, needs a user token — and from that
+one refusal the whole page was written off. But:
+
+```
+groups.getAddresses    err 27    cannot read
+groups.addAddress      err 100   CAN write - the method is callable, the parameters were bad
+groups.editAddress     err 100   CAN write
+groups.deleteAddress   err 100   CAN write
+```
+
+**A refused read says nothing about the writes.** The same trap as reading one refused method as an
+absent capability, one level finer: here the capability is present and *half* of it is missing, and
+the missing half is the one that happened to be probed first.
+
+**err 100 is a good probe result.** It means the call reached the method and this credential was
+allowed to make it, and only the arguments were wrong — which is what a probe with no arguments should
+produce. **err 3 and err 27 prove absence; err 100 proves presence.**
+
+## When to split this skill, written down before it is needed
+
+**This is the largest skill in the family — 139 KB, against 116 for `create-a-skill` and 83 for
+`route-a-task` — and it now covers four things a person would name separately: creating a community,
+running one, decorating one, and deleting one. It should be split. It should not be split yet, and
+the difference is worth recording so the question is not re-argued each time it is noticed.**
+
+The family's own criterion is in `create-a-skill`: **`SKILL.md` under 500 lines, and 500 is the point
+at which a reader should split.** This one is at **293**. Splitting now would pay the fixed cost four
+times — frontmatter, a gate, a preflight reference, a description competing for the right trigger —
+for a body that still fits.
+
+**The trigger, named:**
+
+- **split when `SKILL.md` must exceed 500 lines to cover a second subject** — not when the total
+  grows, and not when a reference file grows; a reference is loaded on demand and a body is not;
+- **or split when a task in one subject must read another subject's section to act.** That is the
+  real cost, because it is paid by every task instead of once.
+
+**And the axis is visible in the probe above: it is what the credential can do.**
+
+```
+creating a community     the API exists and needs a user token   -> its own skill, when asked for
+running one              API and interface interleaved           -> the core, where it is now
+decorating one           mostly interface; links need a user token
+deleting one             no API at all, ever                     -> interface only
+```
+
+**A split also needs a routing rule, and that cost has no shortcut.** `route-a-task` is what decides
+which skill a task requires; four VK skills with no rule between them would leave the choice to a
+model reading four descriptions, which is the failure that skill exists to prevent. **Plan the split
+together with the rule, or the split makes routing worse than the size did.**
+
+---
+
 ## What this file does not cover
 
 - **The exact call signatures.** That is layer 2 and it belongs in [api-errors.md](api-errors.md),
