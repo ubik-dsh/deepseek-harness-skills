@@ -228,21 +228,58 @@ A probe that leaves residue is not a probe. If write authority must be establish
 real post, the way to do it is a real post whose content is worth publishing — the ceiling is
 the same and the residue is the point.
 
-## The photo sequence is four steps, and none of them works with a community token
+## Photos: the upload works, the attachment is dropped, and that is not obvious
+
+**Measured, and the first version of this skill got it wrong in a way worth recording.** It said
+photos could not be uploaded at all and needed another credential. Both halves were false.
+
+```
+photos.getWallUploadServer       error 27     <- the obvious route, refused
+photos.getUploadServer           error 27
+photos.getMessagesUploadServer   OK           <- an upload_url comes back
+photos.getChatUploadServer       OK
+```
+
+So a community token **can** upload a file: POST it to the messages upload server, then
+`photos.saveMessagesPhoto`, and a photo exists, owned by the community, with a real `id`.
+
+**And it still cannot appear on the wall.** `wall.post` with `attachments=photo<owner_id>_<id>`
+**accepts the call, returns a `post_id`, and silently drops the attachment.** Confirmed by two
+independent witnesses on the same post:
+
+```
+the event     wall_post_new  ->  "attachments": []
+the page      the post renders as text, with no picture
+```
+
+**The likely mechanism is the album** — the photo lands in the messages album (`album_id: -64`)
+and VK attaches only photos it considers the wall's own. That part is inference. What is measured
+is the outcome: the upload succeeds, the attach is ignored, and nothing anywhere reports a
+problem.
+
+**Which makes this the third call in this skill that succeeds and does nothing.** The others were
+`--prove-write` on a token that cannot delete, and a hand-assembled input struct that sent no
+movement. The defence is the same each time: **verify the effect, never the reply.** Here the
+effect is visible only in the event stream or on the page, because this token cannot read the
+wall.
+
+**A link is not an attached photo.** `attachments` also accepts a URL, which VK turns into a link
+card with a preview image. That is a different object from an attached photo, it needs the image
+to be publicly hosted somewhere, and it is not what "add a photo to the post" means.
+
+## The four-step photo sequence, for a credential that has a wall upload server
 
 1. `photos.getWallUploadServer` with `group_id` → a one-use upload URL;
 2. `POST` the file to that URL → it returns `server`, `photos`, and a `hash`;
 3. `photos.saveWallPhoto` with those three → a photo object with an `owner_id` and an `id`;
 4. `wall.post` with `attachments=photo<owner_id>_<id>`.
 
-**Step 1 answers error 27 on a community token**, so the sequence cannot start. It is written
-down because the shape is right and a service or user token would need it — not because this
-credential can run it. Text posts are what a community token is for.
+**Step 1 answers error 27 on a community token**, so this sequence is written down because the
+shape is right and a service or user token would need it — not because this credential can run it.
 
 **Each step's output is the next step's input, and none of them is a URL you can reuse.** The
 upload host is not the API host; the `hash` is not the `photos` field; and a photo saved once
-does not need saving again. A failure in step 3 leaves an uploaded file nobody will look at,
-which is harmless and should simply be retried.
+does not need saving again.
 
 ## Errors do not arrive as HTTP errors
 

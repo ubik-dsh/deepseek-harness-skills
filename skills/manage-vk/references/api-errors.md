@@ -83,6 +83,10 @@ Measured against the live API with a full community key — mask 134623237, perm
 | `wall.edit` | **error 27** |
 | `wall.restore` | **error 27** |
 | `photos.getWallUploadServer` | **error 27** |
+| `photos.getUploadServer` | **error 27** |
+| `photos.getMessagesUploadServer` | **ok** — returns an `upload_url` and `album_id: -64` |
+| `photos.getChatUploadServer` | **ok** — returns an `upload_url` |
+| `docs.getWallUploadServer` | **error 15**, and the message is different: *"User can't upload docs to this group"*. That is a **community setting**, not a method refusal — documents are disabled for the group, and the method itself is not forbidden |
 | `stats.get` | **error 27** |
 | `board.getTopics` | **error 27** |
 | `market.get` | **error 27** |
@@ -101,8 +105,15 @@ a human looking at the community.
 `wall.edit` and `wall.restore` are all refused. **A post published with a community key can
 only be removed by hand in the interface.** Worth knowing before the first post, not after.
 
-**Photos cannot be uploaded.** `photos.getWallUploadServer` is refused, so the four-step photo
-sequence cannot begin. Photo posts need a different credential.
+**Photos cannot be attached to a wall post.** `photos.getWallUploadServer` is refused, so the
+wall-album route cannot begin — **but the upload itself is not impossible, which the first version
+of this table got wrong.** `photos.getMessagesUploadServer` works, the file uploads, and
+`photos.saveMessagesPhoto` returns a real photo owned by the community. `wall.post` with
+`attachments=photo<owner_id>_<id>` then **accepts the call, returns a `post_id`, and drops the
+attachment in silence** — confirmed by the `wall_post_new` event reporting `attachments: []` and
+by the page rendering text with no picture. One method being refused is not the same as the
+capability being absent, and this reference said "cannot upload photos" on the strength of one
+call while three upload servers were standing open.
 
 **Reading the wall needs a different key.** A **service token** (сервисный ключ доступа), tied
 to an application rather than to a person, reads public data without acting as anyone — a

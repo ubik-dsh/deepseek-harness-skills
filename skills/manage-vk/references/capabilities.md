@@ -25,9 +25,16 @@ Measured, for a community token. Full table in [api-errors.md](api-errors.md).
 CAN      post to the wall        groups.edit        wall.closeComments
          groups.getById          groups.getTokenPermissions   groups.getMembers
          messages.getConversations   users.get   the Long Poll event stream
-CANNOT   read the wall           delete or edit a post        upload a photo
+         upload a file and save it as a community-owned photo
+CANNOT   read the wall           delete or edit a post        attach a photo to a post
          get statistics           act as any person
 ```
+
+**"Cannot attach a photo" is not "cannot upload a photo", and the difference cost a wrong entry
+in this skill.** The upload works: `photos.getMessagesUploadServer` issues a URL, the file uploads,
+and `photos.saveMessagesPhoto` returns a real photo the community owns. What fails is the last
+step — `wall.post` drops the attachment without a word. One refused method is not an absent
+capability, and the first version of this list concluded the second from the first.
 
 Two boundaries decide more than the rest, and both are asymmetries rather than absences:
 
@@ -83,7 +90,9 @@ leaves the reader to invent the meaning.
 
 - "what did we post last month" → no. Reading is not available.
 - "take that post down" → no. Only by hand.
-- "add a photo" → no. The upload server is refused.
+- "add a photo to that post" → not through the API. The file uploads and the attachment is
+  dropped; only the interface can put a picture on a post, and doing it there acts as the person
+  rather than as the community key.
 
 A skill must be able to answer **no** in one line. That is a capability too.
 
