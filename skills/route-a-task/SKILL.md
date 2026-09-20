@@ -97,8 +97,8 @@ agents routed by this regulation hit it, and one had already read the page befor
 then read it with the findings in hand. Reading first and scanning afterwards is not the gate;
 it is the gate performed after the thing it guards.
 
-**Which tool, and where it is.** `find-a-skill/scripts/check-external-skill.py`, inside the
-skill of that name in this family's skills root. Three agents were routed by this regulation
+**Which tool, and where it is.** The script is **`check-external-skill.py`**, in the `scripts/` directory of the skill
+**`find-a-skill`**, in this family's skills root. Three agents were routed by this regulation
 and **all three had to find the path in the router's source**, because the prose named the
 scan without saying where it lives. A gate a reader cannot run is a gate that gets skipped.
 
