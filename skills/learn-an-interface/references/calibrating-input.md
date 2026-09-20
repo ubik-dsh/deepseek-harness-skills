@@ -2,6 +2,58 @@
 
 Moved out of SKILL.md when it passed the family's 500-line limit — which is the rule working on this skill rather than on somebody else's.
 
+## Two agents: an executor and a watcher, and what each one is blind to
+
+**Run one agent that does the work and a second that watches the recording, then compare both accounts
+against the machine.** Measured on a nine-gesture calibration game, 2026-09-20: 1635 frames, one
+executor, one watcher who saw **pictures only** — the mouse event log and the game's own log were moved
+out of reach on purpose.
+
+**The watcher recovered the true order of events from the pictures** — `1,2,3,4 → 7,8 → 9 → 5,6`, where
+the prescribed order was different and the worker had disclosed the deviation. It proved the order from a
+single frame showing the checklist with five items ticked and two blank. It measured the drag along one
+axis to the same endpoints the event log recorded, found a 1.8-second excursion the task never asked
+for, spotted the pointer returning to **the object's old position rather than its new one**, and read a
+2929-pixel jump in under a second as programmatic rather than human. **Every one of those matched the
+machine.**
+
+**AND IT LISTED WHAT PICTURES CANNOT SETTLE, WHICH IS THE POINT OF THE WHOLE DESIGN:**
+
+```
+which physical button produced any tick    left, right, middle and both side buttons are identical in a still
+wheel direction                            invisible; only the tick says one happened
+press and release state                    and the instant of the press, at 0.2 s per frame
+double click or two clicks                 identical in a still
+how many attempts failed                   a stall looks the same whether it was one attempt or fifty
+whether the cursor was moved by software   inference from timing, never observation
+```
+
+**So the division of labour is not redundancy — it is two instruments with different blind spots.**
+
+| the watcher's pictures give | only the event log gives |
+|---|---|
+| the **order** things happened in | **which button** was pressed |
+| **timing** — stalls, pauses, duration | press and release, and their instants |
+| **position** — where a thing started and ended | whether a "double click" was two clicks |
+| the **effect** — did the target change state | whether a fault was one attempt or fifty |
+| **extra actions** the task did not ask for | whether input was injected or by hand |
+
+**An operator supervisor watching a screen can catch a wrong sequence and a missing result, and cannot
+catch a wrong button.** A verification design that uses only pictures will pass a run that pressed the
+wrong mouse button the whole way through; one that uses only the event log will pass a run that did
+everything in the wrong order. **Use both, and say which one is speaking.**
+
+**And a watcher's honesty is part of its evidence.** This one refused to read a `buttons` column that was
+present in a file it was allowed to open — because that column answers what the pictures cannot — and
+said so rather than quietly using it. **A report that marks where its own evidence stops is worth more
+than one that is merely right.**
+
+**Pruning is part of the job, and it applies to the watcher's own artifacts.** It kept 23 frames out of
+1635, deleted the rest, took the folder from 109 MB to 1.2 MB, and deleted its own 40 MB of derived
+signatures — because *look, record, delete* is a rule about not hoarding, not about deleting somebody
+else's files.
+
+
 ## Reading a recording: three tools, and the reason they ship here
 
 **A description of a method with no tool beside it makes every reader build the tool.** This reference
