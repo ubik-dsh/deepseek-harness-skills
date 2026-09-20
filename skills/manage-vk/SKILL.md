@@ -128,6 +128,12 @@ version of this skill promised exactly that. What replaces it:
 
 - **Read with a different key.** A **service token** reads public data without acting as
   anyone, and cannot post. Two credentials with two scopes is a design, not a workaround.
+- **Or subscribe instead of reading.** A community key **cannot** call `wall.get` and **can**
+  reach the event stream — `groups.getLongPollServer` works, and `wall_post_new`,
+  `wall_post_edit`, `wall_post_delete` and `wall_schedule_post_delete` arrive with content. It
+  is not history: it carries only what happens while you are listening. But it is enough to
+  confirm what happened, including that a human deleted the post this skill could not delete.
+  See [references/events.md](references/events.md).
 - **Confirm by `post_id`, and by eye.** `wall.post` returns the id; the human opens the
   community and looks. That is the verification this credential allows.
 - **The preflight still runs first**, and still changes nothing: it resolves the community,
@@ -265,8 +271,9 @@ Version 0.1.0. What is least trustworthy:
 - **The method table is measured for one community key with one mask.** A key with fewer
   permissions will fail differently, and a *service* token is a different set entirely. The
   table is a floor, not a law.
-- **Reading is not implemented.** The skill says a service token is the right answer for it and
-  ships no code for one. That is a named gap, not a design.
+- **Reading is implemented only as events.** The skill says a service token is the right answer
+  for reading the wall as it stands, and ships no code for one. What it does have is the event
+  stream, which is a read path for the future and not for the past.
 - **The typography rules are trialled** — 8 of 9 mechanised, 0 false positives against 20
   control traps — and the ninth is deliberately left to the reader. `--nbsp` is untested.
 - **Nothing has published a real post yet.** A scheduled post was created and abandoned; the
