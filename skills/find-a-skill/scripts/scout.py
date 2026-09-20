@@ -138,6 +138,11 @@ def rate_note(headers) -> tuple[str, int]:
     return note, wait
 
 
+# Repository search allows 30 requests a minute; code search allows 10. Three words is
+# well inside the first and would be a third of the second.
+MAX_REMOTE_QUERIES = 6
+
+
 def github_search(keywords: list[str], token: str | None, limit: int) -> list[dict]:
     """Find SKILL.md files on GitHub whose path or repo matches.
 
@@ -150,9 +155,30 @@ def github_search(keywords: list[str], token: str | None, limit: int) -> list[di
     if token:
         headers["Authorization"] = f"Bearer {token}"
 
-    for query in [f"agent skills {word}" for word in keywords[:2]]:
+    # One word per query, never a phrase, and every word rather than the first two.
+    # A phrase matches nothing at all on a search engine while its own words each match
+    # plenty, and dropping the rest of the request silently is worse than making it.
+    words: list[str] = []
+    for phrase in keywords:
+        for word in phrase.split():
+            if word and word.lower() not in {seen.lower() for seen in words}:
+                words.append(word)
+    if len(words) > MAX_REMOTE_QUERIES:
+        skipped = words[MAX_REMOTE_QUERIES:]
+        words = words[:MAX_REMOTE_QUERIES]
+        results.append({
+            "error": f"searched the first {MAX_REMOTE_QUERIES} words only; skipped: "
+                     f"{', '.join(skipped)}. Repository search allows 30 requests a "
+                     "minute, so add the rest in a second pass rather than losing them",
+        })
+
+    for position, query in enumerate(f"agent skills {word}" for word in words):
         url = "https://api.github.com/search/repositories?" + urllib.parse.urlencode(
             {"q": query, "sort": "stars", "per_page": str(min(limit, 10))})
+        if position > 0:
+            # Repository search is 30 a minute. One request a second is three times
+            # inside the budget and costs nothing worth measuring.
+            time.sleep(1.1)
         request = urllib.request.Request(url, headers=headers)
         try:
             with urllib.request.urlopen(request, timeout=25) as response:
