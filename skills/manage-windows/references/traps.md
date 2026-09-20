@@ -186,6 +186,41 @@ either.** A fresh tab proves it hardest, because it cannot be a cached page.
 placeholder, or nothing; `GroupBox`, `TextBox` and a canvas all render a value they do not own. **Set a
 value, then read it back** — the same rule as `Set-Content` into a file and reading the file.
 
+## A Russian operator who forgot to switch the layout
+
+**Text typed with the layout left in the other language is not a foreign phrase and not a typo — it is
+the same sentence under a permutation of the keys.** `nfr 'nf inerf kjrfkmyfz` is *«так эта штука
+локальная»*. **A reader who knows the mapping understands it at once; an agent that does not will treat
+it as gibberish, guess, or ask** — and asking, here, is a waste of the operator's time.
+
+```
+python scripts/fix-layout.py "nfr 'nf inerf kjrfkmyfz"     detect and convert
+python scripts/fix-layout.py --to-ru "ghbdtn"              force Latin -> Cyrillic
+python scripts/fix-layout.py --file message.txt            a file
+```
+
+**The mapping is a permutation, so it is exact and reversible** — `;'[]` are `жэхъ` on the other
+layout, and a round trip returns the original character for character.
+
+**Detection is the hard half, and the first attempt at it was wrong.** It scored vowel ratio,
+consonant runs, odd one-letter words and punctuation inside a word — a pile of weak signals **which
+voted the wrong way on a real English sentence**, converting `wall.post` into Cyrillic nonsense because
+the dot carried a penalty. **A pile of weak signals adds up to a confident wrong answer.**
+
+**What works is a letter-pair model**: score each candidate by the fraction of adjacent letter pairs
+that are pairs the language actually uses. Sixty parameters, no dictionary, and it separates the cases
+cleanly. **When a decision is a guess worth printing the reasons for, print them** — the script reports
+its evidence so a reader can disagree with it.
+
+| Fails | Works |
+|---|---|
+| treating it as a typo or a foreign word | convert, because the key did not move |
+| asking the operator what they meant | reading what they said |
+| a handful of heuristics voted together | one small model of the language |
+
+**[ours]** — the operator asked for it after two of his own messages arrived this way, and the
+regression cases in `scripts/test-fix-layout.py` are those two messages verbatim.
+
 ## Files
 
 **Before editing anything whose loss would hurt — a config file, a skill, a document, a script that
