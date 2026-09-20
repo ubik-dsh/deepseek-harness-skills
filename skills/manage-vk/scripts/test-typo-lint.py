@@ -125,6 +125,37 @@ def main() -> int:
         expect(f"the {label} survived", wanted in guarded, f"lost: {wanted!r}")
 
     print()
+    print("  === --nbsp binds units and short words, and does not crash")
+    #
+    # This branch had never been run. It unpacked re.sub's return value into two names, which
+    # raises, and the first real draft post found it. A switch nobody has executed is a switch
+    # that does not work.
+    typo.NBNS_ENABLED[0] = True
+    try:
+        # The input has to contain what each assertion looks for. The first version asserted on
+        # "20 сентября" against a string with no date in it, and failed for that reason alone -
+        # a test that does not contain its own subject.
+        bound, bound_count = typo.fix("В Москве 18 °C, 57 % влажности, 20 сентября и 10 с.\n")
+        expect("--nbsp runs at all", True, "")
+        expect("a number is bound to its unit",
+               "18\u00a0°C" in bound, f"got {bound!r}")
+        expect("and to a percent", "57\u00a0%" in bound, f"got {bound!r}")
+        expect("a short preposition is bound to its word",
+               "В\u00a0Москве" in bound, f"got {bound!r}")
+        expect("something was counted", bound_count > 0, f"count {bound_count}")
+        # The unit list contains `с` for seconds, and without a trailing boundary it caught the
+        # first letter of "сентября". A real draft produced "20\u00a0сентября".
+        expect("a date is NOT mistaken for seconds",
+               "20\u00a0сентября" not in bound and "20 сентября" in bound,
+               f"got {bound!r}")
+        expect("but a real unit still binds",
+               "10\u00a0с." in bound, f"got {bound!r}")
+    except Exception as trouble:                            # noqa: BLE001
+        expect("--nbsp runs at all", False, f"{type(trouble).__name__}: {trouble}")
+    finally:
+        typo.NBNS_ENABLED[0] = False
+
+    print()
     print(f"  {len(PASSED)} passed, {len(FAILED)} failed")
     for label in FAILED:
         print(f"    failed: {label}")

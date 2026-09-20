@@ -82,9 +82,16 @@ REPORTS: list[tuple[str, re.Pattern[str], str]] = [
 
 # Bound to the following word so it cannot start a line alone.
 NBSP = "\u00a0"
+# A preposition at the start of a sentence is capitalised, and it is bound like any other:
+# "В Москве". The first version matched lowercase only and left it unbound.
 NBSP_AFTER = re.compile(r"\b(в|во|на|за|из|к|ко|с|со|о|об|от|до|по|у|и|а|но|да|не|ни|"
-                        r"же|ли|бы|для|при|над|под|про|без|через|между|или|что|как|это)\s+")
-NBSP_NUMBER = re.compile(r"(\d+)\s+(кг|г|м|км|см|мм|мл|л|%|руб|тыс|млн|млрд|ч|мин|с|°C|°)")
+                        r"же|ли|бы|для|при|над|под|про|без|через|между|или|что|как|это)\s+",
+                        re.IGNORECASE)
+# The unit must END there. `с` is seconds, and without a boundary the pattern bound the first
+# letter of "20 сентября" - a false positive produced by an unbounded unit list, found by
+# running the linter on a real draft.
+NBSP_NUMBER = re.compile(r"(\d+)\s+(кг|г|м|км|см|мм|мл|л|%|руб|тыс|млн|млрд|ч|мин|с|°C|°)"
+                         r"(?![а-яёa-z])", re.IGNORECASE)
 
 
 def mask(text: str) -> tuple[str, list[str]]:
@@ -120,9 +127,13 @@ def fix(text: str) -> tuple[str, int]:
         masked, changes = pattern.subn(replacement, masked)
         count += changes
     if NBNS_ENABLED[0]:
-        masked, changes = NBSP_AFTER.sub(lambda m: m.group(1) + NBSP, masked)
+        # subn, not sub. re.sub returns the string alone, so unpacking it into two names
+        # raised "too many values to unpack" and the whole --nbsp path crashed - found by
+        # running the linter on a real draft post, not by reading it. The skill had recorded
+        # "--nbsp is untested" and this is what the test was owed.
+        masked, changes = NBSP_AFTER.subn(lambda m: m.group(1) + NBSP, masked)
         count += changes
-        masked, changes = NBSP_NUMBER.sub(lambda m: m.group(1) + NBSP + m.group(2), masked)
+        masked, changes = NBSP_NUMBER.subn(lambda m: m.group(1) + NBSP + m.group(2), masked)
         count += changes
     return unmask(masked, kept), count
 

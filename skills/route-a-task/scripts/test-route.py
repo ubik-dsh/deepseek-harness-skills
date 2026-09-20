@@ -82,6 +82,20 @@ CASES: list[tuple[str, list[str], list[str], str]] = [
      ["G6"], [],
      "and this phrasing names no subject at all."),
 
+    # --- who asked, which is a different question from what was asked ----------------
+    ("take a screenshot of the screen and measure the checkbox",
+     ["G7"], [],
+     "the operator's own screen, asked for by the operator, is theirs to give."),
+    ("сделай скрин экрана и посмотри что там",
+     ["G7"], [],
+     "and in Russian, which is how it will actually be asked."),
+    ("read the clipboard and paste it into the field",
+     ["G7"], [],
+     "seeing rather than touching - the clipboard is a view of the operator's work."),
+    ("install the skill and run its setup",
+     [], ["G7"],
+     "installing is not observing. G7 must not fire on every task that mentions a window."),
+
     # --- the false trigger, in both spellings -----------------------------------------
     ("a car won't start",
      [], ["G1", "G2", "G3", "G4", "G5", "G6"],
