@@ -26,6 +26,11 @@ section exists to stop the next reader repeating the search.
 route at all, on the strength of an FAQ page that would not serve its body; the route is here, in a
 menu three rows below the wall's own compose button.
 
+**The composer is not where a community's settings are, and most settings are not here either.**
+Before opening this page for a setting, read
+[community-settings.md](community-settings.md): `groups.edit` writes the title, the topic, the
+website, the phone and the city, and the page makes it look as though none of that is reachable.
+
 **The account that can see this menu can also see `Управление` in the community sidebar**, with
 `Сообщения`, `Статистика`, `Монетизация`, `Комментарии` and `События` beneath it. If those are
 absent, the account is a plain member, the composer is absent too, and posting is API-only.

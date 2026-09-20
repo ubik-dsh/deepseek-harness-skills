@@ -55,6 +55,46 @@ This is a private community
 **That is independent evidence.** The name and the member count were gone, which is what
 `access 2` promises and no API reply had confirmed.
 
+## Which settings are in the API, and which are only on the page
+
+**A community's settings page looks like somewhere the API cannot reach. Most of it is not.** The
+temptation, after seeing a page full of fields no method is named for, is to record the whole thing
+as interface-only and send the next reader to the screen for something one request already does.
+
+Measured on 2026-09-20 with a community token, on community `241624898`:
+
+| the page shows | in the API? | how |
+|---|---|---|
+| Название | **yes, writable** | `groups.edit title=…` |
+| **Тематика** | **yes, writable** | `groups.edit subject=…` |
+| **Сайт** | **yes, writable** | `groups.edit website=…` (read back as `site`) |
+| **Телефон** | **yes, writable** | `groups.edit phone=…` |
+| **Город** | **yes, writable and readable** | `groups.edit city=<id>`; read as `city {id, title}` |
+| Описание, Статус | **yes, writable** | `groups.edit description=…`, `status=…` |
+| Обложка | **interface only** | `groups.edit` has no cover |
+| Отметки сообщества — Верификация, Подтверждённый бизнес | **interface only** | an application a human submits |
+| the sidebar: Адреса, Меню, Канал, Приложения, **Журнал действий** | **interface only** | — |
+
+**So the rule is: check `groups.edit` before opening the browser.** The page and the method overlap
+more than the page suggests, and `groups.edit` is one of the calls this credential can actually
+make.
+
+### "Accepted" is not "applied"
+
+**Every one of those parameters was accepted when written back with the value it already had**, which
+is how the table above was established — an idempotent write proves a parameter is known without
+changing anything. But `groups.edit title=""` was **also accepted, and the name did not change**:
+VK returns success and ignores an empty value for a field that cannot be empty.
+
+So a `groups.edit` that returns without an error proves the parameter is *known*. It does not prove
+the value was written, and the only way to know is to **read it back** — which is the same rule this
+file opens with, arriving from a different direction. **Never report a settings change from the
+absence of an error.**
+
+And know what is being written before writing it: `groups.getById` returns `city`, `site`,
+`description`, `status`, `verified`, `activity`, `wall`, `is_closed`, `members_count` and
+`age_limits`, so the current value is one call away and an idempotent write needs no guessing.
+
 ## The rule that came out of it
 
 **Close the door before you test anything that writes.** A test community is a test community
