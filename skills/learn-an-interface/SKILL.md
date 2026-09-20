@@ -180,8 +180,46 @@ The input calls are not interchangeable, and the failures are silent.
   Selecting an identified item also beats counting arrow keys, which is a failure this
   work has on record.
 
-## Step 5 — Name the unknown as a small finite set of actions
+## Step 4b — If a human will show you, record the demonstration
 
+**The cheapest way to learn an interface is to watch someone who already knows it.** The bandit in
+Step 6 is for when nobody does. `scripts/screenwatch.ps1` records the demonstration:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/screenwatch.ps1 -Fps 5 -Out "$env:TEMP\demo"
+```
+
+What it gives you, and why each part is there:
+
+- **frames**, numbered, at the rate asked for. **Measured**: 5 fps holds a 200 ms interval on a
+  4480x1440 desktop, and 25 frames of a 1000x700 region around the cursor come to 2.5 MB for five
+  seconds. The default region is a crop around the cursor rather than the whole desktop, because a
+  demonstration happens where the hand is, and a full-screen capture at that rate is hundreds of
+  megabytes.
+- **the cursor, drawn into the frame.** `CopyFromScreen` does not include it, so a screenshot of a
+  demonstration shows everything except the thing being demonstrated. It is drawn with
+  `DrawIconEx` and then ringed in black, white and magenta, because a real cursor is white on
+  white about half the time.
+- **`cursor.csv`** — frame, milliseconds, x, y. **This is the part that makes a demonstration
+  learnable.** Twenty-five pictures are *watched*; twenty-five coordinates are *read*, and the
+  interesting moments fall out of the numbers — where the pointer paused, and where it moved
+  faster than a hand can point at anything.
+- **a red border and a stamp on every frame**, so a frame from a recording can never be mistaken
+  for an ordinary screenshot. That matters when the frames are the evidence.
+
+**The cursor is ringed, not recoloured.** `SetSystemCursor` replaces the pointer for the whole
+session and every application, and it is easy to leave behind. A ring is drawn into the picture,
+changes nothing on the machine, and disappears with the process.
+
+**The border window is click-through and never activates** — `WS_EX_TRANSPARENT`,
+`WS_EX_TOOLWINDOW`, `WS_EX_NOACTIVATE` — so a demonstration can be given straight through it
+without the overlay stealing a click or the focus.
+
+**Ask for a demonstration before writing a bandit, and say which you did in the record.** A bandit
+over six candidates costs an exploration sweep; a two-minute demonstration costs two minutes and
+is given by the one participant who already knows the answer.
+
+## Step 5 — Name the unknown as a small finite set of actions
 You almost never need a general agent. You need one value: which row, which of four
 similar buttons, what offset makes the click land. Write the candidates down.
 
