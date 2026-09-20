@@ -119,9 +119,12 @@ Each of these is in `references/readings.md` with the command and the limit. The
   sizes and identification. Know which one you asked.
 - **The battery report has two capacities.** Design capacity and full-charge capacity; their
   ratio is the health, and either alone says nothing.
-- **Thermal zones are usually absent.** `MSAcpi_ThermalZoneTemperature` answers on some
-  machines and returns a plausible wrong number on others. Absence is the common case and is
-  not a finding.
+- **Thermal zones are usually absent — or refused, which is a different thing.** On most
+  machines `MSAcpi_ThermalZoneTemperature` returns nothing; on some it returns a plausible
+  wrong number. **On the machine this was written on the class exists and the query is
+  refused for want of rights**, which is not the same fact and does not have the same fix:
+  absence points at a vendor tool, a refusal points at elevation. Read which one you have
+  before choosing.
 - **`wmic` is deprecated and removed from recent builds.** `Get-CimInstance` is the form that
   works everywhere, and a `wmic` failure looks like a missing component rather than a missing
   command.

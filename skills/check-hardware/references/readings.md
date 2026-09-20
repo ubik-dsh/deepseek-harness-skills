@@ -116,9 +116,19 @@ Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature
 ```
 
 **On most machines this returns nothing, and on some it returns a number that is wrong.** Where
-it answers, the value is tenths of a kelvin — `(value / 10) - 273.15`. Where it does not, the
-correct conclusion is *no temperature was available*, and the next step is a vendor tool or
-`HWiNFO`, not a different WMI class.
+it answers, the value is tenths of a kelvin — `(value / 10) - 273.15`.
+
+**Three outcomes and three different next steps**, which is why the distinction matters:
+
+| what happened | what it means | what to do |
+|---|---|---|
+| a value | the firmware exposes one | convert it |
+| **nothing** | no sensor is exposed at all | a vendor tool or `HWiNFO`, not another WMI class |
+| **refused** | the sensor is there and this session may not read it | **elevation** — a vendor tool will fail the same way |
+
+The machine this was written on is the third case, and the first version of this file
+described only the second. It sent the reader to a vendor tool when the actual answer was
+rights — the counter-example the skill's own refinements section asks for.
 
 ## Errors the machine wrote down
 

@@ -92,11 +92,28 @@ def powershell() -> str | None:
     return None
 
 
+# PowerShell reports its own failures as a structured object rather than as text, because
+# text does not survive the trip. A refusal and an absence are different answers and the
+# difference has to be carried by something that cannot be mangled by a codepage.
+WRAPPER = (
+    "$ErrorActionPreference='Stop'; "
+    "try {{ {body} }} "
+    "catch {{ "
+    "[pscustomobject]@{{ __probe_error = $true; "
+    "kind = if ($_.Exception -is [System.UnauthorizedAccessException] -or "
+    "($_.CategoryInfo.Category -as [string]) -match 'PermissionDenied|SecurityError|"
+    "NotEnabled|MetadataError|ResourceUnavailable') {{ 'refused' }} else {{ 'failed' }}; "
+    "type = $_.Exception.GetType().Name; "
+    "message = $_.Exception.Message }} | ConvertTo-Json -Compress }}"
+)
+
+
 def run(shell: str, script: str, timeout: int = 90) -> tuple[object | None, str]:
     """Run one probe. Returns whatever parsed, and why it did not when it did not."""
+    wrapped = WRAPPER.format(body=script)
     try:
         result = subprocess.run(
-            [shell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+            [shell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", wrapped],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout)
     except subprocess.TimeoutExpired:
         return None, "timed out"
@@ -105,23 +122,24 @@ def run(shell: str, script: str, timeout: int = 90) -> tuple[object | None, str]
 
     text = (result.stdout or "").strip()
     if text == "":
-        # The interesting case, and the one a careless report calls "fine".
-        #
-        # A refusal and an absence are different and must not be merged. A sensor the
-        # firmware does not expose is a property of the machine; a query refused for want
-        # of rights is a property of how it was asked, and it has a different fix. The
-        # first version of this called an access-denied failure "the machine returned
-        # nothing", which sends the reader to the wrong place.
         detail = " ".join((result.stderr or "").strip().split())
-        lowered = detail.lower()
-        if any(marker in lowered for marker in
-               ("отказано в доступе", "access is denied", "access denied",
-                "not available to the client", "privilege", "elevation")):
-            return None, f"REFUSED, not absent - the query needs rights this session does " \
-                         f"not have: {detail[:130]}"
-        if detail:
-            return None, detail[:160]
-        return None, "the machine returned nothing for this"
+        return None, detail[:160] if detail else "the machine returned nothing for this"
+
+    # Did PowerShell report its own failure? Read the KIND, never the message: the message
+    # is text and text is what the console codepage destroys.
+    try:
+        maybe = json.loads(text)
+        first = maybe[0] if isinstance(maybe, list) and maybe else maybe
+        if isinstance(first, dict) and first.get("__probe_error"):
+            kind = str(first.get("kind", "failed"))
+            message = " ".join(str(first.get("message", "")).split())[:110]
+            exception = str(first.get("type", ""))
+            if kind == "refused":
+                return None, (f"REFUSED, not absent - the query needs rights this session "
+                              f"does not have ({exception}): {message}")
+            return None, f"the query failed ({exception}): {message}"
+    except (json.JSONDecodeError, AttributeError, IndexError):
+        pass
     try:
         parsed = json.loads(text)
     except json.JSONDecodeError:
