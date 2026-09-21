@@ -103,7 +103,7 @@ covers, and it is the least of the four problems.
 | `groups.getLongPollServer` | `group_id` | `server`, `key`, `ts` |
 | `messages.getConversations` | `count` | `count`, `items` |
 
-`owner_id` is the community id **negated**: `241624898` becomes `-241624898`. The positive form
+`owner_id` is the community id **negated**: `123456789` becomes `-123456789`. The positive form
 asks about a user who does not exist, and the error that comes back is about access rather than
 about the argument.
 

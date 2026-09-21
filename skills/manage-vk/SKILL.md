@@ -86,7 +86,7 @@ succeeded.
 
 ```bash
 VK_COMMUNITY_TOKEN=<the community key>     # a user environment variable, not a file
-VK_GROUP_ID=241624898                      # the community's numeric id, positive
+VK_GROUP_ID=123456789                      # the community's numeric id, positive
 ```
 
 Rules, and they are not stylistic:
@@ -122,8 +122,8 @@ which is why the file belongs there.
 `wall` and `photos` (add `docs` only if documents are to be attached). The same screen
 enables **Long Poll API**, which a bot needs and publishing does not.
 
-**The community id is positive; the wall's owner id is negative.** `VK_GROUP_ID=241624898`
-becomes `owner_id=-241624898` at the call. Getting this sign wrong is the most common
+**The community id is positive; the wall's owner id is negative.** `VK_GROUP_ID=123456789`
+becomes `owner_id=-123456789` at the call. Getting this sign wrong is the most common
 single mistake in this API, and it fails in a way that looks like a permissions problem.
 
 ## Step 2 — what a community token can and cannot do, measured
@@ -192,7 +192,7 @@ Three rules make it a gate rather than a courtesy:
 ## Step 4 — publish, or schedule
 
 ```bash
-python scripts/post.py --env-file "$DSH_HOME/vk.env" --target 241624898 --file draft.txt
+python scripts/post.py --env-file "$DSH_HOME/vk.env" --target 123456789 --file draft.txt
 python scripts/post.py ... --confirm          # only after the human has agreed
 ```
 
@@ -252,7 +252,7 @@ the event     wall_post_new  ->  "attachments": []
 the page      the post renders as text, with no picture
 ```
 
-**Measured on 2026-09-20 against community 241624898, and written with its date on purpose.** It is
+**Measured on 2026-09-20 against community 123456789, and written with its date on purpose.** It is
 an observation about one host rather than a law of VK, and a reader cannot tell the two apart
 unless the difference is on the page. The mechanism — the photo lands in the messages album
 (`album_id: -64`) and VK attaches only what it considers the wall's own — is **inference**, and it
@@ -309,7 +309,7 @@ does not need saving again.
 Measured, without a token:
 
 ```
-GET https://api.vk.com/method/groups.getById?group_id=241624898&v=5.199
+GET https://api.vk.com/method/groups.getById?group_id=123456789&v=5.199
 -> HTTP 200
    {"error":{"error_code":15,"error_msg":"Access denied: token required"}}
 ```

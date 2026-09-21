@@ -16,7 +16,7 @@ wall.restore all answer error 27. The only way to remove a post published with t
 by hand in the interface. The gate is not a formality here; it is the last moment at which a
 mistake is still cheap.
 
-    --target -241624898     the wall, as the community id negated
+    --target -123456789     the wall, as the community id negated
     --file draft.txt        the text, from a file - better than --text for anything with
                             quotes, newlines or non-breaking spaces in it
     --schedule 1789911152   a unix timestamp, for a post that should wait
@@ -103,7 +103,7 @@ def main() -> int:
     parser.add_argument("--text", default="", help="the post body")
     parser.add_argument("--file", type=Path, default=None, help="a file with the post body")
     parser.add_argument("--target", required=True,
-                        help="the wall, as the community id negated, e.g. -241624898")
+                        help="the wall, as the community id negated, e.g. -123456789")
     parser.add_argument("--schedule", type=int, default=None,
                         help="a unix timestamp; later than now makes it a scheduled post")
     parser.add_argument("--photo", type=Path, default=None,
@@ -164,7 +164,7 @@ def main() -> int:
     # ---- the picture, if there is one ----------------------------------------------
     # The upload works and the ATTACH is what fails: wall.post takes `attachments`, returns a
     # post_id, and VK drops a photo from the messages album without a word. Measured on
-    # 2026-09-20 on community 241624898, and re-confirmed by a fresh agent the same day by
+    # 2026-09-20 on community 123456789, and re-confirmed by a fresh agent the same day by
     # reloading the wall and looking. It is stated with the date because it is an observation
     # about one host, not a law - and a reader cannot tell those apart unless the difference is
     # written down.

@@ -1,5 +1,12 @@
 # Community settings, and how to change one safely
 
+**The community id in this file is a placeholder.** Every measurement below was taken on a real test
+community whose id is written here as `123456789`. The numbers, the method and the dates are real; the
+operator's own community is not published. Every example stays correct for any community once the id is
+substituted, because the sign of `owner_id`, the URL shapes, the permissions and the error codes do not
+depend on which community it is.
+
+
 `groups.edit` **is callable with a community token** — measured, and surprising given that six
 of the eight `wall.*` methods are not. It is the only write in this skill that is reversible and
 verifiable, which makes it the best place to learn how a VK write behaves.
@@ -48,7 +55,7 @@ https://vk.com/widget_community.php?app=0&width=300&_ver=1&gid=<the numeric id>&
 Before the change it returned the community's name and its follower count. After it returned:
 
 ```
-[Private community](https://vk.com/club241624898)
+[Private community](https://vk.com/club123456789)
 This is a private community
 ```
 
@@ -61,7 +68,7 @@ This is a private community
 temptation, after seeing a page full of fields no method is named for, is to record the whole thing
 as interface-only and send the next reader to the screen for something one request already does.
 
-Measured on 2026-09-20 with a community token, on community `241624898`:
+Measured on 2026-09-20 with a community token, on community `123456789`:
 
 **READ THE TABLE WITH ITS CAVEAT.** Everything below rests on `groups.edit` returning without an error
 when each value was written back — and an independent agent then measured that **`groups.edit` ignores
@@ -281,20 +288,20 @@ below came from fourteen hovers and one picture, where clicking through would ha
 navigations:
 
 ```
-1  Настройки        https://vk.ru/club241624898?act=edit
-2  Кнопка действия  https://vk.ru/club241624898/settings/cta
-3  Разделы          https://vk.ru/club241624898/settings/sections
-4  Комментарии      https://vk.ru/club241624898?act=activity
-5  Ссылки           https://vk.ru/club241624898/settings/links
-6  Адреса           https://vk.ru/club241624898?act=addresses
-7  Меню             https://vk.ru/club241624898/settings/menu
-8  Канал            https://vk.ru/club241624898/settings/channel
-9  Подписчики       https://vk.ru/club241624898/settings/subscribers
-10 Сообщения        https://vk.ru/club241624898/settings/messages
-11 Чаты             https://vk.ru/club241624898?act=chats
-12 Приложения       https://vk.ru/club241624898?act=apps
-13 Дополнительно    https://vk.ru/club241624898/settings/extras
-14 Журнал действий  https://vk.ru/club241624898?act=event_log
+1  Настройки        https://vk.ru/club123456789?act=edit
+2  Кнопка действия  https://vk.ru/club123456789/settings/cta
+3  Разделы          https://vk.ru/club123456789/settings/sections
+4  Комментарии      https://vk.ru/club123456789?act=activity
+5  Ссылки           https://vk.ru/club123456789/settings/links
+6  Адреса           https://vk.ru/club123456789?act=addresses
+7  Меню             https://vk.ru/club123456789/settings/menu
+8  Канал            https://vk.ru/club123456789/settings/channel
+9  Подписчики       https://vk.ru/club123456789/settings/subscribers
+10 Сообщения        https://vk.ru/club123456789/settings/messages
+11 Чаты             https://vk.ru/club123456789?act=chats
+12 Приложения       https://vk.ru/club123456789?act=apps
+13 Дополнительно    https://vk.ru/club123456789/settings/extras
+14 Журнал действий  https://vk.ru/club123456789?act=event_log
 ```
 
 **Fourteen rows, fourteen distinct addresses.** Three shapes exist — `?act=<name>`, `settings/<name>`,
@@ -450,8 +457,8 @@ panel's own, so nothing was lost. The trap is written up in `manage-windows`.
 Measured on 2026-09-20:
 
 ```
-Разделы       https://vk.ru/club241624898/settings/sections
-Комментарии   https://vk.ru/club241624898?act=activity
+Разделы       https://vk.ru/club123456789/settings/sections
+Комментарии   https://vk.ru/club123456789?act=activity
 settings/comments                            -> "Такой страницы нет"
 ```
 

@@ -82,7 +82,7 @@ check("a single english word is left alone", decide("attachment"), False)
 check("a single russian word is left alone", decide("вложение"), False)
 
 # A file path is the case that made the first version fail: it contains a dot inside a word.
-check("a dotted identifier is not layout damage", decide("wall.post attachments=photo-241624898_456239017"), False)
+check("a dotted identifier is not layout damage", decide("wall.post attachments=photo-123456789_456239017"), False)
 check("a shell command is left alone",
       decide("python skills/manage-vk/scripts/preflight.py --env-file x.env"), False)
 

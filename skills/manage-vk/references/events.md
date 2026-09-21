@@ -90,7 +90,7 @@ Measured, on a live community, minutes after the first post was published with t
 
 ```
 EVENT wall_post_new
-  {"inner_type": "wall_wallpost", "type": "post", "from_id": -241624898,
+  {"inner_type": "wall_wallpost", "type": "post", "from_id": -123456789,
    "date": 1789909506, "created_by": 4341552, "can_edit": 1, "can_delete": 1,
    "comments": {"count": 0}, "attachments": [], "marked_as_ads": 0,
    "post_author_data": {"author": 4341552}}

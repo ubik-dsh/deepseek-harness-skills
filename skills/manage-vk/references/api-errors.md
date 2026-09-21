@@ -7,13 +7,13 @@ hearing and all rejected; their code is evidence of what they expected, not of w
 ## The shape that costs the most
 
 ```bash
-curl 'https://api.vk.com/method/groups.getById?group_id=241624898&v=5.199'
+curl 'https://api.vk.com/method/groups.getById?group_id=123456789&v=5.199'
 ```
 
 ```
 HTTP 200
 {"error":{"error_code":15,"error_msg":"Access denied: token required",
-          "request_params":[{"key":"group_id","value":"241624898"},{"key":"v","value":"5.199"}]}}
+          "request_params":[{"key":"group_id","value":"123456789"},{"key":"v","value":"5.199"}]}}
 ```
 
 **Measured, on this machine, against the live API.** VK answers **HTTP 200** and puts the
@@ -127,8 +127,8 @@ to call a method and does not change error 27 for a single one of them.
 
 ## Two mistakes that look like permission problems
 
-**The sign of `owner_id`.** A community's id is positive — `241624898`. The wall's
-`owner_id` is the same number **negated** — `-241624898`. Sending the positive form asks
+**The sign of `owner_id`.** A community's id is positive — `123456789`. The wall's
+`owner_id` is the same number **negated** — `-123456789`. Sending the positive form asks
 about a *user* with that id, who does not exist, and the error that comes back talks about
 access rather than about the argument. `preflight.py` flips the sign and says so out loud.
 

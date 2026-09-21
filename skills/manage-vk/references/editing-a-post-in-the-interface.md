@@ -163,7 +163,7 @@ is the only way to know whether a post was seen.
 
 ### Скопировать ссылку is the interface's output channel
 
-It put `https://vk.ru/wall-241624898_4` on the clipboard, which is **both** the canonical address of
+It put `https://vk.ru/wall-123456789_4` on the clipboard, which is **both** the canonical address of
 the post **and** its numeric id — the same `post_id` that `wall.post` returned. Two uses:
 
 - **it is the address to give a human**, in the form VK itself uses;

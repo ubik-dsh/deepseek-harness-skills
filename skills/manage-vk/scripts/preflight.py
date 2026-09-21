@@ -12,7 +12,7 @@ flag the script creates a post scheduled far in the future - never visible, admi
 reads its id back, and deletes it. The round trip is the evidence, and it leaves nothing.
 
     python preflight.py                                  who is this token
-    python preflight.py --target -241624898 --show-wall 5
+    python preflight.py --target -123456789 --show-wall 5
     python preflight.py --intent post --intent photo
     python preflight.py --prove-write --confirmed        the only write, undone
 
@@ -81,7 +81,7 @@ def call(method: str, token: str, **params: object) -> object:
 
     Measured without a token:
 
-        GET groups.getById?group_id=241624898&v=5.199
+        GET groups.getById?group_id=123456789&v=5.199
         -> HTTP 200
            {"error":{"error_code":15,"error_msg":"Access denied: token required"}}
 
