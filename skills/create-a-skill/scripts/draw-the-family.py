@@ -58,8 +58,7 @@ EDGE = {
 # and called it beautiful.
 TITLE_H = 78        # the diagram's own title box: bigger than everything, because it is the entrance
 STEP_H = 88         # a node: its name, what it is, and the path underneath
-CELL_H = 62         # a node with a name but no description - the case the air is for
-ROW_H = 74          # row pitch in a column: the tallest cell plus GAP
+CELL_H = 66         # a node with a name but no description - the case the air is for
 GAP = 42            # air between boxes. Below 30 the frames read as one block
 BAND_H = 34         # the column header band: it says what the column IS, without being a node
 TITLE_GAP = 48      # air under the title. A gap of 30 is not "almost the same"
@@ -80,6 +79,16 @@ F_TITLE, F_STEP, F_DETAIL, F_PATH, F_BAND = 18, 13, 11, 9, 12
 # One width class per column, because breaking a uniform width is the first fix for the flat
 # band: a path needs more room than a file name, and giving both the same width wastes the page.
 COL_WIDTH = {"skill": 420, "reference": 660, "script": 520, "asset": 420, "file": 520}
+
+# What each column IS, in the reader's language. The band is a header, not a node: it names the
+# column so the picture does not need a caption somewhere else to make sense.
+BAND_TITLE = {
+    "skill":     "СКИЛЛЫ — что умеет семья",
+    "reference": "СПРАВОЧНИКИ — что она объясняет",
+    "script":    "СКРИПТЫ — что она запускает",
+    "asset":     "ВЛОЖЕНИЯ — что она отдаёт наружу",
+    "file":      "ПРОЧИЕ ФАЙЛЫ — всё остальное",
+}
 
 
 def esc(text: str) -> str:
@@ -111,19 +120,37 @@ def main() -> int:
     present = sorted({columns.get(nodes[rel]["kind"], 4) for rel in nodes})
     if not present:                       # a graph with no nodes: place nothing, but do not crash
         present = [0]
-    x_of = {column: MARGIN_X + sum(COL_WIDTH[k] + GAP for k in present[:present.index(column)])
+    kind_of = {column: kind for kind, column in columns.items()}
+    x_of = {column: MARGIN_X + sum(COL_WIDTH[kind_of[k]] + GAP
+                                   for k in present[:present.index(column)])
             for column in present}
+    table_w = sum(COL_WIDTH[kind_of[column]] + GAP for column in present) - GAP
     rows: dict[int, int] = defaultdict(int)
+    cursor: dict[int, int] = {column: MARGIN_Y + TITLE_H + TITLE_GAP + BAND_H + GAP
+                              for column in present}
+    bottom: dict[int, int] = defaultdict(int)
     place: dict[str, tuple[int, int]] = {}
     for rel in sorted(nodes):
         kind = nodes[rel]["kind"]
         column = columns.get(kind, 4)
-        row = rows[column]
         rows[column] += 1
-        # Header band first, then the nodes: the pitch is ROW_H so the tallest cell keeps its GAP.
-        place[rel] = (x_of[column], MARGIN_Y + TITLE_H + TITLE_GAP + BAND_H + GAP + row * ROW_H)
+        # Height answers to the TEXT, and the next node starts below THIS one plus a real GAP.
+        # A fixed row pitch taller than a short node is not air - it is a hole.
+        height = STEP_H if glossary.get(rel, "") else CELL_H
+        place[rel] = (x_of[column], cursor[column])
+        cursor[column] += height + GAP
+        bottom[column] = cursor[column]
 
     cells: list[str] = []
+
+    # The diagram's own title box. Height TITLE_H and the TITLE style (strokeWidth 2) so it reads as
+    # "the entrance" rather than as one more node in the flow.
+    cells.append(f'<mxCell id="head" value="{esc("Семья навыков — что на что ссылается")}" '
+                 f'style="{TITLE}fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize={F_TITLE};'
+                 f'fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">'
+                 f'<mxGeometry x="{MARGIN_X}" y="{MARGIN_Y}" '
+                 f'width="{min(table_w, 900)}" '
+                 f'height="{TITLE_H}" as="geometry" /></mxCell>')
 
     def vertex(cell_id: str, label: str, x: int, y: int, fill: str, stroke: str,
                width: int = COL_WIDTH["skill"], height: int = CELL_H) -> None:
@@ -220,31 +247,43 @@ def main() -> int:
                      f'source="{esc(source)}" target="{esc(target)}">'
                      f'<mxGeometry relative="1" as="geometry" /></mxCell>')
 
-    # ЛЕГЕНДА, нарисованная в самой схеме. Читатель не должен узнавать, что значат цвета, из другого
-    # файла - схема без легенды это картинка, а не карта. Рисуется списком текстовых ячеек.
-    legend_title = ["ЧТО ЗНАЧИТ ЦВЕТ РАМКИ",
-                    "синяя — скилл", "жёлтая — справочник", "зелёная — скрипт",
-                    "фиолетовая — вложение", "серая — прочий файл",
-                    "",
-                    "ЧТО ЗНАЧИТ ОБВОДКА",
-                    "тонкая — обычная", "красная толстая — файл НИГДЕ не назван",
-                    "",
-                    "ЧТО ЗНАЧИТ СТРЕЛКА",
-                    "сплошная зелёная — EXTRACTED: ссылка написана  (щит стоит)",
-                    "пунктир янтарный — INFERRED: имя есть, ссылки нет  (место названо, дороги нет)",
-                    "точками фиолетовая — AMBIGUOUS: имя подходит к двум файлам  (щит на два места)",
-                    "сплошная красная — DANGLING: ссылка в никуда  (щит в пустоту)",
-                    "",
-                    "ЧТО ЗДЕСЬ ВООБЩЕ",
-                    "Схема связей внутри семьи навыков: 9 скиллов, их справочники и скрипты.",
-                    "Стрелка означает «этот файл ссылается на тот»."]
-    for row, text in enumerate(legend_title):
-        bold = "1" if text.isupper() or text.startswith("ЧТО") else "0"
-        style = ("text;html=1;align=left;verticalAlign=middle;fontSize=12;"
-                 f"fontStyle={bold};strokeColor=none;fillColor=none;")
-        cells.append(f'<mxCell id="legend{row}" value="{esc(text)}" style="{style}" '
-                     f'vertex="1" parent="1"><mxGeometry x="60" y="{3450 + row * 24}" '
-                     f'width="700" height="22" as="geometry" /></mxCell>')
+    # ЛЕГЕНДА ПАНЕЛЬЮ, А НЕ СПИСКОМ СТРОК. Строки без рамки читаются как продолжение схемы, и глаз
+    # не отделяет их от узлов; панель с заголовком и полями говорит: это справка, а не часть потока.
+    # HTML собирается НАСТОЯЩИМИ <b> и <br> и экранируется РОВНО ОДИН РАЗ, когда попадает в
+    # атрибут value - двойное экранирование не падает, оно рисует разметку текстом.
+    legend_rows = [
+        ("ЧТО ЗНАЧИТ ЦВЕТ РАМКИ",
+         ["синяя — скилл", "жёлтая — справочник", "зелёная — скрипт",
+          "фиолетовая — вложение", "серая — прочий файл"]),
+        ("ЧТО ЗНАЧИТ ОБВОДКА",
+         ["тонкая — обычная", "красная толстая — файл НИГДЕ не назван"]),
+        ("ЧТО ЗНАЧИТ СТРЕЛКА",
+         ["сплошная зелёная — EXTRACTED: ссылка написана  (щит стоит)",
+          "пунктир янтарный — INFERRED: имя есть, ссылки нет  (место названо, дороги нет)",
+          "точками фиолетовая — AMBIGUOUS: имя подходит к двум файлам  (щит на два места)",
+          "сплошная красная — DANGLING: ссылка в никуда  (щит в пустоту)"]),
+        ("ЧТО ЗДЕСЬ ВООБЩЕ",
+         ["Схема связей внутри семьи навыков: 9 скиллов, их справочники и скрипты.",
+          "Стрелка означает «этот файл ссылается на тот»."]),
+    ]
+    legend_parts: list[str] = []
+    for heading, lines in legend_rows:
+        legend_parts.append(f'<b>{esc(heading)}</b>')
+        legend_parts.extend(esc(line) for line in lines)
+        legend_parts.append("&nbsp;")
+    legend_html = "<br>".join(legend_parts)
+    legend_w = 900
+    legend_h = 34 + sum(len(lines) + 1 for _, lines in legend_rows) * 22 + 16
+
+    # The page is measured from the content, not fixed: a fixed height either crops the picture or
+    # leaves a dead half-page under it.
+    content_bottom = max(list(bottom.values()) or [MARGIN_Y + TITLE_H])
+    legend_y = content_bottom + GAP
+    cells.append(f'<mxCell id="legend" value="{esc(legend_html)}" style="{BOX}'
+                 f'fillColor=#FFFFFF;strokeColor=#B3B3B3;align=left;verticalAlign=top;'
+                 f'spacingLeft={PAD_L};spacingTop={PAD_T};fontSize={F_DETAIL};" vertex="1" '
+                 f'parent="1"><mxGeometry x="{MARGIN_X}" y="{legend_y}" width="{legend_w}" '
+                 f'height="{legend_h}" as="geometry" /></mxCell>')
 
     # The vendor's rules, followed exactly: two structural cells, no XML comments, unique ids, one
     # type flag per cell.
@@ -254,8 +293,11 @@ def main() -> int:
     # automatically - and draw.io DESKTOP 28.2.5 opened such a file as an EMPTY PAGE, with the title
     # bar showing the right filename. The wrapped form renders. EVIDENCE BEATS DOCUMENTATION, and the
     # cost of the wrapper is one line.
+    page_w = table_w + 2 * MARGIN_X
+    page_h = legend_y + legend_h + MARGIN_Y
     model = ('<mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" '
-             'arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="3400" '
+             'arrows="1" fold="1" page="1" pageScale="1" '
+             f'pageWidth="{page_w}" pageHeight="{page_h}" '
              'math="0" shadow="0">'
              '<root><mxCell id="0" /><mxCell id="1" parent="0" />'
              + "".join(cells) +
@@ -282,7 +324,7 @@ def main() -> int:
             problems.append(f"edge target missing: {edge.get('to')}")
 
     print(f"  nodes {len(nodes)}   edges {len(drawn)} drawn of {len(data['edges'])}   "
-          f"legend {len(legend_title)} lines")
+          f"legend {sum(len(lines) for _, lines in legend_rows)} lines in a panel")
     print(f"  wrote {out.relative_to(repo)}  ({len(model):,} bytes)")
     print("  open it in draw.io, or:")
     print(f"    \"C:\\Program Files\\draw.io\\draw.io.exe\" \"{out}\"")

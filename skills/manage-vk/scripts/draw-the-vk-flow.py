@@ -26,6 +26,38 @@ BLUE = ("#DAE8FC", "#6C8EBF")
 PURPLE = ("#E1D5E7", "#9673A6")
 GREY = ("#F5F5F5", "#666666")
 
+# ── LOOK. Not taste - the answers to "it reads like a book description: boxes stacked tightly, no
+# air". Every number is copied from draw-a-skill-flow.py, where the operator looked at the result
+# and called it beautiful.
+TITLE_H = 78        # the diagram's title box: bigger than everything, because it is the entrance
+STEP_H = 88         # a step of the publication: a title plus why
+ITEM_H = 56         # one measured capability: one line, but room to wrap onto a second
+GAP = 42            # air between boxes. Below 30 the frames read as one block
+TIGHT = 12          # air between siblings INSIDE one panel: well under half a box height
+TITLE_GAP = 88      # air under the title - more than GAP, so the entrance reads as an entrance
+BAND_H = 34         # the column header band: it names the column without being a step
+PAD_L = 20          # padding inside a frame: 10 left the text touching the border
+PAD_T = 10          # top padding: 0 pressed the first line against the frame
+MARGIN_X, MARGIN_Y = 90, 60     # page margins: the diagram must not start at the sheet edge
+
+ORDER_W = 460       # column 1: the order to think in
+CAN_W = 760         # column 2: what the key can do
+CANNOT_W = 760      # column 3: what it cannot - and this column is the important one
+ORDER_X = MARGIN_X
+CAN_X = ORDER_X + ORDER_W + GAP
+CANNOT_X = CAN_X + CAN_W + GAP
+FULL_W = CANNOT_X + CANNOT_W - MARGIN_X
+
+# The vendor palette only, from jgraph/drawio-mcp/shared/style-reference.md.
+BOX = "rounded=1;arcSize=10;whiteSpace=wrap;html=1;shadow=1;strokeWidth=1;"
+TITLE = "rounded=1;arcSize=10;whiteSpace=wrap;html=1;shadow=1;strokeWidth=2;"
+BAND = ("rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;"
+        "align=left;verticalAlign=middle;spacingLeft=20;fontStyle=1;")
+
+# Font ladder: four sizes and each means exactly one thing - the diagram title, a step's title,
+# its explanation, and a measured item inside a panel. Not one size for everything.
+F_TITLE, F_STEP, F_DETAIL, F_PATH, F_BAND = 18, 13, 11, 9, 12
+
 # Порядок мышления - первое, что говорит скилл.
 ORDER = [("ГРАНИЦЫ", "что этот ключ вообще может трогать", BLUE),
          ("ФУНКЦИИ", "чем именно, каким методом", BLUE),
@@ -71,17 +103,29 @@ def esc(text: str) -> str:
 
 
 def box(cells: list[str], cell_id: str, label: str, x: int, y: int, w: int, h: int,
-        colours: tuple[str, str], size: int = 12) -> None:
-    cells.append(f'<mxCell id="{cell_id}" value="{esc(label)}" style="rounded=1;whiteSpace=wrap;'
-                 f'html=1;fillColor={colours[0]};strokeColor={colours[1]};align=left;spacingLeft=10;'
-                 f'fontSize={size};" vertex="1" parent="1">'
+        colours: tuple[str, str], size: int = F_STEP) -> None:
+    """One bordered cell with real padding. The HTML is escaped ONCE, here, on the way in."""
+    cells.append(f'<mxCell id="{esc(cell_id)}" value="{esc(label)}" style="{BOX}'
+                 f'fillColor={colours[0]};strokeColor={colours[1]};align=left;'
+                 f'verticalAlign=middle;spacingLeft={PAD_L};spacingTop={PAD_T};'
+                 f'spacingBottom={PAD_T};fontSize={size};" vertex="1" parent="1">'
                  f'<mxGeometry x="{x}" y="{y}" width="{w}" height="{h}" as="geometry" /></mxCell>')
 
 
-def arrow(cells: list[str], cell_id: str, source: str, target: str, colour: str = "#6C8EBF") -> None:
-    cells.append(f'<mxCell id="{cell_id}" style="endArrow=classic;html=1;strokeColor={colour};'
-                 f'strokeWidth=2;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" '
-                 f'source="{source}" target="{target}"><mxGeometry relative="1" as="geometry" /></mxCell>')
+def band(cells: list[str], cell_id: str, label: str, x: int, y: int, w: int) -> None:
+    """A column header band: it says what the column IS, without being a node of the flow."""
+    cells.append(f'<mxCell id="{esc(cell_id)}" value="{esc(label)}" style="{BAND}'
+                 f'fontSize={F_BAND};" vertex="1" parent="1"><mxGeometry x="{x}" y="{y}" '
+                 f'width="{w}" height="{BAND_H}" as="geometry" /></mxCell>')
+
+
+def arrow(cells: list[str], cell_id: str, source: str, target: str,
+          colour: str = "#6C8EBF") -> None:
+    cells.append(f'<mxCell id="{esc(cell_id)}" style="endArrow=classic;html=1;strokeColor={colour};'
+                 f'strokeWidth=2;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;'
+                 f'exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" '
+                 f'source="{esc(source)}" target="{esc(target)}">'
+                 f'<mxGeometry relative="1" as="geometry" /></mxCell>')
 
 
 def main() -> int:
@@ -92,68 +136,107 @@ def main() -> int:
     repo = args.repo.resolve()
 
     cells: list[str] = []
-    cells.append('<mxCell id="in" value="ЗАДАЧА В ВК" style="rounded=0;whiteSpace=wrap;html=1;'
-                 'fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=16;fontStyle=1;" vertex="1" parent="1">'
-                 '<mxGeometry x="80" y="30" width="380" height="46" as="geometry" /></mxCell>')
+    # The diagram's own title box: TITLE_H and strokeWidth 2, so it reads as the entrance and not
+    # as one more card.
+    cells.append(f'<mxCell id="head" value="{esc("РАБОТА С ВК — что ключ сообщества может и чего нет")}" '
+                 f'style="{TITLE}fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize={F_TITLE};'
+                 f'fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">'
+                 f'<mxGeometry x="{MARGIN_X}" y="{MARGIN_Y}" width="{FULL_W}" height="{TITLE_H}" '
+                 f'as="geometry" /></mxCell>')
+    # The task, as the one thing that enters the flow. Same sentence as before, drawn as a card.
+    task_y = MARGIN_Y + TITLE_H + TITLE_GAP
+    t = (BLUE[0], BLUE[1])
+    box(cells, "in", "ЗАДАЧА В ВК", MARGIN_X, task_y, FULL_W, 56, t)
+    # A COLUMN HEADER BAND per column: the reader is told what each column is. This is the fix for
+    # a picture where a column of boxes has no name.
+    band_y = task_y + 56 + GAP
+    band(cells, "band_order", "ПОРЯДОК МЫШЛЕНИЯ — сверху вниз", ORDER_X, band_y, ORDER_W)
+    band(cells, "band_can", "ЧТО ЭТОТ КЛЮЧ МОЖЕТ — измерено, не прочитано в документации",
+         CAN_X, band_y, CAN_W)
+    band(cells, "band_cannot", "ЧЕГО ЭТОТ КЛЮЧ НЕ МОЖЕТ — и это дороже, чем кажется",
+         CANNOT_X, band_y, CANNOT_W)
 
-    # Порядок мышления.
+    # Column 1: the order to think in, then a gap twice as large, then the publication itself.
+    # The gap is the grouping - proximity says which boxes belong to which thought.
+    y = band_y + BAND_H + GAP
     for i, (name, why, colours) in enumerate(ORDER):
-        box(cells, f"o{i}", f"<b>{name}</b> — {why}", 80, 100 + i * 46, 380, 40, colours, 11)
+        box(cells, f"o{i}", f"<b>{name}</b> — {why}", ORDER_X, y, ORDER_W, 56, colours)
         if i:
-            arrow(cells, f"ao{i}", f"o{i-1}", f"o{i}", colours[1])
+            arrow(cells, f"ao{i}", f"o{i - 1}", f"o{i}", colours[1])
+        y += 56 + TIGHT
+    order_bottom = y - TIGHT
     arrow(cells, "ao0", "in", "o0")
 
-    y = 300
+    y += GAP                      # GAP on top of TIGHT: the steps are a new group, not the next thought
     previous = "o3"
     arrow(cells, "as0", previous, "s0")
     for i, (number, title, why, colours) in enumerate(STEPS):
         label = (f'<b>{number} — {title}</b><br>'
-                 f'<font color="#444444" style="font-size:11px">{why}</font>')
-        box(cells, f"s{i}", label, 80, y, 380, 56, colours)
+                 f'<font color="#444444" style="font-size:{F_DETAIL}px">{why}</font>')
+        box(cells, f"s{i}", label, ORDER_X, y, ORDER_W, STEP_H, colours)
         if i:
-            arrow(cells, f"as{i}", f"s{i-1}", f"s{i}")
-        y += 74
+            arrow(cells, f"as{i}", f"s{i - 1}", f"s{i}")
+        y += STEP_H + GAP
+    flow_bottom = y - GAP
 
-    # Главное: что можно и что нельзя.
-    box(cells, "ch", "<b>ЧТО ЭТОТ КЛЮЧ МОЖЕТ</b> — измерено, не прочитано в документации",
-        540, 100, 470, 30, GREEN, 13)
-    cy = 142
+    # Columns 2 and 3: what the key can and cannot do. The items are siblings inside one meaning,
+    # so they sit TIGHT together, and the two panels are separated by the full GAP.
+    cy = band_y + BAND_H + GAP
     for i, item in enumerate(CAN):
-        box(cells, f"c{i}", "+ " + item, 540, cy, 470, 38, GREEN, 11)
-        cy += 46
-    box(cells, "nh", "<b>ЧЕГО ЭТОТ КЛЮЧ НЕ МОЖЕТ</b> — и это дороже, чем кажется",
-        540, cy + 20, 470, 30, RED, 13)
-    ny = cy + 62
+        box(cells, f"c{i}", "+ " + item, CAN_X, cy, CAN_W, ITEM_H, GREEN, F_DETAIL)
+        cy += ITEM_H + TIGHT
+    can_bottom = cy - TIGHT
+
+    ny = can_bottom + GAP         # the two panels are different meanings: the full GAP between them
     for i, item in enumerate(CANNOT):
-        box(cells, f"n{i}", "− " + item, 540, ny, 470, 44, RED, 11)
-        ny += 52
+        box(cells, f"n{i}", "− " + item, CANNOT_X, ny, CANNOT_W, ITEM_H, RED, F_DETAIL)
+        ny += ITEM_H + TIGHT
+    cannot_bottom = ny - TIGHT
 
-    ty = max(ny, y) + 40
-    box(cells, "th", "<b>ЛОВУШКИ, КОТОРЫЕ СТОЯТ ДОРОЖЕ ВСЕГО</b>", 80, ty, 930, 30, ORANGE, 13)
+    # ЛЕГЕНДА ПАНЕЛЬЮ, А НЕ СПИСКОМ СТРОК: строки без рамки читаются как продолжение карточек.
+    # HTML собирается НАСТОЯЩИМИ <b> и <br> и экранируется РОВНО ОДИН РАЗ, в box().
+    legend_rows = [
+        ("ЧТО ЭТО ЗА СХЕМА",
+         ["Работа с ВК: что ключ сообщества может и чего не может, и в каком порядке идёт публикация.",
+          "Это НЕ структура файлов (family.drawio), НЕ ворота (gates.drawio) и НЕ суд (hearing.drawio)."]),
+        ("КАК ЧИТАТЬ",
+         ["Слева сверху вниз — порядок мышления и шаги публикации.",
+          "Зелёная колонка — что получается. Красная — что не получается, и это важнее."]),
+        ("ПОЧЕМУ КРАСНАЯ КОЛОНКА ГЛАВНАЯ",
+         ["Отказы здесь приходят как успех: вызов возвращает 200 или post_id, а не происходит ничего.",
+          "Стену нельзя прочитать обратно тем же ключом — проверить публикацию можно только глазами."]),
+    ]
+    parts: list[str] = []
+    for heading, lines in legend_rows:
+        parts.append(f'<b>{esc(heading)}</b>')
+        parts.extend(esc(line) for line in lines)
+        parts.append("&nbsp;")
+    legend_html = "<br>".join(parts)
+    legend_h = 34 + sum(len(lines) + 1 for _, lines in legend_rows) * 22 + 16
+    legend_y = max(flow_bottom, order_bottom, cannot_bottom) + GAP
+    cells.append(f'<mxCell id="legend" value="{esc(legend_html)}" style="{BOX}'
+                 f'fillColor=#FFFFFF;strokeColor=#B3B3B3;align=left;verticalAlign=top;'
+                 f'spacingLeft={PAD_L};spacingTop={PAD_T};fontSize={F_DETAIL};" vertex="1" '
+                 f'parent="1"><mxGeometry x="{MARGIN_X}" y="{legend_y}" width="{FULL_W}" '
+                 f'height="{legend_h}" as="geometry" /></mxCell>')
+
+    # The traps are the reason the skill exists, so they get their own banded panel full width: a
+    # header band above five siblings, TIGHT inside and GAP outside - the same grammar as the rest.
+    traps_y = legend_y + legend_h + GAP
+    band(cells, "band_traps", "ЛОВУШКИ, КОТОРЫЕ СТОЯТ ДОРОЖЕ ВСЕГО",
+         MARGIN_X, traps_y, FULL_W)
+    ty = traps_y + BAND_H + TIGHT
     for i, item in enumerate(TRAPS):
-        box(cells, f"t{i}", item, 80, ty + 42 + i * 40, 930, 34, ORANGE, 11)
+        box(cells, f"t{i}", item, MARGIN_X, ty, FULL_W, ITEM_H, ORANGE, F_DETAIL)
+        ty += ITEM_H + TIGHT
+    traps_bottom = ty - TIGHT
 
-    legend = ["ЧТО ЭТО ЗА СХЕМА",
-              "Работа с ВК: что ключ сообщества может и чего не может, и в каком порядке идёт публикация.",
-              "Это НЕ структура файлов (family.drawio), НЕ ворота (gates.drawio) и НЕ суд (hearing.drawio).",
-              "",
-              "КАК ЧИТАТЬ",
-              "Слева сверху вниз — порядок мышления и шаги публикации.",
-              "Зелёная колонка — что получается. Красная — что не получается, и это важнее.",
-              "",
-              "ПОЧЕМУ КРАСНАЯ КОЛОНКА ГЛАВНАЯ",
-              "Отказы здесь приходят как успех: вызов возвращает 200 или post_id, а не происходит ничего.",
-              "Стену нельзя прочитать обратно тем же ключом — проверить публикацию можно только глазами."]
-    for row, text in enumerate(legend):
-        bold = "1" if (text.isupper() or text.startswith("ЧТО") or text.startswith("КАК")
-                       or text.startswith("ПОЧЕМУ")) else "0"
-        cells.append(f'<mxCell id="l{row}" value="{esc(text)}" style="text;html=1;align=left;'
-                     f'verticalAlign=middle;fontSize=12;fontStyle={bold};strokeColor=none;fillColor=none;"'
-                     f' vertex="1" parent="1"><mxGeometry x="80" y="{ty + 280 + row * 26}" width="1140" '
-                     f'height="24" as="geometry" /></mxCell>')
-
+    # The page is measured from the content, not fixed.
+    page_w = MARGIN_X + FULL_W + MARGIN_X
+    page_h = traps_bottom + MARGIN_Y
     model = ('<mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" '
-             'arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="1600" math="0" '
+             'arrows="1" fold="1" page="1" pageScale="1" '
+             f'pageWidth="{page_w}" pageHeight="{page_h}" math="0" '
              'shadow="0"><root><mxCell id="0" /><mxCell id="1" parent="0" />' + "".join(cells)
              + '</root></mxGraphModel>')
     model = ('<mxfile host="dsh" agent="draw-the-vk-flow.py"><diagram id="vk" name="ВК">'

@@ -20,6 +20,59 @@ from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
 
+# ── LOOK. Not taste - the answers to "it reads like a book description: boxes stacked tightly, no
+# air". Every number is copied from draw-a-skill-flow.py, where the operator looked at the result
+# and called it beautiful.
+TITLE_H = 78        # the diagram's title box: bigger than everything, because it is the entrance
+STEP_H = 88         # a step, and a verdict: a title plus why, and the original name underneath
+GAP = 42            # air between boxes. Below 30 the frames read as one block
+TITLE_GAP = 88      # air under the title - more than GAP, so the entrance reads as an entrance
+BAND_H = 34         # the column header band: it names the column without being a step
+PAD_L = 20          # padding inside a frame: 10 left the text touching the border
+PAD_T = 10          # top padding: 0 pressed the first line against the frame
+MARGIN_X, MARGIN_Y = 90, 60     # page margins: the diagram must not start at the sheet edge
+
+FLOW_W = 900        # the hearing, read top to bottom
+VERDICT_W = 760     # the five verdicts, side by side with it
+COLUMN_X = MARGIN_X + FLOW_W + GAP + 60
+LEGEND_W = 900
+
+# The vendor palette only, from jgraph/drawio-mcp/shared/style-reference.md.
+BOX = "rounded=1;arcSize=10;whiteSpace=wrap;html=1;shadow=1;strokeWidth=1;"
+TITLE = "rounded=1;arcSize=10;whiteSpace=wrap;html=1;shadow=1;strokeWidth=2;"
+BAND = ("rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;"
+        "align=left;verticalAlign=middle;spacingLeft=20;fontStyle=1;")
+
+# Font ladder: four sizes and each means exactly one thing - the diagram title, a step's title,
+# its role, and the original English heading. Not one size for everything.
+F_TITLE, F_STEP, F_DETAIL, F_PATH, F_BAND = 18, 13, 11, 9, 12
+
+
+def esc(text: str) -> str:
+    return html.escape(str(text), quote=True)
+
+
+def box(cell_id: str, label: str, x: int, y: int, w: int, h: int, fill: str, stroke: str) -> str:
+    """One bordered cell with real padding. Escaped ONCE, here, on the way into the attribute."""
+    return (f'<mxCell id="{esc(cell_id)}" value="{esc(label)}" style="{BOX}fillColor={fill};'
+            f'strokeColor={stroke};align=left;verticalAlign=middle;spacingLeft={PAD_L};'
+            f'spacingTop={PAD_T};spacingBottom={PAD_T};fontSize={F_STEP};" vertex="1" parent="1">'
+            f'<mxGeometry x="{x}" y="{y}" width="{w}" height="{h}" as="geometry" /></mxCell>')
+
+
+def band(cell_id: str, label: str, x: int, y: int, width: int) -> str:
+    return (f'<mxCell id="{esc(cell_id)}" value="{esc(label)}" style="{BAND}fontSize={F_BAND};" '
+            f'vertex="1" parent="1"><mxGeometry x="{x}" y="{y}" width="{width}" '
+            f'height="{BAND_H}" as="geometry" /></mxCell>')
+
+
+def arrow(cell_id: str, source: str, target: str, dashed: str = "0") -> str:
+    return (f'<mxCell id="{esc(cell_id)}" style="endArrow=classic;html=1;strokeColor=#6C8EBF;'
+            f'strokeWidth=2;dashed={dashed};rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=0.5;'
+            f'exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" '
+            f'parent="1" source="{esc(source)}" target="{esc(target)}">'
+            f'<mxGeometry relative="1" as="geometry" /></mxCell>')
+
 # По-русски. Порядок и содержание — из регламента суда; здесь только перевод и роли.
 STEP_RU = {
     "Step 0": ("Стоит ли вообще судить", "Не созывать суд по каждому поводу", "#F5F5F5", "#666666"),
@@ -62,69 +115,100 @@ def main() -> int:
                 re.search(r"### The verdicts\n(.*?)(?=\n## |\n### )", source, re.S).group(1), re.M)]
 
     cells: list[str] = []
-    cells.append('<mxCell id="defendant" value="СКИЛЛ-ПОДСУДИМЫЙ" style="rounded=0;whiteSpace=wrap;'
-                 'html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=16;fontStyle=1;" vertex="1" '
-                 'parent="1"><mxGeometry x="80" y="40" width="420" height="50" as="geometry" /></mxCell>')
+    # The diagram's own title box: TITLE_H and strokeWidth 2, so it reads as the entrance and not
+    # as one more step.
+    cells.append(f'<mxCell id="head" value="{esc("СУД НАД СКИЛЛОМ — judge-a-skill")}" '
+                 f'style="{TITLE}fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize={F_TITLE};'
+                 f'fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">'
+                 f'<mxGeometry x="{MARGIN_X}" y="{MARGIN_Y}" width="{FLOW_W}" height="{TITLE_H}" '
+                 f'as="geometry" /></mxCell>')
+    # The defendant, as the one thing the hearing is about. Same sentence as before, drawn as a card.
+    defendant_y = MARGIN_Y + TITLE_H + TITLE_GAP
+    cells.append(box("defendant", "СКИЛЛ-ПОДСУДИМЫЙ", MARGIN_X, defendant_y, FLOW_W, 56,
+                     "#DAE8FC", "#6C8EBF"))
+    # A COLUMN HEADER BAND per column: the reader is told which column is the process and which is
+    # the outcome, instead of having to learn it from a caption.
+    band_y = defendant_y + 56 + GAP
+    cells.append(band("band_steps", "ВОСЕМЬ ШАГОВ СУДА — в порядке исполнения",
+                      MARGIN_X, band_y, FLOW_W))
+    cells.append(band("band_verdicts", "ПЯТЬ ПРИГОВОРОВ — из них выбирает судья",
+                      COLUMN_X, band_y, VERDICT_W))
 
-    previous, y = "defendant", 140
+    y = band_y + BAND_H + GAP
+    previous = "defendant"
     for number in [f"Step {i}" for i in range(8)]:
         russian, role, fill, stroke = STEP_RU[number]
         english = steps.get(number, "")
+        # Four sizes doing four jobs: which step (inside the title), what it is (13), what it is for
+        # (11), and the English heading (9) it was read from.
         label = (f'<b>{number} — {russian}</b><br>'
-                 f'<font color="#333333" style="font-size:11px">{role}</font><br>'
-                 f'<font color="#888888" style="font-size:9px">{english}</font>')
+                 f'<font color="#444444" style="font-size:{F_DETAIL}px">{role}</font><br>'
+                 f'<font color="#999999" style="font-size:{F_PATH}px">{english}</font>')
         cell = f"s{number[-1]}"
-        cells.append(f'<mxCell id="{cell}" value="{esc(label)}" style="rounded=1;whiteSpace=wrap;'
-                     f'html=1;fillColor={fill};strokeColor={stroke};align=left;spacingLeft=10;'
-                     f'fontSize=12;" vertex="1" parent="1">'
-                     f'<mxGeometry x="80" y="{y}" width="540" height="76" as="geometry" /></mxCell>')
-        cells.append(f'<mxCell id="a{number[-1]}" style="endArrow=classic;html=1;strokeColor=#6C8EBF;'
-                     f'strokeWidth=2;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" '
-                     f'source="{previous}" target="{cell}"><mxGeometry relative="1" as="geometry" /></mxCell>')
-        previous, y = cell, y + 96
+        cells.append(box(cell, label, MARGIN_X, y, FLOW_W, STEP_H, fill, stroke))
+        cells.append(arrow(f"a{number[-1]}", previous, cell))
+        previous = cell
+        y += STEP_H + GAP
+    flow_bottom = y - GAP
 
-    # Приговоры отдельной колонкой: их пять, и они выход суда, а не шаг.
-    cells.append('<mxCell id="vh" value="ПЯТЬ ПРИГОВОРОВ — из них выбирает судья" style="text;html=1;'
-                 'align=left;fontSize=14;fontStyle=1;strokeColor=none;fillColor=none;" vertex="1" '
-                 'parent="1"><mxGeometry x="700" y="112" width="520" height="26" as="geometry" /></mxCell>')
-    vy = 148
-    for name in verdicts:
+    # The verdicts are the OUTPUT of the hearing, so they get their own column, the same height per
+    # box and the same air. Their vertical rhythm matches the steps', which is what makes the two
+    # columns read as one picture.
+    vy = band_y + BAND_H + GAP
+    first_verdict = "v0"
+    for index, name in enumerate(verdicts):
         russian, when, fill, stroke = VERDICT_RU.get(name, (name, "", "#F5F5F5", "#666666"))
         label = (f'<b>{russian}</b><br>'
-                 f'<font style="font-size:11px">{when}</font><br>'
-                 f'<font color="#888888" style="font-size:9px">{name}</font>')
-        cells.append(f'<mxCell id="v{vy}" value="{esc(label)}" style="rounded=1;whiteSpace=wrap;html=1;'
-                     f'fillColor={fill};strokeColor={stroke};align=left;spacingLeft=10;fontSize=12;" '
-                     f'vertex="1" parent="1"><mxGeometry x="700" y="{vy}" width="520" height="70" '
-                     f'as="geometry" /></mxCell>')
-        vy += 84
-    cells.append(f'<mxCell id="av" style="endArrow=classic;html=1;strokeColor=#6C8EBF;strokeWidth=2;'
-                 f'dashed=1;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="s5" '
-                 f'target="v148"><mxGeometry relative="1" as="geometry" /></mxCell>')
+                 f'<font color="#444444" style="font-size:{F_DETAIL}px">{when}</font><br>'
+                 f'<font color="#999999" style="font-size:{F_PATH}px">{name}</font>')
+        cell = f"v{index}"
+        cells.append(box(cell, label, COLUMN_X, vy, VERDICT_W, STEP_H, fill, stroke))
+        if index == 0:
+            first_verdict = cell
+        vy += STEP_H + GAP
+    verdict_bottom = vy - GAP
+    # «Судья выбирает одно из пяти» - the one edge between the columns.
+    cells.append(f'<mxCell id="av" style="endArrow=classic;html=1;strokeColor=#6C8EBF;'
+                 f'strokeWidth=2;dashed=1;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" '
+                 f'source="s5" target="{first_verdict}">'
+                 f'<mxGeometry relative="1" as="geometry" /></mxCell>')
 
-    legend = ["ЧТО ЭТО ЗА СХЕМА",
-              "Процесс суда над скиллом — judge-a-skill. Как скилл обвиняют, защищают и судят.",
-              "Это НЕ схема файлов (family.drawio) и НЕ ворота регламента (gates.drawio).",
-              "У каждого процесса своя схема, и они друг друга не заменяют.",
-              "",
-              "КАК ЧИТАТЬ",
-              "Синяя рамка сверху — подсудимый. Стрелка вниз — следующий шаг суда.",
-              "Красная — сторона обвинения. Зелёная — сторона защиты.",
-              "Пунктир к колонке справа — «судья выбирает одно из пяти».",
-              "",
-              "ЧТО ГЛАВНОЕ В ЭТОМ ПРОЦЕССЕ",
-              "Обвинительный лист пишется ДО чтения защиты себя — иначе доводы подгоняются под ответ.",
-              "Чистый приговор — полноценный исход: если конкретного довода не уцелело, скилл оставляют.",
-              "Обе стороны получают оценку, чтобы близкое решение было видно как близкое."]
-    for row, text in enumerate(legend):
-        bold = "1" if (text.isupper() or text.startswith("ЧТО") or text.startswith("КАК")) else "0"
-        cells.append(f'<mxCell id="l{row}" value="{esc(text)}" style="text;html=1;align=left;'
-                     f'verticalAlign=middle;fontSize=12;fontStyle={bold};strokeColor=none;fillColor=none;"'
-                     f' vertex="1" parent="1"><mxGeometry x="80" y="{1010 + row * 26}" width="1140" '
-                     f'height="24" as="geometry" /></mxCell>')
+    # ЛЕГЕНДА ПАНЕЛЬЮ, А НЕ СПИСКОМ СТРОК: строки без рамки читаются как продолжение шагов.
+    # HTML собирается НАСТОЯЩИМИ <b> и <br> и экранируется РОВНО ОДИН РАЗ, в box().
+    legend_rows = [
+        ("ЧТО ЭТО ЗА СХЕМА",
+         ["Процесс суда над скиллом — judge-a-skill. Как скилл обвиняют, защищают и судят.",
+          "Это НЕ схема файлов (family.drawio) и НЕ ворота регламента (gates.drawio).",
+          "У каждого процесса своя схема, и они друг друга не заменяют."]),
+        ("КАК ЧИТАТЬ",
+         ["Синяя рамка сверху — подсудимый. Стрелка вниз — следующий шаг суда.",
+          "Красная — сторона обвинения. Зелёная — сторона защиты.",
+          "Пунктир к колонке справа — «судья выбирает одно из пяти»."]),
+        ("ЧТО ГЛАВНОЕ В ЭТОМ ПРОЦЕССЕ",
+         ["Обвинительный лист пишется ДО чтения защиты себя — иначе доводы подгоняются под ответ.",
+          "Чистый приговор — полноценный исход: если конкретного довода не уцелело, скилл оставляют.",
+          "Обе стороны получают оценку, чтобы близкое решение было видно как близкое."]),
+    ]
+    parts: list[str] = []
+    for heading, lines in legend_rows:
+        parts.append(f'<b>{esc(heading)}</b>')
+        parts.extend(esc(line) for line in lines)
+        parts.append("&nbsp;")
+    legend_html = "<br>".join(parts)
+    legend_h = 34 + sum(len(lines) + 1 for _, lines in legend_rows) * 22 + 16
+    legend_y = max(flow_bottom, verdict_bottom) + GAP
+    cells.append(f'<mxCell id="legend" value="{esc(legend_html)}" style="{BOX}'
+                 f'fillColor=#FFFFFF;strokeColor=#B3B3B3;align=left;verticalAlign=top;'
+                 f'spacingLeft={PAD_L};spacingTop={PAD_T};fontSize={F_DETAIL};" vertex="1" '
+                 f'parent="1"><mxGeometry x="{MARGIN_X}" y="{legend_y}" width="{LEGEND_W}" '
+                 f'height="{legend_h}" as="geometry" /></mxCell>')
 
+    # The page is measured from the content, not fixed.
+    page_w = COLUMN_X + VERDICT_W + MARGIN_X
+    page_h = legend_y + legend_h + MARGIN_Y
     model = ('<mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" '
-             'arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="1400" math="0" '
+             'arrows="1" fold="1" page="1" pageScale="1" '
+             f'pageWidth="{page_w}" pageHeight="{page_h}" math="0" '
              'shadow="0"><root><mxCell id="0" /><mxCell id="1" parent="0" />' + "".join(cells)
              + '</root></mxGraphModel>')
     model = ('<mxfile host="dsh" agent="draw-the-hearing.py"><diagram id="hearing" name="Суд">'
