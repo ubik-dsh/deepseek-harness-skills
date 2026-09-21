@@ -201,7 +201,7 @@ intention.
 
 ### Sandboxing and workspace isolation tiers
 
-**From:** `affaan-m/ECC` and `majiayu000/claude-skill-registry` — filesystem isolation,
+**From:** `affaan-m/ECC` and a community skill registry — filesystem isolation,
 Windows Job Objects, Windows Sandbox, and a strong emphasis on containment and
 security for computer-use agents.
 

@@ -6,7 +6,7 @@ compatibility: Agent Skills standard. SKILL.md is plain text. scripts/preflight.
 metadata:
   version: 0.1.0
   status: first formulation, assembled from twelve hearings and one session of getting it wrong
-  borrowed_from: raphaol/powershell-windows-best-skill for the trap list, browser-use/windows-harness for one call per decision point and the input ladder, Lucien-1127/strata-skill for the CMD encoding trap, mturac/everything-openai-codex for the accessibility-tree rung - all found through find-a-skill and judged through judge-a-skill
+  borrowed_from: raphaol/powershell-windows-best-skill for the trap list, browser-use/windows-harness for one call per decision point and the input ladder, Lucien-1127/strata-skill for the CMD encoding trap, mturac via a multi-harness toolkit for the accessibility-tree rung - all found through find-a-skill and judged through judge-a-skill
   sibling: learn-an-interface holds the method, the order of channels and how to find an unknown control; this skill holds the platform, and what Windows does that surprises you
 ---
 

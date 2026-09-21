@@ -4,7 +4,7 @@ Every rule in this skill came from somewhere else. This file records the ones
 that were taken most recently, where they came from, and what they mean when the
 work is authoring a skill rather than doing the thing the skill is about.
 
-The source for all six is `skill-creator` in `anthropics/skills`, found by
+The source for all six is the `skill-creator` skill in that vendor's own collection, found by
 running both skills against the same three tasks — mathematics, logic, and
 ancient-language decipherment — and having a third agent read the six results
 blind. That comparison is why they are here: a judge named each one as something

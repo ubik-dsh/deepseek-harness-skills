@@ -408,7 +408,7 @@ than the working tree.
 **`Lucien-1127/strata-skill`** (as `windows-automation`) — the `chcp 65001` trap, the exact
 PowerShell invocation with the reason for each flag, and the shortcut COM lines.
 
-**`mturac/everything-openai-codex`** (as `windows-desktop-e2e`) — the accessibility-tree rung,
+**a multi-harness toolkit** (as `windows-desktop-e2e`) — the accessibility-tree rung,
 now held by `learn-an-interface`.
 
 **[ours]** — found by doing it: the BOM defect, the input calls that reach nothing, the
