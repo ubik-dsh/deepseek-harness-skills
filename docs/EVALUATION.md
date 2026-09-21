@@ -10,7 +10,7 @@ measurement changed it. Both are recorded.
 
 | | |
 |---|---|
-| **Live loading** | Ten claims about how a harness registers a skill, each turned into a probe file in a live DeepSeek Harness 0.1.5-rc.2 session and read back from the session's own skill catalogue |
+| **Live loading** | Ten claims about how a harness registers a skill, each turned into a probe file in a live harness 0.1.5-rc.2 session and read back from the session's own skill catalogue |
 | **Trigger evaluation** | Twenty realistic prompts, ten that should load the skill and ten near-misses that should not, judged by an agent shown only names and descriptions |
 | **With and without** | One task, two agents, same turn — one told to follow the skill, one given nothing — and a third agent comparing the two outputs |
 
@@ -38,7 +38,7 @@ message, with no restart.
 **The eighth and ninth rows are the reason this was worth running.** They show
 that the harness addresses a skill by the name in the file and does not care what
 the folder is called — and that it reports the *folder* as the resource base. A
-mismatch therefore works completely on DSH and breaks only where it is enforced.
+mismatch therefore works completely on this harness and breaks only where it is enforced.
 Before this was measured, this skill asserted the opposite: that the loader
 matched on the folder and ignored the file. That was wrong, and the bundled
 checker was failing valid skills on the strength of it.
@@ -117,8 +117,8 @@ Every change below came from the run, not from reading.
 precedence; trigger accuracy against near-misses; one with-and-without pair on
 one task, judged by a third agent.
 
-**Not measured, and therefore still a claim:** how this behaves in Claude Code or
-any harness other than DSH — every cross-harness statement in this repository
+**Not measured, and therefore still a claim:** how this behaves in another harness or
+any harness other than this one — every cross-harness statement in this repository
 rests on documentation, not on a probe. The protocol has been run once, on one
 task, by one pair of agents. Everything the checker detects is tested against 46
 fixtures written by its own author, which is a weak form of evidence: it proves

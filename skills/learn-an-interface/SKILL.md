@@ -8,7 +8,7 @@ metadata:
   version: 0.2.0
   status: sharpened by a survey of 105 rival skills, each read and trialled — see references/borrowed-practices.md
   measured_on: Windows 11, Paint (Microsoft Store build), two monitors at 2560x1440 and 1920x1440
-  verified_against: DSH 0.1.5-rc.2
+  verified_against: this harness 0.1.5-rc.2
   borrowed_from: youngjunning/windows-app-automation and affaan-m/ECC (UI Automation with AutomationId selectors), BanmaXM/operate-ui-by-screenshot (an interface ladder that starts at API), alchaincyf/huashu-mac-use (the macOS side) — found by a GitHub survey of 105 repositories shipping a SKILL.md for interface control, and kept only after a live trial on Paint confirmed the tree reaches the tools and the palette by name
   sibling: design-a-reward — the reward this skill feeds is a subject of its own
 ---

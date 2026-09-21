@@ -1,16 +1,16 @@
 ---
 name: create-a-skill
-description: Author a new agent skill, or improve an existing one — a folder of instructions an agent loads on demand, from a SKILL.md that works in DeepSeek Harness, Claude Code and any other harness reading the Agent Skills standard. Ships a bundled checklist runner and a measured evaluation protocol, not just advice. Use when the user asks you to learn a tool, a site, or a workflow and keep it for later; says "make yourself a skill for X"; asks to write, fix, review, or evaluate a skill; wants a repeated procedure turned into something reusable; or asks whether a skill's description actually fires, what its trigger eval says, or how it performs with and without the skill.
+description: Author a new agent skill, or improve an existing one - a folder of instructions an agent loads on demand, from a SKILL.md that works in this harness, in other harnesses, and in any harness reading the Agent Skills standard. Ships a bundled checklist runner and a measured evaluation protocol, not just advice. Use when the user asks you to learn a tool, a site, or a workflow and keep it for later; says "make yourself a skill for X"; asks to write, fix, review, or evaluate a skill; wants a repeated procedure turned into something reusable; or asks whether a skill's description actually fires, what its trigger eval says, or how it performs with and without the skill.
 license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text with no runtime; the two files in scripts/ need Python 3.8 or newer, standard library only, and neither is required for the skill to work.
 metadata:
   spec: https://agentskills.io/specification
   assembled_from: anthropics/skills (skill-creator), mattpocock via alirezarezvani/claude-skills (write-a-skill), sickn33/agentic-awesome-skills (effective-agent-skills, writing-skills, verification-before-completion), deanpeters/Product-Manager-Skills
   borrowed_from_skill_creator: status vocabularies, early-stop disclosure, bounds instead of refusal, calibration against an existing skill, form before substance, and a description that claims the work — see references/borrowed-practices.md
-  verified_against: DSH 0.1.5-rc.2, by live probes of all seven roots and their precedence
+  verified_against: this harness 0.1.5-rc.2, by live probes of all seven roots and their precedence
 ---
 
-# Authoring a DSH skill
+# Authoring a harness skill
 
 A skill is a file an agent reads when a task matches it. It is not a plugin: no
 install, no restart, no code. Write one and the capability exists.
@@ -77,13 +77,13 @@ that carries it gives every agent that opens it the same capability.
 It is 1–64 characters of `a-z`, digits and single hyphens, and may not begin, end
 or double up on a hyphen.
 
-The standard says the name **must** match the directory it sits in. DSH does not
-enforce it — it registers whatever the frontmatter says and never compares the
-two — so a mismatch works here and breaks in a harness that does check. Treat the
-match as a portability rule, not a local one.
+The standard says the name **must** match the directory it sits in. This harness
+does not enforce it — it registers whatever the frontmatter says and never
+compares the two — so a mismatch works here and breaks in a harness that does
+check. Treat the match as a portability rule, not a local one.
 
 Where *your* harness looks, including the seven roots and precedence ranks
-measured for DSH and the conventions of several others:
+measured for this harness and the conventions of several others:
 [references/harness-locations.md](references/harness-locations.md). Confirm it by
 observation rather than documentation — write the file, then ask the session for
 its catalogue. Documentation describes the version its author had.
@@ -107,14 +107,14 @@ for skills needing a package, network or a specific product), `metadata`
 (free-form map), `allowed-tools` (experimental).
 
 `disable-model-invocation` and `user-invocable` are not in the standard but are
-read by Claude Code and by DSH, spelled in kebab-case. DSH rejects the older
-camelCase spellings with a message saying so. A portable skill uses them for what
-they do locally and does not rely on them.
+read by other harnesses and by this harness, spelled in kebab-case. This harness
+rejects the older camelCase spellings with a message saying so. A portable skill
+uses them for what they do locally and does not rely on them.
 
 One caution about `compatibility`: declare dependencies there, because it is the
 field the standard provides, but do not expect a harness to install anything from
-it. Claude Code accepts the field without acting on it, and DSH does not read it
-at all. It is a note to a human, not an instruction to a machine.
+it. Other harnesses accept the field without acting on it, and this harness does
+not read it at all. It is a note to a human, not an instruction to a machine.
 
 ## The description is the whole matching surface
 
@@ -223,9 +223,9 @@ every ~300 tokens and no paragraph over ~200 keep a file navigable rather than
 merely small. **A wall of 500 tokens is harder to read than two files of 250**, and
 the same total hides it.
 
-None of this is enforced anywhere upstream; DSH caps the body at nothing at all.
-The bundled checker now estimates tokens from characters and warns, which is the
-part that was missing when this rule was written.
+None of this is enforced anywhere upstream; this harness caps the body at nothing
+at all. The bundled checker now estimates tokens from characters and warns, which
+is the part that was missing when this rule was written.
 
 ## Write the body as a procedure
 
@@ -296,9 +296,9 @@ More traps, and the reasoning behind each: [references/anti-patterns.md](referen
 
 ## What this skill does not cover
 
-- **Harnesses other than DSH.** The seven roots, their ranks and the precedence
-  rule were measured on DSH `0.1.5-rc.2` by live probes. The conventions of Claude
-  Code and the others in
+- **Harnesses other than this one.** The seven roots, their ranks and the
+  precedence rule were measured on this harness `0.1.5-rc.2` by live probes. The
+  conventions of the other harnesses in
   [references/harness-locations.md](references/harness-locations.md) come from
   their documentation, not from a probe on this machine.
 - **What is inside a bundled script.** The checker reads markdown. Whether a
@@ -361,8 +361,8 @@ it.
 
 Кратко по-русски: скилл — это папка с `SKILL.md`, которую агент читает, когда
 задача совпала с описанием. Сначала реши, что это: обёртка над инструментом или
-метод работы. Имя обязано совпадать с именем папки (это требует стандарт; DSH
-сам это не проверяет, но другой инструмент может) и быть kebab-case. Описание —
+метод работы. Имя обязано совпадать с именем папки (это требует стандарт; этот
+харнесс сам это не проверяет, но другой инструмент может) и быть kebab-case. Описание —
 единственное, что агент видит до загрузки, поэтому в нём должны стоять слова
 пользователя и фраза «Use when…». Тело пиши процедурой: шаг 1 — признак успеха,
 дальше точные команды и то, как выглядит ошибка. 500 строк — рекомендация

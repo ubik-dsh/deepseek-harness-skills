@@ -47,9 +47,9 @@ catalogue, so it loses every competition for the task.
 If the work needs a parser, install the package. Pasting a library into a skill
 means maintaining someone else's code forever and shipping a version that will
 quietly age. Declare the dependency in `compatibility` instead — while knowing
-that no harness installs anything from that field. Claude Code accepts it without
-acting on it and DSH does not read it. It documents the requirement for a human;
-it does not satisfy it for a machine.
+that no harness installs anything from that field. Other harnesses accept it
+without acting on it and this harness does not read it. It documents the
+requirement for a human; it does not satisfy it for a machine.
 
 ## Don't build a framework
 

@@ -8,7 +8,7 @@ metadata:
   version: 0.1.0
   status: first formulation, to be sharpened by use
   measured_on: tabular Q-learning and UCB1 bandits, 150 parallel iterations, and a two-agent arena
-  verified_against: DSH 0.1.5-rc.2
+  verified_against: this harness 0.1.5-rc.2
   sibling: learn-an-interface — where the reward is a verified property of a real window
 ---
 

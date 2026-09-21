@@ -64,7 +64,8 @@ find ~/.claude/skills -maxdepth 2 -name SKILL.md
 find ~/.claude/plugins/marketplaces -path '*/skills/*/SKILL.md'
 ```
 
-This harness resolves **seven** roots, and the two it names are user-level Claude paths.
+This harness resolves **seven** roots, and the two it names are user-level paths of
+another harness.
 A skill loaded from `<project>/.agents/skills` — which is where the skill being searched
 *for* would most likely live — is invisible to it. Searching the wrong roots produces a
 **confident "nothing exists" that is false**, which is worse than not searching.

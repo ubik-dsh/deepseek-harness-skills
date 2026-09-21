@@ -8,9 +8,9 @@ place fails in the worst possible way: silently.
 The body of this skill is written to be harness-neutral. This file carries the
 part that is not, so that the rest stays portable.
 
-## DeepSeek Harness
+## The roots this harness resolves
 
-Verified against DSH `0.1.5-rc.2` by reading `@deepseek-ai/dsh-skill` and
+Verified against this harness `0.1.5-rc.2` by reading `@deepseek-ai/dsh-skill` and
 `@deepseek-ai/dsh-skill-filesystem` and by watching the session catalogue change
 after writing a file.
 
@@ -28,16 +28,19 @@ after writing a file.
 beats a duplicate outright. All roots are watched: writing the file is enough,
 with no restart and no install.
 
-`.agents/skills` is the portable choice even on DSH — several harnesses read that
+`.agents/skills` is the portable choice even here — several harnesses read that
 name, so a repository that carries it gives every agent that opens it the same
 capability.
 
-## Other harnesses
+## The conventions other harnesses use
 
-- **Claude Code and Claude.ai** read `.claude/skills/` in a project and
-  `~/.claude/skills/` for the user. Plugins can also ship skills.
-- **Codex, Gemini CLI, Cursor, Copilot and others** each have their own location
-  and their own spelling of the folder name; several read `.agents/skills/`.
+Each family of harnesses keeps its own folder name in its own location. What
+follows is the convention, named by the path that carries it:
+
+- `.claude/skills/` in a project and `~/.claude/skills/` for the user — the
+  spelling one widely-used family reads. Plugins can also ship skills.
+- Other harnesses each have their own location and their own spelling of the
+  folder name; several read `.agents/skills/`.
 
 Do not guess. Check the harness's own documentation, and then confirm by
 observation:

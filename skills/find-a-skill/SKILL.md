@@ -7,7 +7,7 @@ metadata:
   spec: https://agentskills.io/specification
   version: 0.1.0
   status: first formulation, to be sharpened by use
-  measured_on: DSH 0.1.5-rc.2, and a survey of 105 repositories shipping a SKILL.md for interface control
+  measured_on: this harness 0.1.5-rc.2, and a survey of 105 repositories shipping a SKILL.md for interface control
   borrowed_from: affaan-m/ECC (skill-scout) for the search-before-creating rule, the local-before-remote order, the vetting checklist and the use/fork/create decision — taken after reading it in full and finding the two gaps this skill exists to close
   sibling: create-a-skill, which should point here before it writes anything
 ---
@@ -63,7 +63,7 @@ depends on one, and a scout that refuses to run without it is a scout that only 
 the machine it was written on.
 
 Some harnesses keep a store of skills already found and judged — source, description, the
-hearing's verdict, the rating, and the date it entered. **In DSH that is
+hearing's verdict, the rating, and the date it entered. **In this harness that is
 `$DSH_HOME/skill-catalogue.json`, written by the `skill-scout` plugin.** Look for it. If
 it is there, read it before searching anything; if it is not, go straight to Step 1.
 

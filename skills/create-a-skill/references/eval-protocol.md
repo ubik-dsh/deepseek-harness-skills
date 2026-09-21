@@ -4,7 +4,7 @@ A skill that has never been run is a hypothesis. This is how to turn it into a
 finding, in two independent measurements: does it **trigger** when it should, and
 does it **work** when it does.
 
-Both are cheap because DSH can spawn subagents. The whole method is: run the same
+Both are cheap because a harness can spawn subagents. The whole method is: run the same
 task twice — once with the skill, once without — and look at the difference.
 
 ## Part 1 — Does it trigger?
