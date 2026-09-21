@@ -50,7 +50,36 @@ EDGE = {
     "DANGLING":  ("#B85450", "0", 2),
 }
 
-WIDTH, HEIGHT, GAP_X, GAP_Y = 330, 62, 380, 84
+# ── LOOK. These are not taste, they are the answers to a complaint: "it reads like a book
+# description - boxes stacked tightly, no air". The rule under all of them is that SIZE AND
+# PADDING SAY WHAT A THING IS (see ../draw-a-diagram/references/making-it-look-right.md). One
+# height for every frame erases the hierarchy and the page reads as a single paragraph, so the
+# numbers below are copied from draw-a-skill-flow.py, where the operator looked at the result
+# and called it beautiful.
+TITLE_H = 78        # the diagram's own title box: bigger than everything, because it is the entrance
+STEP_H = 88         # a node: its name, what it is, and the path underneath
+CELL_H = 62         # a node with a name but no description - the case the air is for
+ROW_H = 74          # row pitch in a column: the tallest cell plus GAP
+GAP = 42            # air between boxes. Below 30 the frames read as one block
+BAND_H = 34         # the column header band: it says what the column IS, without being a node
+TITLE_GAP = 48      # air under the title. A gap of 30 is not "almost the same"
+PAD_L = 20          # padding inside a frame: 10 left the text touching the border
+PAD_T = 10          # top padding: 0 pressed the first line against the frame
+MARGIN_X, MARGIN_Y = 90, 60     # page margins: the diagram must not start at the sheet edge
+
+# The vendor palette only, from jgraph/drawio-mcp/shared/style-reference.md.
+BOX = "rounded=1;arcSize=10;whiteSpace=wrap;html=1;shadow=1;strokeWidth=1;"
+TITLE = "rounded=1;arcSize=10;whiteSpace=wrap;html=1;shadow=1;strokeWidth=2;"
+BAND = ("rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;"
+        "align=left;verticalAlign=middle;spacingLeft=20;fontStyle=1;")
+
+# Font ladder: four sizes and each means exactly one thing. Never one size for everything -
+# that was the thing that made the page read as a single paragraph.
+F_TITLE, F_STEP, F_DETAIL, F_PATH, F_BAND = 18, 13, 11, 9, 12
+
+# One width class per column, because breaking a uniform width is the first fix for the flat
+# band: a path needs more room than a file name, and giving both the same width wastes the page.
+COL_WIDTH = {"skill": 420, "reference": 660, "script": 520, "asset": 420, "file": 520}
 
 
 def esc(text: str) -> str:
@@ -78,9 +107,12 @@ def main() -> int:
     glossary_path = Path(__file__).resolve().parent / "family-glossary.json"
     glossary = json.loads(glossary_path.read_text(encoding="utf-8")) if glossary_path.exists() else {}
 
-    # One column per kind, so the picture reads left to right: what a skill is, what it explains, what
-    # it runs.
     columns = {"skill": 0, "reference": 1, "script": 2, "asset": 3, "file": 4}
+    present = sorted({columns.get(nodes[rel]["kind"], 4) for rel in nodes})
+    if not present:                       # a graph with no nodes: place nothing, but do not crash
+        present = [0]
+    x_of = {column: MARGIN_X + sum(COL_WIDTH[k] + GAP for k in present[:present.index(column)])
+            for column in present}
     rows: dict[int, int] = defaultdict(int)
     place: dict[str, tuple[int, int]] = {}
     for rel in sorted(nodes):
@@ -88,44 +120,70 @@ def main() -> int:
         column = columns.get(kind, 4)
         row = rows[column]
         rows[column] += 1
-        place[rel] = (60 + column * GAP_X, 100 + row * GAP_Y)
+        # Header band first, then the nodes: the pitch is ROW_H so the tallest cell keeps its GAP.
+        place[rel] = (x_of[column], MARGIN_Y + TITLE_H + TITLE_GAP + BAND_H + GAP + row * ROW_H)
 
     cells: list[str] = []
 
     def vertex(cell_id: str, label: str, x: int, y: int, fill: str, stroke: str,
-               width: int = WIDTH, height: int = HEIGHT) -> None:
-        style = (f"rounded=1;whiteSpace=wrap;html=1;fillColor={fill};strokeColor={stroke};"
-                 f"strokeWidth={3 if cell_id in orphan_ids else 1};fontSize=11;")
+               width: int = COL_WIDTH["skill"], height: int = CELL_H) -> None:
+        # Text inside a box is left and middle, with the padding named in the style. Without
+        # spacingTop the first line is pressed against the frame; without spacingLeft it touches
+        # the border. Both were true of the first version of this picture.
+        style = (f"{BOX}fillColor={fill};strokeColor={stroke};"
+                 f"strokeWidth={3 if cell_id in orphan_ids else 1};fontSize={F_STEP};"
+                 f"align=left;verticalAlign=middle;spacingLeft={PAD_L};spacingTop={PAD_T};"
+                 f"spacingBottom={PAD_T};")
         cells.append(f'<mxCell id="{esc(cell_id)}" value="{esc(label)}" style="{style}" '
                      f'vertex="1" parent="1"><mxGeometry x="{x}" y="{y}" '
                      f'width="{width}" height="{height}" as="geometry" /></mxCell>')
 
+    # A COLUMN HEADER BAND, so the reader knows what each column is without a caption somewhere
+    # else. A band, not seven separate nodes: it belongs to the column, not to the flow.
+    def band(cell_id: str, label: str, x: int, width: int) -> None:
+        style = f"{BAND}fontSize={F_BAND};"
+        cells.append(f'<mxCell id="{esc(cell_id)}" value="{esc(label)}" style="{style}" '
+                     f'vertex="1" parent="1"><mxGeometry x="{x}" '
+                     f'y="{MARGIN_Y + TITLE_H + TITLE_GAP}" width="{width}" height="{BAND_H}" '
+                     f'as="geometry" /></mxCell>')
+
     orphan_ids = {f"n{i}" for i, rel in enumerate(sorted(nodes)) if rel in invisible}
     ids = {rel: f"n{i}" for i, rel in enumerate(sorted(nodes))}
+
+    # The header bands, one per column that actually has nodes in it.
+    for column in present:
+        kind = next(k for k, c in columns.items() if c == column)
+        band(f"band{column}", f"{BAND_TITLE[kind]}  ·  {rows[column]}", x_of[column],
+             COL_WIDTH[kind])
 
     for rel in sorted(nodes):
         node = nodes[rel]
         x, y = place[rel]
-        fill, stroke = THEME.get(node["kind"], THEME["file"])
+        kind = node["kind"]
+        fill, stroke = THEME.get(kind, THEME["file"])
         if rel in invisible:
             stroke = "#B85450"                      # a road with no sign to it
         short = rel.split("skills/", 1)[-1]
         # Русское описание сверху, путь мелким шрифтом под ним: читателю нужен смысл, а путь нужен,
-        # чтобы файл можно было найти.
+        # чтобы файл можно было найти. Русское имя — заголовок строки (F_STEP), путь — строка
+        # источника (F_PATH): два разных размера, потому что это две разные вещи.
         russian = glossary.get(rel, "")
         # HTML собирается НАСТОЯЩИМИ скобками и экранируется ровно один раз, в vertex(). Первая
         # версия писала &lt;b&gt; здесь и потом экранировала ещё раз - draw.io получил &amp;lt;b&amp;gt;
         # и нарисовал разметку текстом. Двойное экранирование не падает, оно просто портит вид.
         if russian:
             label = (f'<b>{russian}</b><br>'
-                     f'<font color="#666666" style="font-size:10px">{short}</font>')
+                     f'<font color="#666666" style="font-size:{F_PATH}px">{short}</font>')
         else:
             label = f'<b>{short}</b>'
         if rel in invisible:
-            label += '<br><font color="#B85450">⚠ нигде не назван</font>'
+            label += f'<br><font color="#B85450" style="font-size:{F_PATH}px">⚠ нигде не назван</font>'
         elif rel in weak:
-            label += '<br><font color="#D79B00">· назван, но не связан</font>'
-        vertex(ids[rel], label, x, y, fill, stroke, height=HEIGHT + (22 if russian else 0))
+            label += (f'<br><font color="#D79B00" style="font-size:{F_PATH}px">'
+                      f'· назван, но не связан</font>')
+        # Height answers to the TEXT: a node with a description is a rich card, one without is a leaf.
+        vertex(ids[rel], label, x, y, fill, stroke, width=COL_WIDTH.get(kind, COL_WIDTH["file"]),
+               height=STEP_H if russian else CELL_H)
 
     # Every edge, coloured by how it was established.
     #
