@@ -4,7 +4,6 @@ description: Work with VK (VKontakte) from an agent - read a community before wr
 license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text. scripts/preflight.py and scripts/typo_lint.py need Python 3.8 or newer and the standard library only; the network is used by preflight alone, and only for reads.
 metadata:
-  spec: https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx
   version: 0.1.0
   status: first formulation, written after four adversarial hearings over existing VK skills. All four were rejected and this takes only the parts that survived, naming each source
   borrowed_from: the gate-before-write idea and the confirmation requirement come from dexterfire/vk-wall-poster-universal, which the hearing rejected for reading a personal session token out of the browser and never asking. The honesty contract of distinguishable exit codes comes from antonbru/vk-video-skill. The Russian typography table comes from Shadowru/crosspost-design-skill, AGPL-3.0, reimplemented rather than copied, with its range rule narrowed

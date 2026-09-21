@@ -4,7 +4,6 @@ description: Read what a Windows machine's hardware actually reports, and tell a
 license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text. scripts/collect.py needs Python 3.8+ on Windows and reads through PowerShell; it takes no reading that changes anything.
 metadata:
-  spec: https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx
   version: 0.1.0
   status: first formulation, assembled from a survey of 132 repositories and one collection of 78
   borrowed_from: Swietlik3d/windows-pc-skills for the frame - symptom to evidence to hypothesis to test, read-only first, and an escalation ladder - which is the best structure found in that survey and is used here; the commands and the traps are ours, and references/readings.md names which is which
