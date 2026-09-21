@@ -1,6 +1,6 @@
 ---
 name: draw-a-diagram
-description: Produce a diagram as a FILE an agent writes directly - draw.io XML, its rules and its traps - instead of driving a diagram editor or describing the picture in prose. Use when the user says "show me the structure", "pиши схему", "draw this", "нарисуй", "покажи схему", or when a document would be clearer as a picture. Covers the ladder rung that matters (a diagram is a file format, so never automate the editor), the vendor's XML rules, the wrapper that Desktop silently requires, double escaping, layout that a human can read, and a validator. Ships a checker for any .drawio file.
+description: Produce a diagram as a FILE an agent writes directly - draw.io XML, its rules and its traps - instead of driving a diagram editor or describing the picture in prose. Use when the user says "show me the structure", "пиши схему", "draw this", "нарисуй", "покажи схему", or when a document would be clearer as a picture. Covers the ladder rung that matters (a diagram is a file format, so never automate the editor), the vendor's XML rules, the wrapper that Desktop silently requires, double escaping, layout that a human can read, and a validator. Ships a checker for any .drawio file.
 compatibility: Agent Skills standard. SKILL.md is plain text. scripts/check-drawio.py needs Python 3.10 and no packages. Verified against draw.io Desktop 28.2.5 on Windows 11.
 ---
 
