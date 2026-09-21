@@ -39,6 +39,26 @@ BLUE, GREEN, ORANGE, RED, PURPLE, GREY = (
 
 LEVEL_COLOURS = [BLUE, ORANGE, PURPLE, GREEN, GREY]
 
+# ── ВИД. Числа не на глаз: каждое отвечает на жалобу «как описание книги».
+#
+# Правило, из которого выведено остальное: РАЗМЕР И ОТСТУП ГОВОРЯТ О РОЛИ. Одинаковая высота у всех
+# рамок убирает иерархию, и взгляду не за что зацепиться - страница читается одним абзацем.
+TITLE_H = 78        # заголовок схемы: крупнее всех, потому что он и есть вход
+STEP_H = 88         # шаг: заголовок + зачем + исходная строка
+GAP = 42            # воздух между шагами. Меньше 30 - рамки читаются как один блок
+BOX_W = 640         # ширина колонки шагов
+PAD_L = 20          # отступ слева внутри рамки: 10 заставляло текст липнуть к границе
+PAD_T = 10          # отступ сверху, иначе первая строка прижата к рамке
+MARGIN_X, MARGIN_Y = 90, 60     # поля страницы: схема не должна начинаться у края листа
+
+# Тень даёт объём и отделяет рамку от листа. arcSize подобран так, чтобы скругление читалось, но не
+# спорило с прямоугольной сеткой колонок.
+BOX = "rounded=1;arcSize=10;whiteSpace=wrap;html=1;shadow=1;strokeWidth=1;"
+TITLE = "rounded=1;arcSize=10;whiteSpace=wrap;html=1;shadow=1;strokeWidth=2;"
+
+# Иерархия шрифта: четыре размера, и каждый значит ровно одно.
+F_TITLE, F_STEP, F_DETAIL, F_PATH = 18, 13, 11, 9
+
 
 def esc(text: str) -> str:
     return html.escape(str(text), quote=True)
@@ -85,11 +105,13 @@ def main() -> int:
         return 1
 
     cells: list[str] = []
-    cells.append(f'<mxCell id="head" value="{esc(title_ru)}" style="rounded=0;whiteSpace=wrap;html=1;'
-                 f'fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=16;fontStyle=1;" vertex="1" '
-                 f'parent="1"><mxGeometry x="70" y="30" width="560" height="48" as="geometry" /></mxCell>')
+    cells.append(f'<mxCell id="head" value="{esc(title_ru)}" style="{TITLE}'
+                 f'fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize={F_TITLE};fontStyle=1;'
+                 f'align=center;verticalAlign=middle;" vertex="1" parent="1">'
+                 f'<mxGeometry x="{MARGIN_X}" y="{MARGIN_Y}" width="{BOX_W}" height="{TITLE_H}" '
+                 f'as="geometry" /></mxCell>')
 
-    y, previous, untranslated = 110, "head", []
+    y, previous, untranslated = MARGIN_Y + TITLE_H + GAP, "head", []
     for index, (heading, first) in enumerate(sections):
         translated = sections_ru.get(heading)
         if translated:
@@ -98,43 +120,49 @@ def main() -> int:
             russian, why = heading, first
             untranslated.append(heading)
         label = (f'<b>{russian}</b><br>'
-                 f'<font color="#444444" style="font-size:11px">{why}</font><br>'
-                 f'<font color="#999999" style="font-size:9px">{heading}</font>')
+                 f'<font color="#444444" style="font-size:{F_DETAIL}px">{why}</font><br>'
+                 f'<font color="#999999" style="font-size:{F_PATH}px">{heading}</font>')
         colour = LEVEL_COLOURS[min(index, len(LEVEL_COLOURS) - 1)]
-        cells.append(f'<mxCell id="s{index}" value="{esc(label)}" style="rounded=1;whiteSpace=wrap;'
-                     f'html=1;fillColor={colour[0]};strokeColor={colour[1]};align=left;spacingLeft=10;'
-                     f'fontSize=12;" vertex="1" parent="1">'
-                     f'<mxGeometry x="70" y="{y}" width="560" height="72" as="geometry" /></mxCell>')
+        cells.append(f'<mxCell id="s{index}" value="{esc(label)}" style="{BOX}'
+                     f'fillColor={colour[0]};strokeColor={colour[1]};align=left;verticalAlign=middle;'
+                     f'spacingLeft={PAD_L};spacingTop={PAD_T};spacingBottom={PAD_T};'
+                     f'fontSize={F_STEP};" vertex="1" parent="1">'
+                     f'<mxGeometry x="{MARGIN_X}" y="{y}" width="{BOX_W}" height="{STEP_H}" '
+                     f'as="geometry" /></mxCell>')
         cells.append(f'<mxCell id="a{index}" style="endArrow=classic;html=1;strokeColor=#6C8EBF;'
-                     f'strokeWidth=2;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" '
+                     f'strokeWidth=2;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;'
+                     f'exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" '
                      f'source="{previous}" target="s{index}">'
                      f'<mxGeometry relative="1" as="geometry" /></mxCell>')
-        previous, y = f"s{index}", y + 92
+        previous, y = f"s{index}", y + STEP_H + GAP
 
-    legend = [f"ЧТО ЭТО ЗА СХЕМА",
-              f"Порядок работы скилла {skill}: шаги в том порядке, в каком их надо делать.",
-              "Это НЕ структура файлов (family.drawio) и НЕ ворота регламента (gates.drawio).",
-              "",
-              "КАК ЧИТАТЬ",
-              "Синяя рамка сверху — сам скилл. Стрелка вниз — следующий шаг.",
-              "Заголовок по-русски, под ним зачем этот шаг, внизу мелко — исходный заголовок из файла.",
-              "",
-              "О ЧЁМ ЭТОТ СКИЛЛ",
-              gloss.get("what", "")]
-    for row, text in enumerate(legend):
-        bold = "1" if (text.isupper() or text.startswith("ЧТО") or text.startswith("КАК")
-                       or text.startswith("О ЧЁМ")) else "0"
-        # row is in the Y COORDINATE. Without it every line lands at the same spot and the legend draws
-        # as one black smudge - which is what the operator saw and reported. The other three diagrams
-        # had it right, so the bug looked like a rendering problem rather than a missing variable.
-        cells.append(f'<mxCell id="l{row}" value="{esc(text)}" style="text;html=1;align=left;'
-                     f'verticalAlign=middle;fontSize=12;fontStyle={bold};strokeColor=none;fillColor=none;"'
-                     f' vertex="1" parent="1"><mxGeometry x="700" y="{110 + row * 30}" width="640" '
-                     f'height="26" as="geometry" /></mxCell>')
+    # ЛЕГЕНДА ПАНЕЛЬЮ, А НЕ СПИСКОМ СТРОК. Строки без рамки читаются как продолжение схемы и глазом
+    # не отделяются от шагов; панель с заголовком и полями говорит: это справка, а не часть потока.
+    legend_rows = [("ЧТО ЭТО ЗА СХЕМА",
+                    [f"Порядок работы скилла {skill}: шаги в том порядке, в каком их надо делать.",
+                     "Это НЕ структура файлов (family.drawio) и НЕ ворота регламента (gates.drawio)."]),
+                   ("КАК ЧИТАТЬ",
+                    ["Синяя рамка сверху — сам скилл. Стрелка вниз — следующий шаг.",
+                     "Заголовок по-русски, под ним зачем этот шаг, внизу мелко — исходный заголовок."]),
+                   ("О ЧЁМ ЭТОТ СКИЛЛ", [gloss.get("what", "")])]
+    parts = []
+    for heading, lines in legend_rows:
+        parts.append(f'<b>{esc(heading)}</b>')
+        parts.extend(esc(line) for line in lines if line)
+        parts.append("&nbsp;")
+    legend_html = "<br>".join(parts)
+    legend_h = 34 + sum(len(lines) + 1 for _, lines in legend_rows) * 22 + 16
+    cells.append(f'<mxCell id="legend" value="{esc(legend_html)}" style="{BOX}'
+                 f'fillColor=#FFFFFF;strokeColor=#B3B3B3;align=left;verticalAlign=top;'
+                 f'spacingLeft={PAD_L};spacingTop={PAD_T};fontSize={F_DETAIL};" vertex="1" parent="1">'
+                 f'<mxGeometry x="{MARGIN_X + BOX_W + GAP + 60}" y="{MARGIN_Y}" width="660" '
+                 f'height="{legend_h}" as="geometry" /></mxCell>')
 
+    page_h = max(y, MARGIN_Y + legend_h) + MARGIN_Y
+    page_w = MARGIN_X + BOX_W + GAP + 60 + 660 + MARGIN_X
     model = ('<mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" '
-             'arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1400" math="0" '
-             'shadow="0"><root><mxCell id="0" /><mxCell id="1" parent="0" />' + "".join(cells)
+             f'arrows="1" fold="1" page="1" pageScale="1" pageWidth="{page_w}" pageHeight="{page_h}" '
+             'math="0" shadow="0"><root><mxCell id="0" /><mxCell id="1" parent="0" />' + "".join(cells)
              + '</root></mxGraphModel>')
     model = (f'<mxfile host="dsh" agent="draw-a-skill-flow.py"><diagram id="{esc(skill)}" '
              f'name="{esc(title_ru)}">{model}</diagram></mxfile>')
