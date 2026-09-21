@@ -4,7 +4,7 @@ description: Decide which skill a task requires, and which are mandatory rather 
 license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text. Names other skills in this family; where one is absent, the obligation is stated rather than the tool.
 metadata:
-  spec: https://agentskills.io/specification
+  spec: https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx
   version: 0.2.0
   status: the correctness gate was added after three independent agents found the regulation silent on the one thing each of them was doing
   borrowed_from: the gate idea - a check that must pass before work continues - is NVIDIA/SkillSpector's install gate, read as "map the recommendation to an action" and generalised here from installs to tasks. The word-boundary trigger rule is find-a-skill's own scanner, which needed it first and whose author did not carry it across

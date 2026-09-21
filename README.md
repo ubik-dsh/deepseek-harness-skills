@@ -1,7 +1,7 @@
 # Harness Skills
 
 Agent skills that work in **this harness**, **other harnesses**, and any other
-harness that reads the [Agent Skills](https://agentskills.io/specification)
+harness that reads the [Agent Skills](https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx)
 standard. Plain text, nothing to build, nothing to install.
 
 *Русская версия: [README.ru.md](README.ru.md).*

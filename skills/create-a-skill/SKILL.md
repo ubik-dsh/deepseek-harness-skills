@@ -4,7 +4,7 @@ description: Author a new agent skill, or improve an existing one - a folder of 
 license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text with no runtime; the two files in scripts/ need Python 3.8 or newer, standard library only, and neither is required for the skill to work.
 metadata:
-  spec: https://agentskills.io/specification
+  spec: https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx
   assembled_from: anthropics/skills (skill-creator), mattpocock via alirezarezvani/claude-skills (write-a-skill), sickn33/agentic-awesome-skills (effective-agent-skills, writing-skills, verification-before-completion), deanpeters/Product-Manager-Skills
   borrowed_from_skill_creator: status vocabularies, early-stop disclosure, bounds instead of refusal, calibration against an existing skill, form before substance, and a description that claims the work — see references/borrowed-practices.md
   verified_against: this harness 0.1.5-rc.2, by live probes of all seven roots and their precedence

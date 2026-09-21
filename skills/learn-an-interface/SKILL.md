@@ -4,7 +4,7 @@ description: Drive a real graphical interface from an agent — a window, a ribb
 license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text. The script in scripts/ needs Python 3.8+ with Pillow, and drives Windows; the method itself is platform-neutral and the traps are documented so they can be recognised elsewhere.
 metadata:
-  spec: https://agentskills.io/specification
+  spec: https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx
   version: 0.2.0
   status: sharpened by a survey of 105 rival skills, each read and trialled — see references/borrowed-practices.md
   measured_on: Windows 11, Paint (Microsoft Store build), two monitors at 2560x1440 and 1920x1440

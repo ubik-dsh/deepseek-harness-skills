@@ -4,7 +4,7 @@ description: Produce a diagram as a FILE an agent writes directly - draw.io XML,
 compatibility: Agent Skills standard. SKILL.md is plain text. scripts/check-drawio.py needs Python 3.10 and no packages. Verified against draw.io Desktop 28.2.5 on Windows 11.
 license: MIT
 metadata:
-  spec: https://agentskills.io/specification
+  spec: https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx
   verified_against: draw.io Desktop 28.2.5, by generating a file and opening it rather than by reading the documentation
 ---
 

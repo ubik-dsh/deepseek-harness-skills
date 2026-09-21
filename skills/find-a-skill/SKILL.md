@@ -4,7 +4,7 @@ description: Look for a skill that already does the job before writing a new one
 license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text. The script in scripts/ needs Python 3.8+, standard library only, and works without a GitHub token with reduced remote coverage.
 metadata:
-  spec: https://agentskills.io/specification
+  spec: https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx
   version: 0.1.0
   status: first formulation, to be sharpened by use
   measured_on: this harness 0.1.5-rc.2, and a survey of 105 repositories shipping a SKILL.md for interface control

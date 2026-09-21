@@ -2,7 +2,7 @@
 
 Скиллы для агентов, которые работают в **этом харнессе**, **других харнессах** и
 любом другом инструменте, читающем стандарт
-[Agent Skills](https://agentskills.io/specification). Только текст: собирать
+[Agent Skills](https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx). Только текст: собирать
 нечего, ставить нечего.
 
 *English version: [README.md](README.md).*

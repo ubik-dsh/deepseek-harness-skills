@@ -4,7 +4,7 @@ description: Put one skill on trial before adopting it — a prosecutor argues w
 license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text. The script in scripts/ needs Python 3.8+, standard library only, and is a recorder rather than a judge — it formats and validates, it does not decide.
 metadata:
-  spec: https://agentskills.io/specification
+  spec: https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx
   version: 0.1.0
   status: first formulation, to be sharpened by use
   measured_on: three real hearings over rival skills, two adopted in part and one rejected

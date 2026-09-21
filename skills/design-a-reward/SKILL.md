@@ -4,7 +4,7 @@ description: Design the reward signal for anything that learns — reinforcement
 license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text. The script in scripts/ needs Python 3.8+, standard library only, and is a template to copy rather than a tool to install.
 metadata:
-  spec: https://agentskills.io/specification
+  spec: https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx
   version: 0.1.0
   status: first formulation, to be sharpened by use
   measured_on: tabular Q-learning and UCB1 bandits, 150 parallel iterations, and a two-agent arena

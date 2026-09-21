@@ -4,7 +4,7 @@ description: Work on a Windows machine from an agent — script it in PowerShell
 license: MIT
 compatibility: Agent Skills standard. SKILL.md is plain text. scripts/preflight.py needs Python 3.8+ on Windows and uses only the standard library through ctypes; it reports and does not act.
 metadata:
-  spec: https://agentskills.io/specification
+  spec: https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx
   version: 0.1.0
   status: first formulation, assembled from twelve hearings and one session of getting it wrong
   borrowed_from: raphaol/powershell-windows-best-skill for the trap list, browser-use/windows-harness for one call per decision point and the input ladder, Lucien-1127/strata-skill for the CMD encoding trap, mturac/everything-openai-codex for the accessibility-tree rung - all found through find-a-skill and judged through judge-a-skill
