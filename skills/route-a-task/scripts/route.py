@@ -254,6 +254,84 @@ GATES = [
 # Everything below a gate. IF is required once its condition holds; CONSIDER is judgement,
 # and not taking it is a decision rather than an omission.
 ROUTES = [
+    # ---- добавлено 25.09.2026: сверка check-routes.py нашла 11 скиллов БЕЗ маршрута,
+    # включая всё, что сделано в тот вечер. Карта на них не указывала, и работа
+    # делалась руками. У каждого маршрута `when` — слова ЗАДАЧИ, а не имя скилла:
+    # ищут по тому, что человек сказал.
+    {
+        "when": ["схем*", "нарисуй", "диаграм*", "diagram", "drawio", "покажи структур*",
+                 "граф*"],
+        "tool": "draw-a-diagram",
+        "strength": "REQUIRED when the answer is a picture of structure",
+        "because": "схема словами — не схема: формат файла и его ловушки описаны только "
+                   "здесь, а редактор не автоматизируют.",
+    },
+    {
+        "when": ["желез*", "hardware", "диск*", "smart", "память", "whea", "батаре*",
+                 "температур*"],
+        "tool": "check-hardware",
+        "strength": "REQUIRED before replacing a part, and before believing a symptom",
+        "because": "здоровый на вид диск может быть вообще не проверен, а отчёт об "
+                   "аккумуляторе содержит две разные ёмкости.",
+    },
+    {
+        "when": ["окно", "нажми", "клик*", "проводник", "чужое приложение",
+                 "интерфейс приложения"],
+        "tool": "computer-use",
+        "strength": "REQUIRED when the target is another application's window",
+        "because": "действие привязано к окну и само поднимает цель, значение меняется "
+                   "через ValuePattern, снимок берётся у окна: иначе ввод уходит в чужое "
+                   "окно, а перекрытое окно не попадает в кадр.",
+    },
+    {
+        "when": ["презентац*", "слайд*", "pptx", "колода", "deck"],
+        "tool": "check-a-deck",
+        "strength": "REQUIRED before delivering a .pptx",
+        "because": "«выглядит нормально» — не проверка: ворота считают фигуры за краем, "
+                   "кегль ниже порога, остатки TODO и итоги таблиц.",
+    },
+    {
+        "when": ["таблиц*", "xlsx", "эксель", "книга", "формул*"],
+        "tool": "check-a-sheet",
+        "strength": "REQUIRED before delivering a .xlsx",
+        "because": "ошибки формул, число текстом и неверное «Итого» видны только "
+                   "пересчётом, а не взглядом.",
+    },
+    {
+        "when": ["шаблон", "template", "как в прошлый раз", "в той же форме", "по образцу"],
+        "tool": "make-a-template",
+        "strength": "REQUIRED when one kind of document keeps coming out in different shapes",
+        "because": "форма измеряется в числа, и `check` умеет провалиться — иначе "
+                   "«похоже» остаётся догадкой.",
+    },
+    {
+        "when": ["проверь", "реценз*", "review", "свежим взглядом", "найди дефект*"],
+        "tool": "review-a-change",
+        "strength": "REQUIRED when the result must be checked by someone who did not make it",
+        "because": "автор видит то, что хотел написать; находка без файла:строка — не "
+                   "находка, а «находок нет» требует списка проверенного.",
+    },
+    {
+        "when": ["интерфейс", "научись", "координат*", "кнопк*", "панель программы"],
+        "tool": "learn-an-interface",
+        "strength": "REQUIRED before hard-coding a click",
+        "because": "сначала дерево доступности и только потом координаты; выученная "
+                   "координата без проверки ломается при первом сдвиге.",
+    },
+    {
+        "when": ["сделай скилл", "навык", "skill", "запиши знание", "чтобы не забыть"],
+        "tool": "create-a-skill",
+        "strength": "REQUIRED when something must survive this session",
+        "because": "скилл — папка с описанием, по которому его найдут; без проверки "
+                   "чек-листом он остаётся заметкой.",
+    },
+    {
+        "when": ["стоит ли", "оцени скилл", "принять ли", "verdict", "нужен ли"],
+        "tool": "judge-a-skill",
+        "strength": "REQUIRED before adopting someone else's skill",
+        "because": "обвинение обязано опираться на проверяемое в самом артефакте, "
+                   "а «взять части» — законный приговор.",
+    },
     {
         "when": ["vk", "вконтакте", "вк", "стен*", "сообществ*", "паблик*", "wall.post",
                  "vk.com", "vk.ru"],
