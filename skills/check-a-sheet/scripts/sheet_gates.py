@@ -41,6 +41,7 @@ if sys.stdout is not None:
     sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
 
 import openpyxl  # noqa: E402
+from openpyxl.utils import get_column_letter  # noqa: E402
 
 ERRORS = ("#REF!", "#DIV/0!", "#VALUE!", "#NAME?", "#N/A", "#NUM!", "#NULL!", "#GETTING_DATA")
 TOTAL_WORD = re.compile(r"^(итого|всего|total|sum)\b", re.IGNORECASE)
@@ -119,18 +120,29 @@ def gate(book_path: Path) -> dict:
                                          "text": f"«{value.strip()}» — Excel такое не сложит"})
                     continue
 
-        # разрыв в столбце формул: столбец, где формул много, а одна ячейка — константа
+        # Разрыв в столбце формул: константа стоит МЕЖДУ формулами.
+        # Первый признак («в столбце есть и формулы, и константы») ругался на честную
+        # книгу, где данные лежат сверху, а итоговые формулы — под ними. Поймала
+        # проверка собственной книги. Теперь константа должна быть внутри
+        # промежутка от первой формулы до последней.
         for column in sheet.iter_cols():
-            cells = [c for c in column if c.value not in (None, "")]
-            if len(cells) < 4:
+            filled = [c for c in column if c.value not in (None, "")]
+            if len(filled) < 4:
                 continue
-            flags = [isinstance(c.value, str) and c.value.startswith("=") for c in cells]
-            if sum(flags) >= 3 and not all(flags) and any(not f for f in flags):
-                soft = [c.coordinate for c, f in zip(cells, flags) if not f]
+            flags = [(c.row, isinstance(c.value, str) and c.value.startswith("=")) for c in filled]
+            formula_rows = [row for row, is_formula in flags if is_formula]
+            if len(formula_rows) < 3:
+                continue
+            first_formula, last_formula = min(formula_rows), max(formula_rows)
+            inside = [row for row, is_formula in flags
+                      if not is_formula and first_formula < row < last_formula]
+            if inside:
+                letter = get_column_letter(filled[0].column)
                 warnings.append({"kind": "разрыв столбца", "sheet": name,
-                                 "where": ",".join(soft[:4]),
-                                 "text": f"столбец {cells[0].column_letter}: формул {sum(flags)}, "
-                                         f"констант {len(soft)} — похоже, одну ячейку вписали руками"})
+                                 "where": ",".join(f"{letter}{row}" for row in inside[:4]),
+                                 "text": f"столбец {letter}: формулы идут с {first_formula} по "
+                                         f"{last_formula}, а внутри — {len(inside)} констант(ы) "
+                                         f"вместо формулы"})
 
         # итоги: строка «Итого» против суммы слагаемых над ней
         for row in sheet.iter_rows():
