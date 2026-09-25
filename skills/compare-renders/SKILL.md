@@ -1,6 +1,6 @@
 ---
 name: compare-renders
-description: Compare two rendered versions of the same document page by page and show what moved — old PDF against new PDF, or two folders of page images — so a fix can be shown not to have broken the look. Use after editing a deck, a document, a report or a workbook, whenever the change was supposed to touch content and not layout.
+description: Compare two rendered versions of the same document page by page and show what moved — old PDF against new PDF, or two folders of page images — so a fix can be shown not to have broken the look. Use after editing a deck, a document, a report or a workbook, whenever the change was supposed to touch content and not layout. По-русски — сравни две версии; что изменилось; до и после; не сломал ли вид; поехало ли; различия между файлами.
 ---
 
 # Compare Renders

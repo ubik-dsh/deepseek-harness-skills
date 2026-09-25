@@ -1,6 +1,6 @@
 ---
 name: check-a-deck
-description: Put a finished presentation through measurable gates before calling it done — shapes off the slide, text that runs into other text, font sizes below a floor, leftover placeholders, slides carrying too many words, and table totals that do not match the numbers above them. Use before delivering a .pptx, when a deck "looks fine" but nobody checked it, or when asked to review someone else's slides.
+description: Put a finished presentation through measurable gates before calling it done — shapes off the slide, text that runs into other text, font sizes below a floor, leftover placeholders, slides carrying too many words, and table totals that do not match the numbers above them. Use before delivering a .pptx, when a deck "looks fine" but nobody checked it, or when asked to review someone else's slides. По-русски — проверь презентацию; можно ли отдавать слайды; не стыдно ли показать; колода перед отправкой.
 ---
 
 # Check a Deck

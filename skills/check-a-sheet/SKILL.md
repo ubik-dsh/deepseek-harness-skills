@@ -1,6 +1,6 @@
 ---
 name: check-a-sheet
-description: Put a finished workbook through measurable gates before calling it done — formula errors, numbers stored as text, a constant hand-typed into a column of formulas, a total that disagrees with the numbers above it, duplicate keys, and merges sitting inside the data. Use before delivering an .xlsx, when a spreadsheet "looks fine" but nobody checked it, or when asked to review someone else's workbook.
+description: Put a finished workbook through measurable gates before calling it done — formula errors, numbers stored as text, a constant hand-typed into a column of formulas, a total that disagrees with the numbers above it, duplicate keys, and merges sitting inside the data. Use before delivering an .xlsx, when a spreadsheet "looks fine" but nobody checked it, or when asked to review someone else's workbook. По-русски — проверь таблицу; сходятся ли итоги; ошибки в формулах; можно ли отдавать книгу.
 ---
 
 # Check a Sheet

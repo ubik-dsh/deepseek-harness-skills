@@ -1,6 +1,6 @@
 ---
 name: review-a-change
-description: Review a finished change read-only and defect-first — a diff, a document, a deck, a workbook, a skill — and report every actionable finding with a severity, a location and a checkable claim, or state plainly that there is none. Use before delivering or committing work, when a second pair of eyes is needed, and whenever a result must be checked by someone who did not produce it.
+description: Review a finished change read-only and defect-first — a diff, a document, a deck, a workbook, a skill — and report every actionable finding with a severity, a location and a checkable claim, or state plainly that there is none. Use before delivering or committing work, when a second pair of eyes is needed, and whenever a result must be checked by someone who did not produce it. По-русски — проверь мою работу; посмотри свежим взглядом; найди дефекты; что здесь не так.
 ---
 
 # Review a Change

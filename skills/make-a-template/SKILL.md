@@ -1,6 +1,6 @@
 ---
 name: make-a-template
-description: Turn one reference document into a reusable template — a personal skill that carries the reference itself plus its MEASURED form (section order, paragraph length, where tables and code sit), and a check that fails when a new text drifts from that form. Use when asked to "make a template from this", "write the next one the same way", "keep this format", or when several documents of one kind keep coming out in different shapes.
+description: Turn one reference document into a reusable template — a personal skill that carries the reference itself plus its MEASURED form (section order, paragraph length, where tables and code sit), and a check that fails when a new text drifts from that form. Use when asked to "make a template from this", "write the next one the same way", "keep this format", or when several documents of one kind keep coming out in different shapes. По-русски — сделай шаблон; как в прошлый раз; в той же форме; по образцу.
 ---
 
 # Make a Template

@@ -1,6 +1,6 @@
 ---
 name: computer-use
-description: Drive another Windows application's window from an agent — list windows, read the accessibility tree, replace a field's value, click by element or coordinate, and capture the window even when it is covered. Use when a task means operating someone else's UI (a desktop app, a chat window, a form) rather than a file or a CLI, and when a screenshot of the screen would show the wrong thing because the target is behind another window.
+description: Drive another Windows application's window from an agent — list windows, read the accessibility tree, replace a field's value, click by element or coordinate, and capture the window even when it is covered. Use when a task means operating someone else's UI (a desktop app, a chat window, a form) rather than a file or a CLI, and when a screenshot of the screen would show the wrong thing because the target is behind another window. По-русски — нажми в чужой программе; открой окно; покажи в проводнике; сними окно, даже если перекрыто.
 ---
 
 # Computer Use
