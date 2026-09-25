@@ -254,6 +254,15 @@ GATES = [
 # Everything below a gate. IF is required once its condition holds; CONSIDER is judgement,
 # and not taking it is a decision rather than an omission.
 ROUTES = [
+    {
+        "when": ["сравни", "не сломал", "что изменилось", "до и после", "diff", "различия",
+                 "поехало", "сдвинулось"],
+        "tool": "compare-renders",
+        "strength": "REQUIRED after an edit that could touch layout, before claiming the "
+                    "look survived",
+        "because": "ворота считают числа, а глаза верят себе: без прежней версии на вопрос "
+                   "«я ничего не сломал» ответить нечем.",
+    },
     # ---- добавлено 25.09.2026: сверка check-routes.py нашла 11 скиллов БЕЗ маршрута,
     # включая всё, что сделано в тот вечер. Карта на них не указывала, и работа
     # делалась руками. У каждого маршрута `when` — слова ЗАДАЧИ, а не имя скилла:

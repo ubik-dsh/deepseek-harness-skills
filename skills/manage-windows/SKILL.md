@@ -270,3 +270,16 @@ Version 0.1.0, assembled from twelve hearings and one session of mistakes. Most 
   while all four passed, that is the check to add.
 
 When a use contradicts something here, the use wins: change the file, keep the counter-example.
+
+## Длинный вывод инструмента — это чужой контекст
+
+**Вывод команды съедает контекст так же, как чтение файла, и заметить это труднее.** Правила:
+
+- **обрезать там, где вывод рождается:** `Select-Object -First`, `--json` с фильтром, счётчики
+  вместо перечислений. Прогон, который печатает двадцать килобайт ради одной строки, стоит как
+  двадцать килобайт;
+- **повторяющийся вывод писать в файл**, а читать выборочно: `> лог.txt`, потом `Select-String`;
+- **не тащить в чат то, что и так лежит на диске** — хватает пути и двух чисел.
+
+**Это то поле, которое у Кодекса стоит в `.mcp.json` числом** (`output_token_limit`,
+`enabled_tools`), — только у нас нет такого поля, поэтому правило живёт текстом.
